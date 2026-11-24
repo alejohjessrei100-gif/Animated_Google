@@ -1,0 +1,73 @@
+name: Render Animated Short (Three.js + Remotion)
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_id:
+        description: "Video folder inside code/src/videos/"
+        required: true
+        default: "02_barbados_own_goal"
+        type: string
+      quality:
+        description: "Preview (540p) or Video (1080p)"
+        required: true
+        default: "Preview"
+        type: choice
+        options:
+          - Preview
+          - Video
+      run_gates:
+        description: "Run gate checks before rendering"
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Auto-unzip project if uploaded as zip
+        run: |
+          if [ ! -d "code" ]; then
+            ZIP=$(ls *.zip 2>/dev/null | head -n 1)
+            if [ -n "$ZIP" ]; then unzip -q -o "$ZIP"; fi
+          fi
+          ls -la code/src/videos
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Chrome deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 libpango-1.0-0 libcairo2
+
+      - name: Install packages
+        working-directory: code
+        run: npm install --no-audit --no-fund
+
+      - name: Run gate checks
+        if: ${{ inputs.run_gates }}
+        working-directory: code
+        env:
+          VIDEO: ${{ inputs.video_id }}
+        run: npx tsx --tsconfig src/videos/${{ inputs.video_id }}/tsconfig.json src/engine/check/gates.ts
+
+      - name: Render MP4
+        working-directory: code
+        env:
+          VIDEO: ${{ inputs.video_id }}
+        run: |
+          mkdir -p out
+          SUF="preview_540p"
+          if [ "${{ inputs.quality }}" = "Video" ]; then SUF="full_1080p"; fi
+          npx remotion render src/index.ts "${{ inputs.quality }}" "out/${{ inputs.video_id }}_${SUF}.mp4" --codec h264 --gl=swangle --concurrency=2
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.video_id }}-${{ inputs.quality }}-mp4
+          path: code/out/*.mp4
+          
