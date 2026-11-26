@@ -18,7 +18,7 @@ $('play').onclick = () => {
 async function pickVideo() {
   const tries = [['avc1.640028', 'avc'], ['avc1.4d0028', 'avc'], ['avc1.42e028', 'avc'], ['vp09.00.40.08', 'vp9']];
   for (const [codec, mux] of tries) {
-    const cfg = { codec, width: W, height: H, bitrate: 12e6, framerate: 30 };
+    const cfg = { codec, width: W, height: H, bitrate: 24e6, framerate: 30, latencyMode: 'quality' };
     try { const s = await VideoEncoder.isConfigSupported(cfg); if (s.supported) return { cfg, mux }; } catch (e) { }
   }
   return null;

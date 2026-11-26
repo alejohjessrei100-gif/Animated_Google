@@ -90,7 +90,7 @@ function makeWolf() {
     for (let i = 0; i < n; i++) { P.push({ x, y, z, a, b, r: R[i] }); a += .26 + lift * .12; b += sw * .22; const L = .21; x += Math.sin(b) * L; y += Math.sin(a) * L * .9; z -= Math.cos(a) * L * .8; }
     const pt = (q, j) => { const t = j / S * Math.PI * 2 + Math.PI / 4; return [q.x + Math.cos(t) * q.r, q.y + Math.sin(t) * q.r * Math.cos(q.a), q.z + Math.sin(t) * q.r * Math.sin(q.a)]; };
     for (let i = 0; i < n - 1; i++) for (let j = 0; j < S; j++) tailG.quad(pt(P[i], j), pt(P[i], j + 1), pt(P[i + 1], j + 1), pt(P[i + 1], j), [j / S, i / 5], [(j + 1) / S, i / 5], [(j + 1) / S, (i + 1) / 5], [j / S, (i + 1) / 5]);
-    tailG.fill(tm.geometry, 99);
+    tailG.fill(tm.geometry, 99); tm.geometry.boundingBox = null; tm.geometry.boundingSphere = null;
   }
   tailAt(0, 0); tris += tailG.tris;
   function pose(q) {
@@ -226,7 +226,7 @@ function makeHouse() {
   add(g, new Geo().box(.24, .24, .24, 1.3, 2.9, -2.2), mLamp); add(g, new Geo().box(.06, .6, 1, -3.25, 1.4, -2.4), mTv);
   // yard: fence, cone trees, trash cans
   const mC = mat({ color: 0x9aa4b4 }), mD = mat({ color: 0x8e98a8 });
-  for (let i = -13; i <= 13; i++) { if (Math.abs(i * .62) < 1) continue; add(g, new Geo().hexa((a, b, c) => [a * .26, b > 0 ? 1.0 : 0, c * .05]).tri([-.26, 1.0, 0], [.26, 1.0, 0], [0, 1.25, 0], [0, 0], [1, 0], [.5, .2]), mWood, i * .62, 0, 6.2); }
+  for (let i = -13; i <= 13; i++) { if (Math.abs(i * .62) < 1) continue; add(g, new Geo().hexa((a, b, c) => [a * .26, b > 0 ? 1.0 : 0, c * .05]).tri([-.26, 1.0, 0], [.26, 1.0, 0], [0, 1.25, 0], [0, 0], [1, 0], [.5, .2]), mWood, i * .62, 0, 9.4); }
   const tree = (x, z, s) => { const t = grp(g, x, 0, z); t.scale.setScalar(s); add(t, new Geo().loft([{ y: 0, rx: .22, rz: .22 }, { y: 1.1, rx: .16, rz: .16 }], 5), mB); for (const [y, a, h] of [[.8, 1.5, 1.7], [1.9, 1.15, 1.5], [2.9, .8, 1.5]]) add(t, new Geo().loft([{ y, rx: a, rz: a }, { y: y + h, rx: .02, rz: .02 }], 6, { cap1: false }), mL); };
   tree(-5.2, -1, 1.3); tree(5.6, -.5, 1.1); tree(-7.5, -4, 1.6); tree(8, -5, 1.5);
   const can = (x, z) => { const t = grp(g, x, 0, z); add(t, new Geo().loft([{ y: 0, rx: .34, rz: .34 }, { y: .86, rx: .40, rz: .40 }], 8, { cap1: false }), mC); add(t, new Geo().loft([{ y: .85, rx: .45, rz: .45 }, { y: .93, rx: .42, rz: .42 }, { y: 1.0, rx: .12, rz: .12 }], 8), mD); };
@@ -245,7 +245,7 @@ const bell = new THREE.Group(); add(bell, dome(.22, .28), mBrass, 0, -.28, 0); a
 const rope = add(bell, new Geo().box(.04, 1.0, .04, 0, -.82, 0).box(.08, .1, .08, 0, -1.34, 0), mRope), ropeStub = add(bell, new Geo().box(.04, .3, .04, 0, -.48, 0), mRope);
 const ropeFall = add(new THREE.Group(), new Geo().box(.04, .7, .04), mRope);
 // the electric bell box on the wall: housing gets sliced, the mechanism inside stays whole
-const BOXY = 2.0, BOXZ = .34;
+const BOXY = 2.0, BOXZ = .355;
 const boxRoot = new THREE.Group(); boxRoot.position.set(BELLX, BOXY, BOXZ);
 const housing = [-1, 1].map((side) => { const m = mat({ map: boxT, color: 0xe9e2d0 }); m.uniforms.uSide.value = side; m.uniforms.uInC.value.set(.26, .2, .3); return { o: add(boxRoot, new Geo().box(.86, 1.0, .68, 0, 0, 0, { all: [0, 0, 1, 1] }), m), m }; });
 const housingWhole = add(boxRoot, new Geo().box(.86, 1.0, .68, 0, 0, 0, { all: [0, 0, 1, 1] }), mBoxW);
@@ -265,6 +265,12 @@ const rings = [0, 1, 2].map(() => { const m = mat({ color: 0xffffff, em: 1, tran
 const streaks = Array.from({ length: 8 }, () => add(new THREE.Group(), new Geo().box(.04, .04, .36), mGlow));
 const bolts = Array.from({ length: 6 }, () => add(new THREE.Group(), new Geo().box(.04, 1, .04), mBolt));
 
+// ---------- blob shadows (kit style) ----------
+const shadowTex = tex(32, 32, (g) => { for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) { const d = Math.hypot(x - 15.5, y - 15.5) / 16; if (d < 1) px(g, x, y, 1, 1, `rgba(0,0,0,${d < .55 ? 1 : (1 - d) / .45})`); } });
+const blob = (w, d) => { const m = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, uniforms: { map: { value: shadowTex }, a: { value: .45 } }, vertexShader: 'varying vec2 u; void main(){ u = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }', fragmentShader: 'uniform sampler2D map; uniform float a; varying vec2 u; void main(){ gl_FragColor = vec4(.10, .05, .16, texture2D(map, u).a * a); }' });
+  const o = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), m); o.frustumCulled = false; o.renderOrder = 2; return o; };
+const wolfShadow = blob(1.1, .9), copShadow = blob(1.1, .9);
+
 // ---------- scene ----------
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(34, W / H, .05, 80);
@@ -272,6 +278,7 @@ scene.add(sky); const house = makeHouse(); scene.add(house.g);
 const wolf = makeWolf(); scene.add(wolf.root);
 const pig = makePig(), cop = makePig({ cop: true }); scene.add(pig.root, cop.root);
 for (const o of [door, bracket, bell, ropeFall.parent, boxRoot, btn, ...rings.map((r) => r.parent), ...streaks.map((s) => s.parent), ...bolts.map((b) => b.parent)]) scene.add(o);
+scene.add(wolfShadow, copShadow);
 console.log('wolf triangles', wolf.tris);
 
 // ---------- timing (from the real voice) ----------
@@ -290,23 +297,23 @@ const SLICE0 = T.wire, SLICE1 = T.now, DROP0 = T.that, DROP1 = T.now;
 // ---------- shots: hard cuts on new beats, a short ease-out push inside a shot ----------
 // [start, pos, look, fov, (optional) [moveStart, pos2, look2, len]]
 const SHOTS = [
-  [0, [2.1, 1.6, 5.7], [-.8, 1.15, 1.4], 40, [1.5, [1.5, 1.55, 4.7], [-.35, 1.2, 1.0], .4]],
-  [T.hears - .05, [2.05, 1.6, 2.9], [2.0, 1.15, -2.6], 30, [T.hears, [2.0, 1.55, 2.3], [2.0, 1.12, -2.6], .25]],
-  [T.so1, [.45, 1.75, .25], [0, 1.55, 1.75], 44, [T.puff, [.35, 1.72, .4], [0, 1.6, 1.75], .25]],
-  [T.blow, [-3.7, 1.45, 3.9], [.1, 1.25, .6], 38, [T.genius1, [-2.7, 1.6, 3.6], [-.1, 1.45, 1.3], .25]],
-  [T.except1, [-4.4, 1.35, 3.7], [.05, 1.0, 1.0], 38],
-  [T.tased + .3, [-3.0, 1.1, 4.0], [-.1, .6, 1.6], 40],
-  [T.so2, [1.0, 1.85, 4.4], [-.85, 1.75, .6], 36, [T.bell, [.6, 2.0, 3.6], [-.95, 2.1, .5], .25]],
-  [T.clever, [-.15, 1.6, 3.9], [-.75, 1.45, .85], 34],
-  [T.but2, [1.7, 1.0, 4.6], [-.85, 1.6, .8], 38, [T.lands, [.8, 1.35, 4.0], [-.8, 1.5, .85], .2]],
-  [T.so3, [-.55, 1.7, 2.9], [-.9, 1.62, 0], 34],
-  [T.that, [.2, 1.5, 7.0], [-.55, 1.0, .5], 36],
-  [T.which, [-.72, 2.06, 2.1], [-1.05, 1.98, 0], 34],
-  [T.genius2, [.75, 1.45, 4.7], [.25, 1.25, 1.1], 36],
-  [T.except2, [.9, 1.55, 6.6], [-.15, 1.3, .4], 38],
-  [T.so4, [-.72, 2.06, 2.1], [-1.05, 1.98, 0], 34, [T.buzzes, [-.5, 1.9, 3.2], [-.9, 1.8, 0], .25]],
-  [T.now, [1.3, 1.6, 7.0], [.8, 1.4, 0], 38],
-  [T.and9, [2.45, 1.6, 2.7], [2.0, 1.2, -2.4], 32, [T.home + .25, [1.5, 1.95, 7.4], [.4, 1.35, 0], .9]],
+  [0, [3.62, 1.87, 8.79], [-0.6, 1.07, 2.02], 48, [1.5, [3.05, 1.91, 8.44], [-0.6, 1.07, 2.02], .4]],
+  [T.hears - .05, [2.06, 1.66, 3.58], [1.98, 1.14, -2.56], 30, [T.hears, [2, 1.6, 2.9], [1.98, 1.13, -2.56], .25]],
+  [T.so1, [4.29, 2.04, 0.19], [0.02, 1.61, 2.01], 47.5, [T.puff, [4.16, 2, 0.18], [0.02, 1.61, 2.01], .25]],
+  [T.blow, [-7.86, 1.84, 6.55], [-0.05, 1.07, 1.77], 40, [T.genius1, [-6.77, 2.32, 6.53], [-0.05, 1.07, 1.77], .25]],
+  [T.except1, [-10.4, 1.77, 7.64], [-0.14, 1.07, 0.85], 40],
+  [T.tased + .3, [-8.8, 2.14, 7.38], [-0.14, 0.58, 2.45], 40],
+  [T.so2, [2.16, 2.28, 6.94], [-0.65, 1.08, 0.75], 40, [T.bell, [2.24, 2.95, 7.25], [-0.65, 1.08, 0.75], .25]],
+  [T.clever, [0.24, 1.9, 6.02], [-0.72, 1.09, 0.82], 40],
+  [T.but2, [3.98, 0.87, 8.03], [-0.84, 1.04, 0.77], 40, [T.lands, [2.65, 1.6, 7.65], [-0.84, 1.04, 0.77], .2]],
+  [T.so3, [-0.09, 1.63, 4.93], [-1.18, 1.83, 0.41], 34],
+  [T.that, [0.3, 1.57, 8.56], [-0.2, 1.25, 1.05], 41.5],
+  [T.which, [-0.35, 2.13, 4.09], [-1.05, 2, 0.41], 34],
+  [T.genius2, [1.06, 1.65, 6.83], [0.23, 1.08, 1.1], 40],
+  [T.except2, [1.11, 1.61, 7.79], [-0.21, 1.25, 0.35], 40],
+  [T.so4, [-0.39, 2.12, 3.88], [-1.05, 2, 0.41], 35.5, [T.buzzes, [-0.03, 1.85, 5.78], [-1.05, 2, 0.41], .25]],
+  [T.now, [1.2, 1.7, 8.7], [0.55, 1.1, -0.4], 46],
+  [T.and9, [2.45, 1.6, 2.7], [2, 1.2, -2.4], 32, [T.home + .25, [1.1, 1.95, 7.8], [0.2, 1.3, 0], .9]],
 ];
 const camAt = (t) => {
   let s = SHOTS[0]; for (const x of SHOTS) if (t >= x[0]) s = x;
@@ -345,9 +352,9 @@ const CUES = [
 const STRESS = CUES.slice(1).map((c) => c[0]).concat(WORDS.filter((w) => w[2].replace(/[^a-z]/gi, '').length >= 7).map((w) => w[0]));
 function wolfPlace(t) {
   // where he stands and which way he faces, per beat
-  if (t < T.selling + 1.9) { const k = clamp(t / 2.1), walk = Math.sin(t * 9); return { x: lerp(-2.7, -.05, k), z: lerp(3.3, 1.05, k), ry: Math.atan2(2.65, -2.25) * (1 - smooth((t - 1.6) / .5)) + BACK * smooth((t - 1.6) / .5), ll: walk * .5 * (1 - k * k), rl: -walk * .5 * (1 - k * k), lx: -walk * .35 * (1 - k * k), hip: Math.abs(walk) * .02 }; }
+  if (t < T.selling + 1.9) { const k = clamp(t / 2.1), walk = Math.sin(t * 9); return { x: lerp(-.75, -.05, k), z: lerp(2.8, 1.05, k), ry: Math.atan2(.7, -1.75) * (1 - smooth((t - 1.6) / .5)) + BACK * smooth((t - 1.6) / .5), ll: walk * .5 * (1 - k * k), rl: -walk * .5 * (1 - k * k), lx: -walk * .35 * (1 - k * k), hip: Math.abs(walk) * .02 }; }
   if (t < T.so1) return { x: -.05, z: 1.05, ry: BACK };
-  if (t < T.genius1) return { x: 0, z: 1.75, ry: BACK };
+  if (t < T.genius1) return { x: 0, z: t < T.blow ? 2.05 : 1.75, ry: BACK };
   if (t < T.except1) return { x: 0, z: 1.75, ry: lerp(BACK, Math.PI * 2 - 1.0, overshoot((t - T.genius1) / .22)) };
   if (t < T.so2) { const fall = smooth((t - (T.tased + .5)) / .3); return { x: 0, z: 1.75, ry: BACK, rx: fall * 1.5 }; }
   if (t < T.clever) return { x: BELLX + .3, z: .85, ry: 0 };
@@ -355,14 +362,14 @@ function wolfPlace(t) {
   if (t < T.so3) return { x: BELLX + .3, z: .85, ry: 0 };
   if (t < T.genius2) return { x: .1, z: 1.15, ry: -.6 };
   if (t < T.except2) return { x: .25, z: 1.1, ry: 0 };
-  return { x: -.12, z: .5, ry: -Math.PI / 2 };
+  return { x: .08, z: .44, ry: -Math.PI / 2 };
 }
 
 // ---------- 2D overlay at 270x480: captions and the one label ----------
 const ov = document.createElement('canvas'); ov.width = LW; ov.height = LH; const og = ov.getContext('2d', { willReadFrequently: true });
 function chunkyText(text, x, y, size, fill, outline) {
   og.font = `900 ${size}px "Archivo Black", "Arial Black", Impact, sans-serif`; og.textAlign = 'center'; og.textBaseline = 'middle'; og.lineJoin = 'round';
-  og.lineWidth = Math.max(3, size * .26); og.strokeStyle = outline; og.strokeText(text, x, y); og.fillStyle = fill; og.fillText(text, x, y);
+  og.lineWidth = Math.max(3, Math.round(size * .3)); og.strokeStyle = outline; og.strokeText(text, x, y); og.fillStyle = fill; og.fillText(text, x, y);
 }
 function hardOverlay() { const d = og.getImageData(0, 0, LW, LH); for (let i = 3; i < d.data.length; i += 4) d.data[i] = d.data[i] > 110 ? 255 : 0; og.putImageData(d, 0, 0); }
 const v3 = new THREE.Vector3();
@@ -395,13 +402,17 @@ function drawFrame(t) {
   const zap = t >= T.tased && t < T.tased + .55 ? Math.sin((t - T.tased) / .55 * Math.PI) : 0;
   wolf.set('uExp', zap * .5); wolf.set('uFlash', zap > 0 ? (Math.floor(t * 30) % 2 ? .6 : .1) : 0);
   wolf.set('uRed', t >= T.lands && t < T.lands + .35 ? .7 * (1 - (t - T.lands) / .35) : t >= T.skull && t < T.skull + .3 ? .5 * (1 - (t - T.skull) / .3) : 0);
+  // blob shadows: under the feet, stretched when lying down, gone when he flies apart
+  { const lying = pl.rx || 0; wolfShadow.position.set(pl.x, .03, pl.z + Math.sin(lying) * .85); wolfShadow.scale.set(1, 1, 1 + lying * 1.1); wolfShadow.visible = zap < .3; wolfShadow.material.uniforms.a.value = .45; }
+  copShadow.visible = t >= T.except1 && t < T.so2;
   // homeowner pig on the sofa: zoned out -> hears -> ducks
   const ducked = smooth((t - (T.pretend - .1)) / .25);
-  pig.pose({ x: 2.0, y: -.05 - ducked * 1.25, z: -2.55, ry: t >= T.hear ? .15 : -.55, sit: 1, phones: t < T.hear + .15, bob: t < T.hear ? Math.abs(Math.sin(t * 5)) * .04 : 0, hx: t < T.hear ? Math.sin(t * 5) * .12 : 0,
+  pig.pose({ x: 2.0, y: .07 - ducked * 1.35, z: -2.55, ry: t >= T.hear ? .15 : -.55, sit: 1, phones: t < T.hear + .15, bob: t < T.hear ? Math.abs(Math.sin(t * 5)) * .04 : 0, hx: t < T.hear ? Math.sin(t * 5) * .12 : 0,
     face: t >= T.hear ? 'wide' : 'closed', mouth: t >= T.hear && t < T.pretend ? .8 : 0, la: t >= T.hear && t < T.hear + .35 ? 2.6 : .5, ra: .5 });
   // cop pig steps into the doorway
   cop.root.visible = t >= T.except1 && t < T.so2;
-  cop.pose({ x: .12, z: lerp(-.6, .2, smooth((t - T.except1) / .4)), ry: 0, ra: t >= T.tased - .5 ? 1.5 : .3, la: .2, mouth: t >= T.felony && t < T.tased ? .5 : 0, face: 'open' });
+  const copZ = lerp(-.6, .2, smooth((t - T.except1) / .4)); copShadow.position.set(.12, .03, copZ);
+  cop.pose({ x: .12, z: copZ, ry: 0, ra: t >= T.tased - .5 ? 1.5 : .3, la: .2, mouth: t >= T.felony && t < T.tased ? .5 : 0, face: 'open' });
   // the door: knocked, blown in, back on its hinges with planks
   const fly = t >= T.blow + .15 && t < T.so2 ? smooth((t - T.blow - .15) / .3) : 0;
   door.position.set(-.46 + fly * .5, fly * .2, -.06 - fly * 2.6); door.rotation.set(-fly * 1.5, fly * .5, 0);
@@ -461,6 +472,7 @@ function drawFrame(t) {
   bolts.forEach((b, k) => { b.parent.visible = zapOn; if (!zapOn) return; const r = rnd(Math.floor(t * 15) * 7 + k), a = [.25, 1.05, .55], z = [0, 1.25, 1.65], u = k / 6, v = (k + 1) / 6;
     const pa = a.map((x, j) => lerp(x, z[j], u) + (k ? (r() - .5) * .25 : 0)), pb = a.map((x, j) => lerp(x, z[j], v) + (k < 5 ? (r() - .5) * .25 : 0));
     const dir = new THREE.Vector3(pb[0] - pa[0], pb[1] - pa[1], pb[2] - pa[2]); b.parent.position.set((pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2, (pa[2] + pb[2]) / 2); b.scale.set(1, dir.length(), 1); b.parent.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize()); });
+  if (window.__noRender) return;
   // render the low-res frame, scanlines, overlay
   shoot(ctx, scene, cam, {});
   ctx.fillStyle = 'rgba(10,4,24,.07)'; for (let y = 4; y < H; y += 8) ctx.fillRect(0, y, W, 4);
@@ -468,7 +480,7 @@ function drawFrame(t) {
   if (open > .9 && t >= T.magnet) {
     const [x, y, z] = toScreen(coil, [-.08, .06, .08]);
     if (z < 1 && x > 0 && x < LW && y > 0 && y < LH) {
-      const lx = Math.min(LW - 72, Math.max(72, x + 16)), ly = Math.max(30, y - 64);
+      og.font = '900 17px "Archivo Black", "Arial Black", Impact, sans-serif'; const hw = og.measureText('ELECTROMAGNET').width / 2 + 8; const lx = Math.min(LW - hw - 6, Math.max(hw + 6, x + 16)), ly = Math.max(30, y - 64);
       og.strokeStyle = '#1a1320'; og.lineWidth = 4; og.beginPath(); og.moveTo(x, y); og.lineTo(lx, ly + 10); og.stroke();
       og.strokeStyle = '#ffd23f'; og.lineWidth = 2; og.beginPath(); og.moveTo(x, y); og.lineTo(lx, ly + 10); og.stroke();
       og.fillStyle = '#ffd23f'; og.fillRect(Math.round(x) - 2, Math.round(y) - 2, 4, 4);
@@ -476,9 +488,63 @@ function drawFrame(t) {
     }
   }
   const w = WORDS.filter((x) => t >= x[0]).pop();
-  if (w && t < w[1] + .25) { const k = smooth((t - w[0]) / .08); chunkyText(w[2].replace(/[.,!?]/g, ''), LW / 2, 352 - 3 * (1 - k), 36, '#ffffff', '#1a1320'); }
+  if (w && t < w[1] + .25) { const k = smooth((t - w[0]) / .08); chunkyText(w[2].replace(/[.,!?]/g, ''), LW / 2, 336 - 2 * (1 - k), 18, '#ffffff', '#1a1320'); }
   hardOverlay();
   ctx.imageSmoothingEnabled = false; ctx.drawImage(ov, 0, 0, W, H);
 }
 window.drawFrame = drawFrame; window.END = END;
 window.ready = (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { drawFrame(1.2); });
+
+// ---------- framing audit (used by tools/audit.js, harmless at runtime) ----------
+const SUBJ = {
+  wolf: () => wolf.root, head: () => wolf.head, pig: () => pig.root, cop: () => cop.root, box: () => boxRoot, bell: () => bell, btn: () => btn,
+};
+const NEED = [['wolf'], ['pig'], ['head'], ['wolf'], ['wolf', 'cop'], ['wolf'], ['wolf'], ['wolf'], ['wolf'], ['box', 'btn'], ['wolf', 'box'], ['box'], ['wolf'], ['wolf', 'box', 'btn'], ['box'], ['wolf', 'pig'], ['pig', 'wolf']];
+const _b = new THREE.Box3(), _v = new THREE.Vector3();
+window.__audit = (t) => {
+  drawFrame(t);
+  let si = 0; for (let k = 0; k < SHOTS.length; k++) if (t >= SHOTS[k][0]) si = k;
+  const out = [];
+  for (const name of NEED[si] || []) {
+    const o = SUBJ[name](); if (!o.visible) continue;
+    if (name === 'pig' && t >= T.pretend) continue;
+    if (name === 'wolf' && si === SHOTS.length - 1 && t < T.home + 1.15) continue;
+    _b.setFromObject(o); if (_b.isEmpty()) continue;
+    let x0 = 1, x1 = 0, y0 = 1, y1 = 0, behind = false;
+    for (let k = 0; k < 8; k++) { _v.set(k & 1 ? _b.max.x : _b.min.x, k & 2 ? _b.max.y : _b.min.y, k & 4 ? _b.max.z : _b.min.z).project(cam); if (_v.z > 1) behind = true; const x = _v.x * .5 + .5, y = .5 - _v.y * .5; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    const bad = [];
+    if (behind) bad.push('behind-camera'); if (x0 < .05) bad.push('left ' + x0.toFixed(2)); if (x1 > .95) bad.push('right ' + x1.toFixed(2)); if (y0 < .02) bad.push('top ' + y0.toFixed(2)); if (y1 > .99) bad.push('bottom ' + y1.toFixed(2));
+    if (bad.length) out.push(name + ': ' + bad.join(', '));
+  }
+  return { shot: si, out };
+};
+
+window.__solve = () => {
+  window.__noRender = true;
+  for (const s of SHOTS) s[3] = Math.min(s[3], 40);
+  const ends = SHOTS.map((s, i) => [s[0], i + 1 < SHOTS.length ? SHOTS[i + 1][0] : END]);
+  const report = [];
+  SHOTS.forEach((s, si) => {
+    const need = NEED[si] || [], [a, b] = ends[si], ts = []; for (let t = a + .02; t < b; t += 1 / 15) ts.push(t);
+    const fit = (margX, margY) => { let bad = 0; const U = new THREE.Box3();
+      for (const t of ts) { const r = window.__audit(t); bad += r.out.length;
+        for (const n of need) { const o = SUBJ[n](); if (!o.visible || (n === 'pig' && t >= T.pretend)) continue; _b.setFromObject(o); if (!_b.isEmpty()) U.union(_b); } }
+      return { bad, U }; };
+    let it = 0, r = fit();
+    while (r.bad && it < 60) {
+      const c = r.U.getCenter(new THREE.Vector3());
+      const ends2 = [[s[1], s[2]]]; if (s[4]) ends2.push([s[4][1], s[4][2]]);
+      for (const [p, l] of ends2) {
+        for (let k = 0; k < 3; k++) l[k] += (c.getComponent(k) - l[k]) * .35;
+        const np = p.map((v, k) => l[k] + (v - l[k]) * 1.06);
+        if (np[2] <= 8.8 && !(si === 2 && np[2] < .15)) for (let k = 0; k < 3; k++) p[k] = np[k];
+        else s[3] = Math.min(48, s[3] + 1.5);
+      }
+      it++; r = fit();
+    }
+    report.push(si + ': ' + it + ' steps, ' + r.bad + ' bad');
+  });
+  window.__noRender = false;
+  const r3 = (v) => Math.round(v * 100) / 100;
+  return { report, shots: SHOTS.map((s) => [s[0], s[1].map(r3), s[2].map(r3), r3(s[3]), s[4] ? [s[4][0], s[4][1].map(r3), s[4][2].map(r3), s[4][3]] : null]) };
+};
