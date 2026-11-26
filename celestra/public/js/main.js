@@ -454,19 +454,48 @@ async function quickMatch(skip = "") {
   try { const r = await (await fetch("/api/quick" + (skip ? "?skip=" + skip : ""))).json(); app.quick = true; joinRoom(r.code, true); }
   catch { lobbyMsg("COULD NOT REACH SERVER", true); }
 }
-function leaveRoom() { if (app.net) { const n = app.net; app.net = null; n.close(); } app.session = null; app.room = null; app.code = null; $("#roomInfo").classList.add("hidden"); }
-async function joinRoom(code, quick = false) {
-  leaveRoom();
+function leaveRoom() { app.reconnectCode = null; clearTimeout(app.reconnT); if (app.net) { const n = app.net; app.net = null; n.close(); } app.session = null; app.room = null; app.code = null; $("#roomInfo").classList.add("hidden"); }
+function playerId() {
+  let id = store.get("pid", "");
+  if (!id) { id = Array.from(crypto.getRandomValues(new Uint8Array(9)), (b) => b.toString(16).padStart(2, "0")).join(""); store.set("pid", id); }
+  if (!app._pid) app._pid = id + "-" + Math.random().toString(36).slice(2, 6); // per-tab, so 2 tabs = 2 players
+  return app._pid;
+}
+function scheduleReconnect(delay = 900) {
+  if (!app.reconnectCode || app.net) return;
+  clearTimeout(app.reconnT);
+  app.reconnT = setTimeout(async () => {
+    if (!app.reconnectCode || app.net) return;
+    app.reconnTries = (app.reconnTries || 0) + 1;
+    if (app.reconnTries > 25) { app.reconnectCode = null; show("online"); lobbyMsg("CONNECTION LOST — REJOIN WITH THE ROOM CODE", true); return; }
+    await joinRoom(app.reconnectCode, app.quick, true);
+    if (!app.net || !app.net.open) scheduleReconnect(Math.min(4000, 900 + app.reconnTries * 300));
+  }, delay);
+}
+async function joinRoom(code, quick = false, reconnect = false) {
+  if (app.joining) return;                      // ignore double taps / Enter+click
+  if (!reconnect && app.net && app.net.open && app.code === code) return;
+  app.joining = true;
+  if (!reconnect) leaveRoom(); else if (app.net) { const n = app.net; app.net = null; n.close(); }
   const name = ($("#pname").value || store.get("name", "") || "PLAYER" + Math.floor(Math.random() * 90 + 10)).toUpperCase().slice(0, 14);
   store.set("name", name);
   const net = new NetClient(); app.net = net; app.code = code; app.quick = quick;
   net.on("welcome", (m) => {
+    const wasPlaying = app.screen === "fight" || app.screen === "results" || app.screen === "pause";
+    const sameSeat = reconnect && m.slot === app.slot;
     app.slot = m.slot; app.code = m.code; app.mode = "online";
+    app.reconnectCode = m.code; app.reconnTries = 0;
     $("#rcode").textContent = m.code; $("#roomInfo").classList.remove("hidden");
-    app.picks = [null, null]; app.locked = [false, false];
-    openSelect();
+    const myPick = sameSeat ? app.picks[m.slot] : null;
+    app.picks = [null, null]; app.locked = [false, false]; app.session = null;
+    if (myPick) app.picks[m.slot] = myPick;
+    if (reconnect) { app.S = null; if (app.screen !== "select" || wasPlaying) openSelect(); else renderSelect(); banner("RECONNECTED", wasPlaying ? "MATCH RESET — PICK & READY AGAIN" : "", "", 1800); }
+    else openSelect();
   });
-  net.on("full", () => { if (quick) quickMatch(code); else { show("online"); lobbyMsg("ROOM IS FULL", true); } });
+  net.on("full", () => {
+    if (reconnect) return;
+    if (quick) quickMatch(code); else { app.reconnectCode = null; show("online"); lobbyMsg("ROOM IS FULL", true); }
+  });
   net.on("room", (m) => {
     const had = app.room?.players?.[1 - app.slot];
     app.room = m; app.stage = m.stage;
@@ -495,19 +524,26 @@ async function joinRoom(code, quick = false) {
   net.on("left", () => {
     app.session = null;
     if (app.screen === "fight" || app.screen === "results" || app.screen === "pause") { app.S = null; openSelect(); }
-    banner("OPPONENT LEFT", "WAITING FOR A NEW CHALLENGER", "", 2200);
+    banner("RIVAL DISCONNECTED", "THEY CAN REJOIN WITH CODE " + app.code, "", 2600);
   });
   net.on("peerRtt", (r) => {
     const el = $("#net"); $("span", el).textContent = Math.round(r) + " ms";
     el.classList.toggle("mid", r > 90 && r <= 160); el.classList.toggle("bad", r > 160);
   });
-  net.on("close", () => {
-    if (app.net !== net) return;
+  net.on("close", (e) => {
+    if (app.net !== net || net.byUs) return;
     app.net = null; app.session = null;
-    if (app.screen !== "menu" && app.screen !== "title") { show("online"); lobbyMsg("DISCONNECTED FROM ROOM", true); }
+    if (e && e.code === 4000) return; // room full (handled above)
+    if (app.reconnectCode) { banner("CONNECTION LOST", "RECONNECTING…", "", 1500); scheduleReconnect(document.hidden ? 300 : 900); }
+    else if (app.screen !== "menu" && app.screen !== "title") { show("online"); lobbyMsg("DISCONNECTED FROM ROOM", true); }
   });
-  try { await net.connect(code, name); lobbyMsg(quick ? "CONNECTED — WAITING FOR A CHALLENGER…" : "ROOM " + code + " — SHARE THE CODE OR LINK"); }
-  catch { lobbyMsg("CONNECTION FAILED", true); app.net = null; }
+  try {
+    await net.connect(code, name, playerId());
+    if (!reconnect) lobbyMsg(quick ? "CONNECTED — WAITING FOR A CHALLENGER…" : "ROOM " + code + " — SHARE THE CODE OR LINK");
+  } catch {
+    if (app.net === net) app.net = null;
+    if (!reconnect) lobbyMsg("CONNECTION FAILED", true);
+  } finally { app.joining = false; }
 }
 
 // ================= settings =================
@@ -631,7 +667,9 @@ addEventListener("keydown", (e) => {
   if (e.code === "KeyM" && !e.repeat) { initAudio(); store.set("muted", !store.get("muted", false)); applySettings(); }
 });
 addEventListener("pointerdown", () => initAudio(), { once: true });
+addEventListener("online", () => { if (app.reconnectCode && !app.net) { app.reconnTries = 0; scheduleReconnect(50); } });
 document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && app.reconnectCode && (!app.net || !app.net.open)) { app.reconnTries = 0; scheduleReconnect(50); }
   if (document.hidden && app.mode !== "online" && app.screen === "fight") togglePause();
   if (app.mode === "online" && app.net) app.net.send({ t: "emote", away: document.hidden });
 });

@@ -5,15 +5,15 @@ export class NetClient {
   constructor() { this.ws = null; this.handlers = {}; this.open = false; this.rtt = 0; this.peerRtt = 0; this._ping = null; }
   on(t, fn) { (this.handlers[t] ||= []).push(fn); }
   emit(t, m) { for (const fn of this.handlers[t] || []) fn(m); }
-  connect(code, name) {
+  connect(code, name, pid = "") {
     return new Promise((resolve, reject) => {
       const proto = location.protocol === "https:" ? "wss:" : "ws:";
-      const ws = new WebSocket(`${proto}//${location.host}/api/ws/${encodeURIComponent(code)}?name=${encodeURIComponent(name || "Player")}`);
+      const ws = new WebSocket(`${proto}//${location.host}/api/ws/${encodeURIComponent(code)}?name=${encodeURIComponent(name || "Player")}&pid=${encodeURIComponent(pid)}`);
       this.ws = ws;
       let settled = false;
       ws.onopen = () => { this.open = true; settled = true; resolve(); this.startPing(); };
       ws.onerror = () => { if (!settled) { settled = true; reject(new Error("connect failed")); } };
-      ws.onclose = (e) => { this.open = false; clearInterval(this._ping); this.emit("close", e); };
+      ws.onclose = (e) => { this.open = false; clearInterval(this._ping); if (!settled) { settled = true; reject(new Error("closed")); } this.emit("close", e); };
       ws.onmessage = (ev) => {
         let m; try { m = JSON.parse(ev.data); } catch { return; }
         if (m.t === "pong") { this.rtt = performance.now() - m.ts; this.emit("rtt", this.rtt); return; }
@@ -28,7 +28,7 @@ export class NetClient {
     this._ping = setInterval(() => { this.send({ t: "ping", ts: performance.now() }); this.send({ t: "pp", ts: performance.now() }); }, 1000);
   }
   send(o) { if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(o)); }
-  close() { try { this.ws && this.ws.close(); } catch {} this.open = false; clearInterval(this._ping); }
+  close() { this.byUs = true; try { this.ws && this.ws.close(1000, "leave"); } catch {} this.open = false; clearInterval(this._ping); }
 }
 
 const MAX_ROLLBACK = 12;

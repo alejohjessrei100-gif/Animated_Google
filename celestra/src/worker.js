@@ -75,9 +75,14 @@ export class Room extends DurableObject {
     return this._meta;
   }
   async save() { await this.ctx.storage.put("meta", this._meta); }
-  sockets() {
+  // live sockets by slot (optionally ignoring one that is closing)
+  sockets(except) {
     const out = [null, null];
-    for (const ws of this.ctx.getWebSockets()) { const a = ws.deserializeAttachment(); if (a && (a.slot === 0 || a.slot === 1)) out[a.slot] = ws; }
+    for (const ws of this.ctx.getWebSockets()) {
+      if (ws === except) continue;
+      const a = ws.deserializeAttachment();
+      if (a && !a.gone && (a.slot === 0 || a.slot === 1)) out[a.slot] = ws;
+    }
     return out;
   }
   async fetch(req) {
@@ -85,15 +90,27 @@ export class Room extends DurableObject {
     if (url.pathname === "/count") return json({ n: this.sockets().filter(Boolean).length });
     const code = url.searchParams.get("code");
     const name = (url.searchParams.get("name") || "Player").replace(/[^\w \-.]/g, "").slice(0, 14) || "Player";
+    const pid = (url.searchParams.get("pid") || "").replace(/[^\w-]/g, "").slice(0, 40);
     const [c, s] = Object.values(new WebSocketPair());
-    const socks = this.sockets();
-    const slot = socks[0] ? (socks[1] ? -1 : 1) : 0;
+    let socks = this.sockets();
+    // same player reconnecting (e.g. phone dropped the socket while switching apps):
+    // retire the stale socket and give them their seat back
+    let prev = null, keepChar = null;
+    for (const w of socks) if (w && pid && w.deserializeAttachment().pid === pid) prev = w;
+    let slot;
+    if (prev) {
+      const pa = prev.deserializeAttachment();
+      slot = pa.slot; pa.gone = true; prev.serializeAttachment(pa);
+      try { prev.close(4001, "replaced"); } catch {}
+      socks = this.sockets();
+      keepChar = pa.char;
+    } else slot = socks[0] ? (socks[1] ? -1 : 1) : 0;
     if (slot < 0) {
       s.accept(); s.send(JSON.stringify({ t: "full" })); s.close(4000, "room full");
       return new Response(null, { status: 101, webSocket: c });
     }
     this.ctx.acceptWebSocket(s);
-    s.serializeAttachment({ slot, name, char: null, ready: false });
+    s.serializeAttachment({ slot, name, pid, char: keepChar, ready: false });
     const meta = await this.meta();
     meta.code = code;
     if (meta.phase !== "select") { meta.phase = "select"; meta.rematch = [false, false]; }
@@ -102,12 +119,15 @@ export class Room extends DurableObject {
     this.broadcastRoom();
     return new Response(null, { status: 101, webSocket: c });
   }
-  roomState() {
-    const socks = this.sockets();
+  roomState(except) {
+    const socks = this.sockets(except);
     const players = socks.map((ws) => (ws ? (({ name, char, ready }) => ({ name, char, ready, here: true }))(ws.deserializeAttachment()) : null));
     return { t: "room", players, stage: this._meta?.stage || 0, phase: this._meta?.phase || "select" };
   }
-  broadcast(o, except) { const msg = typeof o === "string" ? o : JSON.stringify(o); for (const ws of this.ctx.getWebSockets()) if (ws !== except) { try { ws.send(msg); } catch {} } }
+  broadcast(o, except) {
+    const msg = typeof o === "string" ? o : JSON.stringify(o);
+    for (const ws of this.ctx.getWebSockets()) { if (ws === except) continue; const a = ws.deserializeAttachment(); if (a && a.gone) continue; try { ws.send(msg); } catch {} }
+  }
   broadcastRoom() { this.broadcast(this.roomState()); }
 
   async webSocketMessage(ws, raw) {
@@ -161,17 +181,15 @@ export class Room extends DurableObject {
   async webSocketClose(ws, code, reason) {
     const a = ws.deserializeAttachment();
     try { ws.close(1000, "bye"); } catch {}
+    if (!a || a.gone) return; // replaced by a reconnect — nothing changed for the rival
+    a.gone = true; try { ws.serializeAttachment(a); } catch {}
+    const socks = this.sockets(ws);
+    if (socks[a.slot]) { this.broadcast(this.roomState(ws), ws); return; } // seat already re-taken
     const meta = await this.meta();
     meta.phase = "select"; meta.rematch = [false, false]; await this.save();
-    for (const w of this.ctx.getWebSockets()) if (w !== ws) { const at = w.deserializeAttachment(); if (at) { at.ready = false; w.serializeAttachment(at); } }
-    this.broadcast({ t: "left", slot: a?.slot }, ws);
-    this.broadcast(this.roomStateExcept(ws), ws);
-  }
-  roomStateExcept(gone) {
-    const st = this.roomState();
-    const a = gone.deserializeAttachment();
-    if (a && st.players[a.slot]) st.players[a.slot] = null;
-    return st;
+    for (const w of socks) if (w) { const at = w.deserializeAttachment(); at.ready = false; w.serializeAttachment(at); }
+    this.broadcast({ t: "left", slot: a.slot }, ws);
+    this.broadcast(this.roomState(ws), ws);
   }
   async webSocketError(ws) { await this.webSocketClose(ws); }
 }
