@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Batch 30 Chronicles — 2D Tekken-Inspired Web Fighter</title>
+  <meta name="description" content="Play Batch 30 Chronicles — a fast, 60 FPS Tekken-inspired 2D browser fighting game featuring 6 unique fighters, launchers, back-dash cancels, and signature abilities. Zero downloads required." />
+
+  <!-- Open Graph / Social Meta -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Batch 30 Chronicles — 2D Web Fighting Game" />
+  <meta property="og:description" content="Choose from 6 legendary Batch 30 fighters — Apsay, Dap, JOG, Jaguilar, Paulite, and Johan Bacorro — in a 60 FPS Tekken-inspired arena fighter!" />
+  <meta property="og:site_name" content="Batch 30 Chronicles" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Batch 30 Chronicles — 2D Web Fighting Game" />
+  <meta name="twitter:description" content="60 FPS Tekken-inspired browser fighter with 1P vs CPU & Local 2P modes." />
+  <meta name="theme-color" content="#0d0f17" />
+
+  <!-- Inline SVG Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23ff3355'/%3E%3Cstop offset='100%25' stop-color='%23ffaa00'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='12' fill='%230d0f17'/%3E%3Cpath d='M14 48 L24 16 L36 16 L31 30 L42 16 L52 16 L36 36 L48 48 L36 48 L28 38 L24 48 Z' fill='url(%23g)'/%3E%3C/svg%3E" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app-shell">
+    <!-- Top Persistent Wrapper Bar -->
+    <header class="top-bar">
+      <div class="brand">
+        <span class="brand-badge">B30</span>
+        <div class="brand-text">
+          <h1>BATCH 30 CHRONICLES</h1>
+          <span class="brand-sub">IRON FIST EDITION // 60 FPS</span>
+        </div>
+      </div>
+
+      <div class="top-controls">
+        <button id="btn-movelist" class="ui-btn ui-btn-accent" type="button" title="View Controls & Move List (Tab)">
+          <span class="btn-icon">?</span> Controls &amp; Moves
+        </button>
+
+        <div class="audio-controls" aria-label="Audio Settings">
+          <button id="btn-mute" class="ui-btn" type="button" title="Toggle Audio (M)">
+            <span id="mute-icon">🔊</span>
+          </button>
+          <input id="volume-slider" type="range" min="0" max="100" value="70" aria-label="Master Volume" />
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Viewport Stage -->
+    <main id="stage-container">
+      <!-- SCREEN 1: TITLE & MODE SELECTION -->
+      <section id="screen-title" class="screen active">
+        <div class="title-hero">
+          <div class="eyebrow">KING OF THE CLASSROOM TOURNAMENT</div>
+          <h2 class="hero-title">BATCH 30<br /><span>CHRONICLES</span></h2>
+          <p class="hero-desc">
+            Tekken-inspired 2D arena combat. Master high/mid/low guards, Korean back-dash cancels,
+            air juggle launchers, and signature abilities across 6 iconic fighters.
+          </p>
+
+          <div class="mode-grid">
+            <div class="mode-card">
+              <h3>1P vs CPU</h3>
+              <p>Battle adaptive AI across 3 difficulty tiers.</p>
+              <div class="difficulty-row" role="group" aria-label="CPU Difficulty">
+                <button class="diff-btn" data-diff="easy" type="button">Easy</button>
+                <button class="diff-btn active" data-diff="normal" type="button">Normal</button>
+                <button class="diff-btn" data-diff="hard" type="button">Hard</button>
+              </div>
+              <button id="btn-mode-1p" class="primary-cta" type="button">Start 1P Arcade</button>
+            </div>
+
+            <div class="mode-card">
+              <h3>Local 2P Versus</h3>
+              <p>Shared keyboard showdown. P1 (WASD + UIOP) vs P2 (Arrows + JKL;).</p>
+              <div class="stage-picker-inline">
+                <label for="stage-select-title">Arena:</label>
+                <select id="stage-select-title">
+                  <option value="dojo">Rooftop Dojo</option>
+                  <option value="alley">Neon Cyber Alley</option>
+                  <option value="classroom">Batch 30 Hall</option>
+                </select>
+              </div>
+              <button id="btn-mode-2p" class="primary-cta secondary-cta" type="button">Start 2P Versus</button>
+            </div>
+          </div>
+
+          <div class="quick-controls-strip">
+            <span><strong>P1:</strong> W/A/S/D + U/I/O/P</span>
+            <span class="sep">|</span>
+            <span><strong>P2:</strong> Arrows + J/K/L/; (or Num 1-4)</span>
+            <span class="sep">|</span>
+            <span><strong>Guard:</strong> Hold Back (High/Mid) or Down-Back (Low)</span>
+            <span class="sep">|</span>
+            <span><strong>BDC:</strong> Back, Back, Down, Back, Back...</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 2: CHARACTER SELECT -->
+      <section id="screen-select" class="screen">
+        <div class="select-header">
+          <button id="btn-select-back" class="ui-btn" type="button">&larr; Mode Select</button>
+          <div class="select-title-wrap">
+            <h2>SELECT YOUR FIGHTER</h2>
+            <p id="select-prompt">Player 1: Choose a fighter</p>
+          </div>
+          <div class="stage-picker-inline">
+            <label for="stage-select-char">Stage:</label>
+            <select id="stage-select-char">
+              <option value="dojo">Rooftop Dojo</option>
+              <option value="alley">Neon Cyber Alley</option>
+              <option value="classroom">Batch 30 Hall</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="select-layout">
+          <!-- P1 Preview Panel -->
+          <aside class="preview-panel p1-panel">
+            <div class="panel-tag">P1</div>
+            <canvas id="preview-p1" width="220" height="220"></canvas>
+            <div class="preview-meta">
+              <div class="preview-name-row">
+                <h3 id="p1-name">APSAY</h3>
+                <span id="p1-height" class="height-pill">5'5"</span>
+              </div>
+              <div id="p1-archetype" class="archetype-tag">Teleport Mixup / Rushdown</div>
+              <div id="p1-stats" class="stat-bars"></div>
+              <div id="p1-abilities" class="ability-box"></div>
+            </div>
+          </aside>
+
+          <!-- Center Roster Grid -->
+          <div class="roster-center">
+            <div id="roster-grid" class="roster-grid" role="listbox" aria-label="Fighter Roster"></div>
+            <div class="select-actions">
+              <button id="btn-random-cpu" class="ui-btn" type="button">Randomize P2 / CPU</button>
+              <button id="btn-start-match" class="primary-cta" type="button">FIGHT NOW!</button>
+            </div>
+          </div>
+
+          <!-- P2 / CPU Preview Panel -->
+          <aside class="preview-panel p2-panel">
+            <div id="p2-panel-tag" class="panel-tag p2-tag">CPU</div>
+            <canvas id="preview-p2" width="220" height="220"></canvas>
+            <div class="preview-meta">
+              <div class="preview-name-row">
+                <h3 id="p2-name">DAP</h3>
+                <span id="p2-height" class="height-pill">5'2"</span>
+              </div>
+              <div id="p2-archetype" class="archetype-tag">Heavy Dive / Launcher Bruiser</div>
+              <div id="p2-stats" class="stat-bars"></div>
+              <div id="p2-abilities" class="ability-box"></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- SCREEN 3: GAME ARENA -->
+      <section id="screen-fight" class="screen">
+        <div class="canvas-wrap">
+          <canvas id="game-canvas" width="1280" height="720"></canvas>
+
+          <!-- In-Fight Quick Action Overlay -->
+          <div class="arena-top-actions">
+            <button id="btn-pause" class="arena-mini-btn" type="button" title="Pause (Esc)">⏸ Pause</button>
+            <button id="btn-fight-moves" class="arena-mini-btn" type="button" title="Move List">📜 Moves</button>
+          </div>
+
+          <!-- Pause / Victory Overlay -->
+          <div id="fight-overlay" class="fight-overlay hidden">
+            <div class="overlay-card">
+              <div id="overlay-eyebrow" class="eyebrow">MATCH COMPLETE</div>
+              <h2 id="overlay-title">PLAYER 1 WINS!</h2>
+              <p id="overlay-stats" class="overlay-stats"></p>
+              <div class="overlay-buttons">
+                <button id="btn-resume" class="primary-cta hidden" type="button">Resume</button>
+                <button id="btn-rematch" class="primary-cta" type="button">Rematch</button>
+                <button id="btn-to-select" class="ui-btn" type="button">Character Select</button>
+                <button id="btn-to-menu" class="ui-btn" type="button">Main Menu</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Touch Controls (visible on touch/mobile viewports) -->
+          <div id="touch-controls" class="touch-controls" aria-hidden="true">
+            <div class="touch-dpad">
+              <button class="t-btn t-left" data-key="KeyA">◀</button>
+              <button class="t-btn t-up" data-key="KeyW">▲</button>
+              <button class="t-btn t-down" data-key="KeyS">▼</button>
+              <button class="t-btn t-right" data-key="KeyD">▶</button>
+            </div>
+            <div class="touch-actions">
+              <button class="t-btn t-atk" data-key="KeyU">LP<small>U</small></button>
+              <button class="t-btn t-atk" data-key="KeyI">HK<small>I</small></button>
+              <button class="t-btn t-atk" data-key="KeyO">LNC<small>O</small></button>
+              <button class="t-btn t-sig" data-key="KeyP">SIG<small>P</small></button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Public-friendly Footer -->
+    <footer class="site-footer">
+      <div>Batch 30 Chronicles &bull; Zero-Dependency HTML5 Canvas Engine</div>
+      <div class="footer-right">Best of 3 Rounds &bull; 99s Timer &bull; Static Web Ready</div>
+    </footer>
+  </div>
+
+  <!-- CONTROLS & MOVE LIST MODAL -->
+  <div id="modal-movelist" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modal-title">CONTROLS, MECHANICS &amp; MOVE LIST</h2>
+        <button id="btn-close-modal" class="ui-btn" type="button">&times; Close</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-section">
+          <h3>Keyboard Controls</h3>
+          <div class="controls-two-col">
+            <div class="ctrl-box">
+              <h4>Player 1</h4>
+              <ul>
+                <li><span>Move / Block</span><code>A / D</code></li>
+                <li><span>Jump / Crouch</span><code>W / S</code></li>
+                <li><span>Light Punch (HIGH)</span><code>U</code></li>
+                <li><span>Crouch Light (LOW)</span><code>S + U</code></li>
+                <li><span>Heavy Kick (MID)</span><code>I</code></li>
+                <li><span>Sweep Kick (LOW)</span><code>S + I</code></li>
+                <li><span>Launcher (MID) / Grab</span><code>O</code> / Close <code>Fwd+O</code></li>
+                <li><span>Signature Ability</span><code>P</code></li>
+              </ul>
+            </div>
+            <div class="ctrl-box">
+              <h4>Player 2</h4>
+              <ul>
+                <li><span>Move / Block</span><code>&larr; / &rarr;</code></li>
+                <li><span>Jump / Crouch</span><code>&uarr; / &darr;</code></li>
+                <li><span>Light Punch (HIGH)</span><code>J</code> or <code>Num 1</code></li>
+                <li><span>Crouch Light (LOW)</span><code>&darr; + J</code> or <code>Num 1</code></li>
+                <li><span>Heavy Kick (MID)</span><code>K</code> or <code>Num 2</code></li>
+                <li><span>Sweep Kick (LOW)</span><code>&darr; + K</code> or <code>Num 2</code></li>
+                <li><span>Launcher (MID) / Grab</span><code>L</code> or <code>Num 3</code></li>
+                <li><span>Signature Ability</span><code>;</code> or <code>Num 4</code></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h3>Tekken-Inspired System Mechanics</h3>
+          <div class="mechanics-grid">
+            <div class="mech-item"><strong>Standing Guard (Hold Back)</strong>Blocks <em>HIGH</em> and <em>MID</em> attacks. Vulnerable to <em>LOW</em> sweeps.</div>
+            <div class="mech-item"><strong>Crouching Guard (Down-Back)</strong>Blocks <em>LOW</em> attacks and ducks under <em>HIGH</em> jabs. Hit by <em>MID</em> kicks &amp; overhead slams.</div>
+            <div class="mech-item"><strong>Back-Dash Cancel (BDC)</strong>Double-tap Back to back-dash, tap Down to cancel recovery, and repeat rapidly to create space.</div>
+            <div class="mech-item"><strong>Launchers &amp; Juggles</strong>Hit with Launcher (<code>O</code>/<code>L</code>) to pop foes airborne, then chain Light/Heavy/Signature hits mid-air!</div>
+            <div class="mech-item"><strong>Close Throw (Fwd + Launcher)</strong>Breaks turtles! Unblockable grab when close (within 85px).</div>
+            <div class="mech-item"><strong>Jab Strings (1-2-3)</strong>Press Light &rarr; Light &rarr; Heavy rapidly for a fast target combo chain.</div>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h3>Fighter Signature &amp; Passive Abilities</h3>
+          <div id="modal-roster-list" class="modal-roster-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="game.js"></script>
+</body>
+</html>

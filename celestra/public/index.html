@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Celestra Chronicles</title>
+<meta name="description" content="Celestra Chronicles — a 16-bit pixel arcade fighter with online 1v1 rollback netcode.">
+<meta name="theme-color" content="#0b0820">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%230b0820'/%3E%3Cpath fill='%23ffd23f' d='M7 1h2v4h4v2H9v2h4v2H9v4H7v-4H3V9h4V7H3V5h4z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <div id="screen">
+    <canvas id="game" width="480" height="270" aria-label="Game view"></canvas>
+
+    <!-- ===== HUD ===== -->
+    <div id="hud" class="hidden">
+      <div class="hud-top">
+        <div class="pl p1">
+          <canvas class="por" width="32" height="32"></canvas>
+          <div class="pl-main">
+            <div class="pl-name"><span class="nm">P1</span><span class="pips"></span></div>
+            <div class="bar"><div class="trail"></div><div class="fill"></div><div class="tick"></div></div>
+            <div class="status"></div>
+          </div>
+        </div>
+        <div class="timer"><span>99</span><small class="rnd">R1</small></div>
+        <div class="pl p2">
+          <canvas class="por" width="32" height="32"></canvas>
+          <div class="pl-main">
+            <div class="pl-name"><span class="pips"></span><span class="nm">P2</span></div>
+            <div class="bar"><div class="trail"></div><div class="fill"></div><div class="tick"></div></div>
+            <div class="status"></div>
+          </div>
+        </div>
+      </div>
+      <div class="hud-bot">
+        <div class="kit p1"></div>
+        <div id="net" class="hidden"><i></i><span>-- ms</span></div>
+        <div class="kit p2"></div>
+      </div>
+    </div>
+    <div id="banner"><div class="b-main"></div><div class="b-sub"></div></div>
+    <div id="netwait" class="hidden">WAITING FOR OPPONENT…</div>
+
+    <!-- ===== TITLE ===== -->
+    <section id="title" class="scr active">
+      <div class="logo">
+        <div class="logo-top">CELESTRA</div>
+        <div class="logo-bot">CHRONICLES</div>
+        <div class="logo-sub">16-BIT ARCADE FIGHTER &bull; ONLINE 1V1</div>
+      </div>
+      <div class="press blink">PRESS START</div>
+      <div class="copy">&copy; BATCH 30 &bull; INSERT COIN</div>
+    </section>
+
+    <!-- ===== MODE MENU ===== -->
+    <section id="menu" class="scr">
+      <h2 class="sh">SELECT MODE</h2>
+      <div class="menu-list">
+        <button class="mi" data-mode="online"><b>ONLINE PVP</b><i>Rooms, invite links &amp; quick match</i></button>
+        <button class="mi" data-mode="cpu"><b>VS CPU</b><i>Arcade fight vs AI</i></button>
+        <button class="mi" data-mode="local"><b>LOCAL 2P</b><i>Shared keyboard / 2 gamepads</i></button>
+        <button class="mi" data-mode="training"><b>TRAINING</b><i>Practice vs a dummy, HP refills</i></button>
+        <button class="mi" data-mode="howto"><b>HOW TO PLAY</b><i>Controls &amp; mechanics</i></button>
+        <button class="mi" data-mode="settings"><b>SETTINGS</b><i>CRT, audio, voice</i></button>
+      </div>
+      <div class="cpu-diff invis">
+        <span>CPU LEVEL</span>
+        <button data-diff="easy">EASY</button><button data-diff="normal" class="on">NORMAL</button><button data-diff="hard">HARD</button>
+      </div>
+      <div class="hint">↑↓ / W S to move &bull; ENTER / F to select &bull; ESC back</div>
+    </section>
+
+    <!-- ===== ONLINE LOBBY ===== -->
+    <section id="online" class="scr">
+      <h2 class="sh">ONLINE PVP</h2>
+      <div class="lobby">
+        <label class="fld">NAME <input id="pname" maxlength="14" autocomplete="off" spellcheck="false"></label>
+        <button id="btnQuick" class="big">QUICK MATCH</button>
+        <button id="btnCreate" class="big">CREATE ROOM</button>
+        <div class="join"><input id="jcode" maxlength="6" placeholder="CODE" autocomplete="off" spellcheck="false"><button id="btnJoin">JOIN</button></div>
+        <div id="roomInfo" class="hidden">
+          <div>ROOM CODE <b id="rcode">-----</b></div>
+          <button id="btnCopy">COPY INVITE LINK</button>
+        </div>
+        <div id="lobbyMsg" class="msg"></div>
+        <button class="back">BACK</button>
+      </div>
+    </section>
+
+    <!-- ===== CHARACTER SELECT ===== -->
+    <section id="select" class="scr">
+      <h2 class="sh">CHOOSE YOUR FIGHTER</h2>
+      <div class="sel">
+        <div class="side s1">
+          <div class="who">P1</div>
+          <canvas class="big-spr" width="160" height="192"></canvas>
+          <div class="cname">—</div><div class="ctitle"></div>
+          <ul class="kitlist"></ul>
+          <div class="rdy hidden">READY!</div>
+        </div>
+        <div class="mid">
+          <div class="grid"></div>
+          <div class="stagepick"><button class="sp-prev">◀</button><span id="stageName">STAGE</span><button class="sp-next">▶</button></div>
+          <button id="btnReady" class="big">FIGHT!</button>
+          <div class="hint sel-hint"></div>
+        </div>
+        <div class="side s2">
+          <div class="who">P2</div>
+          <canvas class="big-spr" width="160" height="192"></canvas>
+          <div class="cname">—</div><div class="ctitle"></div>
+          <ul class="kitlist"></ul>
+          <div class="rdy hidden">READY!</div>
+        </div>
+      </div>
+      <button class="back small-back">BACK</button>
+    </section>
+
+    <!-- ===== RESULTS ===== -->
+    <section id="results" class="scr">
+      <div class="res-win"></div>
+      <canvas class="big-spr res-spr" width="160" height="192"></canvas>
+      <div class="res-sub"></div>
+      <div class="res-btns">
+        <button id="btnRematch" class="big">REMATCH</button>
+        <button id="btnChange">CHANGE FIGHTER</button>
+        <button id="btnMenu">MAIN MENU</button>
+      </div>
+      <div class="res-msg msg"></div>
+    </section>
+
+    <!-- ===== PAUSE ===== -->
+    <section id="pause" class="scr">
+      <h2 class="sh">PAUSED</h2>
+      <div class="res-btns">
+        <button id="btnResume" class="big">RESUME</button>
+        <button id="btnTrainDummy" class="hidden">DUMMY: STAND</button>
+        <button id="btnPauseHow">MOVE LIST</button>
+        <button id="btnQuit">QUIT TO MENU</button>
+      </div>
+    </section>
+
+    <!-- ===== HOW TO / SETTINGS ===== -->
+    <section id="howto" class="scr scroll">
+      <h2 class="sh">HOW TO PLAY</h2>
+      <div class="how">
+        <table class="keys">
+          <tr><th></th><th>P1 / SOLO</th><th>SOLO ALT</th><th>P2 (LOCAL)</th><th>PAD</th></tr>
+          <tr><td>MOVE / JUMP / CROUCH</td><td>W A S D</td><td>ARROWS</td><td>ARROWS</td><td>D-PAD</td></tr>
+          <tr><td>BASIC ATTACK (x3 CHAIN)</td><td>F</td><td>J</td><td>NUM1 / K</td><td>X</td></tr>
+          <tr><td>PARRY</td><td>G</td><td>K</td><td>NUM2 / L</td><td>B</td></tr>
+          <tr><td>SKILL 1</td><td>R</td><td>U</td><td>NUM4 / I</td><td>A</td></tr>
+          <tr><td>SKILL 2</td><td>T</td><td>I</td><td>NUM5 / O</td><td>Y</td></tr>
+          <tr><td>SKILL 3 / ULTIMATE</td><td>Y</td><td>O</td><td>NUM6 / P</td><td>RB</td></tr>
+          <tr><td>DASH</td><td>H or 2&times;TAP</td><td>L</td><td>NUM3 / ;</td><td>LB</td></tr>
+        </table>
+        <div class="mech">
+          <p><b>GUARD</b> Hold back to block HIGH &amp; MID. Hold down-back to block LOWs (crouching ducks HIGHs).</p>
+          <p><b>PARRY</b> Tap parry just before a hit lands (10-frame window). Negates damage, staggers the attacker, reflects projectiles and opens a COUNTER window (+25% dmg). Whiffing leaves you open.</p>
+          <p><b>COMBOS</b> Basic attack chains 3 hits. Land a basic, then cancel into any ready skill. Launchers pop foes airborne for juggles. Damage scales down over long combos.</p>
+          <p><b>STATUS</b> BLEED / BURN tick damage &bull; STUN (dizzy, can't act) &bull; BLIND (-30% dmg) &bull; CONFUSE (left/right swap) &bull; SLOW &bull; RATTLED (-15% dmg).</p>
+          <p><b>K.O.</b> The round-winning blow triggers a slow-motion finisher. Best of 3 rounds, 99s timer.</p>
+        </div>
+        <div id="movelist" class="movelist"></div>
+      </div>
+      <button class="back">BACK</button>
+    </section>
+
+    <section id="settings" class="scr">
+      <h2 class="sh">SETTINGS</h2>
+      <div class="sets">
+        <label><input type="checkbox" id="optCrt" checked> CRT SCANLINES</label>
+        <label><input type="checkbox" id="optVoice" checked> KOKORO VOICE</label>
+        <label>SFX <input type="range" id="optSfx" min="0" max="1" step="0.05" value="0.7"></label>
+        <label>MUSIC <input type="range" id="optMusic" min="0" max="1" step="0.05" value="0.35"></label>
+        <label>VOICE <input type="range" id="optVoiceVol" min="0" max="1" step="0.05" value="0.9"></label>
+        <label><input type="checkbox" id="optTouch"> TOUCH CONTROLS</label>
+        <p class="credit">Voices generated with Kokoro-82M (hexgrad/kokoro, Apache-2.0).</p>
+      </div>
+      <button class="back">BACK</button>
+    </section>
+
+    <div id="crt"></div>
+  </div>
+
+  <!-- touch controls -->
+  <div id="touch" class="hidden">
+    <div class="tpad">
+      <button data-bit="U" class="tu">▲</button><button data-bit="L" class="tl">◀</button><button data-bit="R" class="tr">▶</button><button data-bit="D" class="td">▼</button>
+    </div>
+    <div class="tbtns">
+      <button data-bit="S1">S1</button><button data-bit="S2">S2</button><button data-bit="S3" class="ult">S3</button>
+      <button data-bit="A" class="atk">ATK</button><button data-bit="P">PRY</button><button data-bit="DASH">DSH</button>
+    </div>
+  </div>
+  <button id="muteBtn" title="Mute (M)">♪</button>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
