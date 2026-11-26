@@ -14,24 +14,81 @@ export class NetClient {
       ws.onopen = () => { this.open = true; settled = true; resolve(); this.startPing(); };
       ws.onerror = () => { if (!settled) { settled = true; reject(new Error("connect failed")); } };
       ws.onclose = (e) => { this.open = false; clearInterval(this._ping); if (!settled) { settled = true; reject(new Error("closed")); } this.emit("close", e); };
-      ws.onmessage = (ev) => {
-        let m; try { m = JSON.parse(ev.data); } catch { return; }
-        if (m.t === "pong") { this.rtt = performance.now() - m.ts; this.emit("rtt", this.rtt); return; }
-        if (m.t === "pp") { this.send({ t: "pq", ts: m.ts }); return; }
-        if (m.t === "pq") { const r = performance.now() - m.ts; this.peerRtt = this.peerRtt ? this.peerRtt * 0.7 + r * 0.3 : r; this.emit("peerRtt", this.peerRtt); return; }
-        this.emit(m.t, m);
-      };
+      ws.onmessage = (ev) => this.handle(ev.data);
     });
+  }
+  handle(data) {
+    let m; try { m = JSON.parse(data); } catch { return; }
+    if (m.t === "pong") { this.rtt = performance.now() - m.ts; this.emit("rtt", this.rtt); return; }
+    if (m.t === "pp") { this.send({ t: "pq", ts: m.ts }); return; }
+    if (m.t === "pq") { const r = performance.now() - m.ts; this.peerRtt = this.peerRtt ? this.peerRtt * 0.7 + r * 0.3 : r; this.emit("peerRtt", this.peerRtt); return; }
+    if (m.t === "rtc") { this.onRtc(m); return; }
+    this.emit(m.t, m);
+  }
+
+  // ---- direct peer-to-peer channel (WebRTC DataChannel) ----
+  // Unordered + no retransmits, so a lost packet never holds up the next one
+  // (input packets carry every unconfirmed frame, so a drop costs nothing).
+  // The room WebSocket stays as signaling and as the automatic fallback.
+  get direct() { return !!(this.dc && this.dc.readyState === "open"); }
+  startP2P(initiator) {
+    this.stopP2P();
+    if (typeof RTCPeerConnection === "undefined") return;
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"] }] });
+    this.pc = pc; this.pcInit = initiator; this.pendingIce = [];
+    this.emit("p2p", "connecting");
+    pc.onicecandidate = (e) => { if (e.candidate) this.sendWs({ t: "rtc", c: e.candidate.toJSON() }); };
+    pc.onconnectionstatechange = () => { if (this.pc === pc && (pc.connectionState === "failed" || pc.connectionState === "closed")) this.dcDown(pc); };
+    const setup = (dc) => {
+      dc.onopen = () => { if (this.pc !== pc) return; this.dc = dc; clearTimeout(this._p2pT); this.emit("p2p", "direct"); };
+      dc.onclose = () => this.dcDown(pc);
+      dc.onmessage = (ev) => this.handle(ev.data);
+    };
+    if (initiator) {
+      setup(pc.createDataChannel("in", { ordered: false, maxRetransmits: 0 }));
+      pc.createOffer().then((o) => pc.setLocalDescription(o)).then(() => this.sendWs({ t: "rtc", sdp: pc.localDescription.toJSON() })).catch(() => this.dcDown(pc));
+    } else pc.ondatachannel = (e) => setup(e.channel);
+    clearTimeout(this._p2pT);
+    this._p2pT = setTimeout(() => { if (this.pc === pc && !this.direct) this.emit("p2p", "relay"); }, 9000);
+  }
+  async onRtc(m) {
+    try {
+      if (m.sdp && m.sdp.type === "offer") this.startP2P(false);
+      const pc = this.pc; if (!pc) return;
+      if (m.sdp) {
+        await pc.setRemoteDescription(m.sdp);
+        if (m.sdp.type === "offer") { await pc.setLocalDescription(await pc.createAnswer()); this.sendWs({ t: "rtc", sdp: pc.localDescription.toJSON() }); }
+        for (const c of this.pendingIce.splice(0)) await pc.addIceCandidate(c).catch(() => {});
+      } else if (m.c) {
+        if (pc.remoteDescription) await pc.addIceCandidate(m.c).catch(() => {}); else this.pendingIce.push(m.c);
+      }
+    } catch { this.dcDown(this.pc); }
+  }
+  dcDown(pc) {
+    if (pc && this.pc !== pc) return;
+    const was = this.direct || !!this.pc;
+    this.stopP2P();
+    if (was) this.emit("p2p", "relay");
+  }
+  stopP2P() {
+    clearTimeout(this._p2pT);
+    const pc = this.pc; this.pc = null; this.dc = null;
+    if (pc) try { pc.close(); } catch {}
   }
   startPing() {
     clearInterval(this._ping);
     this._ping = setInterval(() => { this.send({ t: "ping", ts: performance.now() }); this.send({ t: "pp", ts: performance.now() }); }, 1000);
   }
-  send(o) { if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(o)); }
-  close() { this.byUs = true; try { this.ws && this.ws.close(1000, "leave"); } catch {} this.open = false; clearInterval(this._ping); }
+  sendWs(o) { if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(o)); }
+  send(o) {
+    if (this.direct && FAST.has(o.t)) { try { this.dc.send(JSON.stringify(o)); return; } catch { this.dcDown(this.pc); } }
+    this.sendWs(o);
+  }
+  close() { this.stopP2P(); this.byUs = true; try { this.ws && this.ws.close(1000, "leave"); } catch {} this.open = false; clearInterval(this._ping); }
 }
 
 const MAX_ROLLBACK = 12;
+const FAST = new Set(["in", "chk", "pp", "pq"]);
 
 export class RollbackSession {
   constructor(S, localSide, net, { delay = 2 } = {}) {
@@ -96,7 +153,8 @@ export class RollbackSession {
     if (!this.localIn.has(tf)) this.localIn.set(tf, localBits);
     const changed = localBits !== this.lastBits; this.lastBits = localBits;
     this.sinceSend++;
-    if (changed || this.sinceSend >= 3) this.send();
+    // direct link: send every frame (cheap, lowest latency). Relay: on change + every 3rd frame.
+    if (changed || this.sinceSend >= (this.net.direct ? 1 : 3)) this.send();
 
     // 1) rollback & resimulate
     if (this.rollbackTo !== null) {

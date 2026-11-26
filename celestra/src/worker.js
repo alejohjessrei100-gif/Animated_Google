@@ -133,11 +133,16 @@ export class Room extends DurableObject {
   async webSocketMessage(ws, raw) {
     if (typeof raw !== "string") return;
     // hot path: relay netcode packets untouched to the other player
-    if (raw.startsWith('{"t":"in"') || raw.startsWith('{"t":"chk"') || raw.startsWith('{"t":"pp"') || raw.startsWith('{"t":"pq"') || raw.startsWith('{"t":"emote"')) {
+    if (raw.startsWith('{"t":"in"') || raw.startsWith('{"t":"chk"') || raw.startsWith('{"t":"pp"') || raw.startsWith('{"t":"pq"') || raw.startsWith('{"t":"emote"') || raw.startsWith('{"t":"rtc"')) {
       this.broadcast(raw, ws); return;
     }
     let m; try { m = JSON.parse(raw); } catch { return; }
     if (m.t === "ping") { ws.send(JSON.stringify({ t: "pong", ts: m.ts })); return; }
+    if (m.t === "stats") { // connection quality report from a client (shows up in Workers logs)
+      const at = ws.deserializeAttachment() || {};
+      console.log(JSON.stringify({ stats: 1, room: (this._meta && this._meta.code) || "", slot: at.slot, path: String(m.path).slice(0, 8), peerRtt: m.peerRtt | 0, srvRtt: m.srvRtt | 0, rb: m.rb | 0, stalls: m.stalls | 0, frame: m.frame | 0, delay: m.delay | 0, fps: m.fps | 0, ua: String(m.ua || "").slice(0, 40) }));
+      return;
+    }
     const a = ws.deserializeAttachment();
     const meta = await this.meta();
     switch (m.t) {

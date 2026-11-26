@@ -487,6 +487,7 @@ async function joinRoom(code, quick = false, reconnect = false) {
     app.reconnectCode = m.code; app.reconnTries = 0;
     $("#rcode").textContent = m.code; $("#roomInfo").classList.remove("hidden");
     const myPick = sameSeat ? app.picks[m.slot] : null;
+    app.room = null; app.p2pTries = 0;
     app.picks = [null, null]; app.locked = [false, false]; app.session = null;
     if (myPick) app.picks[m.slot] = myPick;
     if (reconnect) { app.S = null; if (app.screen !== "select" || wasPlaying) openSelect(); else renderSelect(); banner("RECONNECTED", wasPlaying ? "MATCH RESET — PICK & READY AGAIN" : "", "", 1800); }
@@ -498,6 +499,9 @@ async function joinRoom(code, quick = false, reconnect = false) {
   });
   net.on("room", (m) => {
     const had = app.room?.players?.[1 - app.slot];
+    // both players present -> host opens a direct peer-to-peer link
+    if (!had && m.players[1 - app.slot] && app.slot === 0) setTimeout(() => net === app.net && net.startP2P(true), 300);
+    if (had && !m.players[1 - app.slot]) net.stopP2P();
     app.room = m; app.stage = m.stage;
     for (const p of [0, 1]) {
       const pl = m.players[p];
@@ -526,8 +530,15 @@ async function joinRoom(code, quick = false, reconnect = false) {
     if (app.screen === "fight" || app.screen === "results" || app.screen === "pause") { app.S = null; openSelect(); }
     banner("RIVAL DISCONNECTED", "THEY CAN REJOIN WITH CODE " + app.code, "", 2600);
   });
+  net.on("p2p", (st) => {
+    app.netPath = st;
+    if (st === "direct") app.p2pTries = 0;
+    // direct link failed or dropped: host retries a few times, otherwise play on over the relay
+    if (st === "relay" && app.slot === 0 && app.room?.players?.[1] && (app.p2pTries = (app.p2pTries || 0) + 1) <= 3)
+      setTimeout(() => net === app.net && !net.direct && net.startP2P(true), 2500 * app.p2pTries);
+  });
   net.on("peerRtt", (r) => {
-    const el = $("#net"); $("span", el).textContent = Math.round(r) + " ms";
+    const el = $("#net"); $("span", el).textContent = Math.round(r) + " ms " + (net.direct ? "· DIRECT" : "· RELAY");
     el.classList.toggle("mid", r > 90 && r <= 160); el.classList.toggle("bad", r > 160);
   });
   net.on("close", (e) => {
@@ -593,6 +604,10 @@ function tick() {
     const r = app.session.tick(bits, ev);
     app.S = app.session.S;
     if (r === null) app.stall++; else app.stall = 0;
+    if (app.session.ticks % 900 === 450 && app.net) {
+      const s2 = app.session, n = app.net;
+      n.sendWs({ t: "stats", path: n.direct ? "direct" : "relay", peerRtt: n.peerRtt, srvRtt: n.rtt, rb: s2.rollbacks, stalls: s2.stalls, frame: s2.frame, delay: s2.delay, fps: app.fps, ua: /Mobile|Android|iPhone/.test(navigator.userAgent) ? "mobile" : "desktop" });
+    }
     $("#netwait").classList.toggle("hidden", app.stall < 20);
     if (app.stall === 20) $("#netwait").textContent = "WAITING FOR RIVAL'S CONNECTION…";
     if (app.stall === 600) $("#netwait").textContent = "RIVAL NOT RESPONDING — CHECK THEIR CONNECTION";
@@ -642,7 +657,9 @@ try {
   const clock = new Worker(URL.createObjectURL(new Blob(["setInterval(() => postMessage(0), 4);"], { type: "text/javascript" })));
   clock.onmessage = pump; clockOk = true;
 } catch { clockOk = false; }
+let fpsN = 0, fpsT = 0;
 function frame(now) {
+  fpsN++; if (now - fpsT > 1000) { app.fps = fpsN; fpsN = 0; fpsT = now; }
   if (!clockOk) pump();
   if (document.hidden) { requestAnimationFrame(frame); return; }
   if (app.screen === "title" && app.attract) R.draw(app.attract);
