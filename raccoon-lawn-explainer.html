@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Raccoon Lawn Explainer</title>
+<style>html,body{margin:0;height:100%;background:#15121c;display:grid;place-items:center;overflow:hidden}canvas{height:100vh;max-width:100vw;object-fit:contain;image-rendering:pixelated;cursor:pointer}</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script></head>
+<body><canvas id="c" width="1080" height="1920"></canvas>
+<script type="module">
+// "Why is your lawn torn up?" — a PS1-style low poly explainer.
+// Page contract: canvas#c 1080x1920, window.ready, window.drawFrame(t) (pure function of t, seeded random only), window.END.
+// Click the canvas to pause / play. Calling drawFrame() from outside stops the autoplay loop (for frame-by-frame export).
+import * as THREE from 'three';
+
+// ============================================================ engine
+const W = 1080, H = 1920, LW = 270, LH = 480;
+const rnd = (s) => { let a = s >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+const hex = (h) => [(h >> 16) & 255, (h >> 8) & 255, h & 255];
+// every texture is painted by code, 64 px or smaller, nearest filtering, no mipmaps
+function tex(w, h, paint, seed = 1) {
+  if (w > 64 || h > 64) throw new Error(`texture ${w}x${h} is over 64 px`);
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+  paint(g, rnd(seed), w, h);
+  const t = new THREE.CanvasTexture(c); t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.NoColorSpace;
+  return t;
+}
+const px = (g, x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+// hand-placed shade pixels: n specks of 1..s px in the given colors
+function grain(g, r, w, h, n, cols, s = 1, x0 = 0, y0 = 0) { for (let i = 0; i < n; i++) px(g, x0 + (r() * w | 0), y0 + (r() * h | 0), 1 + (r() * s | 0), 1 + (r() * s | 0), cols[r() * cols.length | 0]); }
+const poly = (g, pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.fill(); };
+// kill canvas anti-aliasing: alpha to 0/255
+function hard(g, w, h) { const d = g.getImageData(0, 0, w, h); for (let i = 3; i < d.data.length; i += 4) d.data[i] = d.data[i] > 100 ? 255 : 0; g.putImageData(d, 0, 0); }
+
+class Geo {
+  constructor() { this.p = []; this.uv = []; }
+  tri(a, b, c, ua = [0, 0], ub = [1, 0], uc = [1, 1]) { this.p.push(...a, ...b, ...c); this.uv.push(...ua, ...ub, ...uc); return this; }
+  quad(a, b, c, d, ua = [0, 0], ub = [1, 0], uc = [1, 1], ud = [0, 1]) { return this.tri(a, b, c, ua, ub, uc).tri(a, c, d, ua, uc, ud); }
+  hexa(f, uv = {}) {
+    const P = f, q = (k, a, b, c, d) => { if (uv[k] === null) return; const [u0, v0, u1, v1] = uv[k] || uv.all || [0, 0, 1, 1]; this.quad(a, b, c, d, [u0, v0], [u1, v0], [u1, v1], [u0, v1]); };
+    q('front', P(-1, -1, 1), P(1, -1, 1), P(1, 1, 1), P(-1, 1, 1)); q('back', P(1, -1, -1), P(-1, -1, -1), P(-1, 1, -1), P(1, 1, -1));
+    q('right', P(1, -1, 1), P(1, -1, -1), P(1, 1, -1), P(1, 1, 1)); q('left', P(-1, -1, -1), P(-1, -1, 1), P(-1, 1, 1), P(-1, 1, -1));
+    q('top', P(-1, 1, 1), P(1, 1, 1), P(1, 1, -1), P(-1, 1, -1)); q('bottom', P(-1, -1, -1), P(1, -1, -1), P(1, -1, 1), P(-1, -1, 1));
+    return this;
+  }
+  box(w, h, d, cx = 0, cy = 0, cz = 0, uv = {}) { return this.hexa((x, y, z) => [cx + x * w / 2, cy + y * h / 2, cz + z * d / 2], uv); }
+  // rings bottom to top. map 'cyl' wraps the texture around; 'face' puts the front half of the texture on the front;
+  // 'planar' projects the whole texture straight onto the front (for the 64x64 face). Partial arcs (a0..a1) get pie caps.
+  loft(rings, segs, { map = 'cyl', cap0 = true, cap1 = true, rot = 0, box = null, vr = [0, 1], a0 = 0, a1 = Math.PI * 2 } = {}) {
+    const A = (j) => a0 + (a1 - a0) * j / segs + rot, pt = (R, j) => { const a = A(j); return [(R.x || 0) + Math.sin(a) * R.rx, R.y, (R.z || 0) + Math.cos(a) * R.rz]; };
+    const n = rings.length, y0 = rings[0].y, y1 = rings[n - 1].y, bx = box || { x: Math.max(...rings.map((r) => r.rx)), y0, y1 };
+    const uvOf = (p, j, i, back) => map === 'cyl' ? [j / segs, vr[0] + (vr[1] - vr[0]) * i / (n - 1)]
+      : map === 'planar' ? [.5 + p[0] / bx.x * .5, (p[1] - bx.y0) / (bx.y1 - bx.y0)]
+      : [(back ? .75 - p[0] / bx.x * .25 : .25 + p[0] / bx.x * .25), (p[1] - bx.y0) / (bx.y1 - bx.y0)];
+    for (let i = 0; i < n - 1; i++) for (let j = 0; j < segs; j++) {
+      const a = pt(rings[i], j), b = pt(rings[i], j + 1), c = pt(rings[i + 1], j + 1), d = pt(rings[i + 1], j), back = (a[2] + b[2] + c[2] + d[2]) / 4 < (rings[i].z || 0) - 1e-4;
+      this.quad(a, b, c, d, uvOf(a, j, i, back), uvOf(b, j + 1, i, back), uvOf(c, j + 1, i + 1, back), uvOf(d, j, i + 1, back));
+    }
+    const cap = (R, i, up) => { const m = [R.x || 0, R.y, R.z || 0]; for (let j = 0; j < segs; j++) { const a = pt(R, j), b = pt(R, j + 1), back = (a[2] + b[2]) / 2 < m[2]; up ? this.tri(a, b, m, uvOf(a, j, i, back), uvOf(b, j + 1, i, back), uvOf(m, j + .5, i, back)) : this.tri(b, a, m, uvOf(b, j + 1, i, back), uvOf(a, j, i, back), uvOf(m, j + .5, i, back)); } };
+    if (cap0) cap(rings[0], 0, false); if (cap1) cap(rings[n - 1], n - 1, true);
+    return this;
+  }
+  get tris() { return this.p.length / 9; }
+  build(seed = 7) { const g = new THREE.BufferGeometry(); this.fill(g, seed); return g; }
+  // per-triangle attributes: centroid, face normal, random, barycentric (for the edge lines on the cut shell)
+  fill(g, seed = 7) {
+    const n = this.p.length / 3, C = new Float32Array(n * 3), N = new Float32Array(n * 3), B = new Float32Array(n * 3);
+    for (let t = 0; t < n; t += 3) {
+      const q = this.p.slice(t * 3, t * 3 + 9), c = [0, 1, 2].map((k) => (q[k] + q[3 + k] + q[6 + k]) / 3);
+      const u = [q[3] - q[0], q[4] - q[1], q[5] - q[2]], v = [q[6] - q[0], q[7] - q[1], q[8] - q[2]];
+      const m = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]], l = Math.hypot(...m) || 1;
+      for (let k = 0; k < 3; k++) for (let a = 0; a < 3; a++) { const i = (t + k) * 3 + a; C[i] = c[a]; N[i] = m[a] / l; B[i] = a === k ? 1 : 0; }
+    }
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.p), 3)); g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(this.uv), 2));
+    g.setAttribute('aC', new THREE.BufferAttribute(C, 3)); g.setAttribute('aN', new THREE.BufferAttribute(N, 3)); g.setAttribute('aB', new THREE.BufferAttribute(B, 3));
+  }
+}
+
+const look = {
+  uSnap: { value: 1.0 }, uSun: { value: new THREE.Vector3(.45, .75, .55).normalize() }, uSunC: { value: new THREE.Vector3(.60, .50, .34) },
+  uAmbT: { value: new THREE.Vector3(.74, .72, .80) }, uAmbB: { value: new THREE.Vector3(.50, .46, .56) }, uFog: { value: new THREE.Vector3(.92, .66, .60) }, uFogR: { value: new THREE.Vector2(12, 34) },
+};
+// Vertex shader: optional slice-open (rotate each half about a hinge behind the object, toward the camera),
+// then snap the clip-space vertex to a grid one low-res pixel wide. vUW carries uv*w so the fragment shader can undo
+// the perspective correction (affine mapping, PS1 wobble).
+const VS = `
+attribute vec3 aB; uniform float uSnap, uSide, uOpen, uShift, uHz; uniform mat4 uRoot, uRootI;
+varying vec3 vWP, vRoot, vB, vUW; varying vec2 vUv; varying float vD;
+void main() {
+  vec4 wp = modelMatrix * vec4(position, 1.);
+  vec4 rp = uRootI * wp; vRoot = rp.xyz;
+  if (uSide != 0.) { vec3 hg = vec3(0., rp.y, uHz); vec3 d = rp.xyz - hg; float a = uSide * uOpen, c = cos(a), s = sin(a);
+    rp.xyz = hg + vec3(c * d.x + s * d.z, d.y, -s * d.x + c * d.z); rp.x += uSide * uShift; wp = uRoot * rp; }
+  vWP = wp.xyz; vec4 v = viewMatrix * wp; vD = -v.z; vec4 cp = projectionMatrix * v;
+  if (uSnap > 0.) { vec2 g = vec2(${(LW / 2).toFixed(1)}, ${(LH / 2).toFixed(1)}) / uSnap; cp.xy = floor(cp.xy / cp.w * g + .5) / g * cp.w; }
+  vUv = uv; vUW = vec3(uv * cp.w, cp.w); vB = aB; gl_Position = cp;
+}`;
+// Fragment shader: flat light from the face normal (screen derivatives), the cut plane discard, and the inside of a cut
+// object painted as a dark shell with its triangle edges drawn.
+const FS = `
+uniform sampler2D map; uniform vec3 uColor, uSun, uSunC, uAmbT, uAmbB, uFog, uInC; uniform vec2 uRep, uFogR; uniform float uAff, uEm, uSide, uTexOwn, uFogA;
+varying vec3 vWP, vRoot, vB, vUW; varying vec2 vUv; varying float vD;
+void main() {
+  if (uSide != 0. && uSide * vRoot.x < 0.) discard;
+  vec2 uv = mix(vUv, vUW.xy / vUW.z, uAff) * uRep;
+  vec4 t = texture2D(map, uv); if (uTexOwn > .5 && t.a < .5) discard;
+  vec3 base = mix(uColor, t.rgb, uTexOwn);
+  vec3 n = normalize(cross(dFdx(vWP), dFdy(vWP)));
+  vec3 L = mix(uAmbB, uAmbT, n.y * .5 + .5) + uSunC * max(dot(n, uSun), 0.);
+  vec3 c = base * mix(L, vec3(1.), uEm);
+  if (!gl_FrontFacing && uSide != 0.) { float e = min(vB.x, min(vB.y, vB.z)); float l = 1. - smoothstep(0., fwidth(e) * 1.2, e);
+    c = mix(uInC * (.6 + .4 * clamp(-n.z, 0., 1.)), uInC * 2.4 + .14, l); }
+  c = mix(c, uFog, uFogA * smoothstep(uFogR.x, uFogR.y, vD));
+  gl_FragColor = vec4(c, 1.);
+}`;
+const white = tex(1, 1, (g) => px(g, 0, 0, 1, 1, '#fff'));
+function mat(o = {}) {
+  const [r, g, b] = hex(o.color ?? 0xffffff);
+  return new THREE.ShaderMaterial({
+    vertexShader: VS, fragmentShader: FS, side: THREE.DoubleSide,
+    uniforms: { ...look, uAff: { value: o.affine ?? 0 }, map: { value: o.map || white }, uTexOwn: { value: o.map ? 1 : 0 }, uColor: { value: new THREE.Vector3(r / 255, g / 255, b / 255) },
+      uRep: { value: new THREE.Vector2(...(o.rep || [1, 1])) }, uEm: { value: o.em ?? 0 }, uFogA: { value: o.fog ?? 1 }, uSide: { value: 0 }, uOpen: { value: 0 }, uShift: { value: 0 }, uHz: { value: 0 },
+      uRoot: { value: new THREE.Matrix4() }, uRootI: { value: new THREE.Matrix4() }, uInC: { value: new THREE.Vector3(...(o.inside || [.30, .16, .14])) } },
+  });
+}
+
+// renderer: draw small (270x480), reduce to 23 levels per channel with a 4x4 Bayer dither, scale up 4x with no smoothing
+const glc = document.createElement('canvas');
+const gl = new THREE.WebGLRenderer({ canvas: glc, antialias: false, preserveDrawingBuffer: true });
+gl.setPixelRatio(1); gl.setSize(LW, LH, false); gl.outputColorSpace = THREE.LinearSRGBColorSpace;
+const lowRT = new THREE.WebGLRenderTarget(LW, LH, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, generateMipmaps: false });
+const post = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { t: { value: lowRT.texture }, uL: { value: 23 } },
+  vertexShader: 'varying vec2 u; void main(){ u = uv; gl_Position = vec4(position.xy, 0., 1.); }',
+  fragmentShader: `uniform sampler2D t; uniform float uL; varying vec2 u;
+  float b2(vec2 a){ a = floor(a); return fract(a.x * .5 + a.y * a.y * .75); }   // 2x2 Bayer
+  float bayer4(vec2 a){ return b2(.5 * a) * .25 + b2(a); }                 // 4x4 Bayer, 16 thresholds
+  void main(){ vec3 c = texture2D(t, u).rgb; vec2 q = u - .5; c *= 1. - .14 * smoothstep(.1, .5, dot(q, q) * 1.2);
+    vec3 d = floor(c * (uL - 1.) + bayer4(gl_FragCoord.xy)) / (uL - 1.); gl_FragColor = vec4(clamp(d, 0., 1.), 1.); }` });
+const pScene = new THREE.Scene(); pScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), post)); const pCam = new THREE.OrthographicCamera();
+function shoot(ctx, scene, camera) {
+  gl.setRenderTarget(lowRT); gl.render(scene, camera); gl.setRenderTarget(null); gl.render(pScene, pCam);
+  ctx.imageSmoothingEnabled = false; ctx.drawImage(glc, 0, 0, W, H);
+}
+
+// ============================================================ the raccoon (about 300 triangles)
+const FUR = '#8b8390', FUR2 = '#9b93a0', FUR3 = '#736b7a', DARK = '#2b2631', DARK2 = '#3a3442', PALE = '#e9e2dc', PALE2 = '#d3c9c4';
+const SUIT = '#f2c42c', SUIT2 = '#d6a518', SUIT3 = '#ffdc5e', SUIT4 = '#b8860f', SHIRT = '#f6f1e6', RED = '#c8332f';
+
+// the face: ONE 64x64 picture projected onto the front of the head. Versions are swapped for expressions.
+function faceTex(eyes = 'open', brow = 0) {
+  return tex(64, 64, (g, r) => {
+    px(g, 0, 0, 64, 64, FUR); grain(g, r, 64, 64, 130, [FUR2, FUR3, FUR], 2);
+    const m = (f) => { f(1); f(-1); }, X = (s, x) => 32 + s * x;
+    m((s) => poly(g, [[X(s, 4), 22], [X(s, 13), 15], [X(s, 26), 20], [X(s, 31), 31], [X(s, 31), 44], [X(s, 22), 53], [X(s, 7), 60], [X(s, 2), 42]], PALE));       // pale brow + cheeks
+    m((s) => { poly(g, [[X(s, 3), 27], [X(s, 12), 22], [X(s, 22), 27], [X(s, 31), 41], [X(s, 25), 46], [X(s, 15), 42], [X(s, 6), 39], [X(s, 3), 36]], DARK);  // the mask
+      poly(g, [[X(s, 20), 32], [X(s, 30), 41], [X(s, 25), 45], [X(s, 18), 40]], DARK2); });
+    poly(g, [[28, 6], [36, 6], [35, 34], [29, 34]], '#4c4652'); poly(g, [[30, 2], [34, 2], [34, 26], [30, 26]], DARK2);                                  // nose stripe
+    grain(g, r, 60, 18, 26, [PALE2], 1, 2, 44);
+    m((s) => { for (let i = 0; i < 5; i++) px(g, X(s, 24 + i) - (s < 0 ? 1 : 0), 45 + i * 2, 2, 2, i % 2 ? PALE2 : PALE); });
+    m((s) => { // big eyes with a highlight
+      const cx = X(s, 13), x = cx - 4, y = 28;
+      if (eyes === 'closed') { px(g, x, y + 5, 8, 2, PALE2); px(g, x + (s > 0 ? 7 : -1), y + 4, 2, 1, PALE2); return; }
+      if (eyes === 'happy') { px(g, x, y + 5, 2, 2, '#fff'); px(g, x + 2, y + 3, 4, 2, '#fff'); px(g, x + 6, y + 5, 2, 2, '#fff'); return; }
+      const wide = eyes === 'wide', half = eyes === 'half';
+      const rows = wide ? [4, 6, 8, 8, 9, 9, 9, 8, 8, 6, 4] : [4, 6, 8, 8, 8, 8, 8, 6, 4], oy = wide ? y - 2 : y - 1;
+      rows.forEach((w, i) => { if (half && i < 4) return; px(g, cx - (w >> 1), oy + i, w, 1, '#fff3da'); });
+      const irR = wide ? [2, 4, 4, 4, 2] : [4, 6, 6, 6, 6, 6, 4], iy = wide ? oy + 3 : oy + 1;
+      irR.forEach((w, i) => { if (half && iy + i < oy + 4) return; px(g, cx - (w >> 1), iy + i, w, 1, wide ? '#17121c' : (i === 0 || i === 6) ? '#9a541a' : '#c5761f'); });
+      if (!wide) [2, 4, 4, 4, 2].forEach((w, i) => { if (half && iy + 1 + i < oy + 4) return; px(g, cx - (w >> 1), iy + 1 + i, w, 1, '#17121c'); });
+      px(g, cx - (wide ? 1 : 2), iy + (half ? 3 : 1), wide ? 1 : 2, wide ? 1 : 2, '#fff');
+      if (half) px(g, cx - 4, oy + 3, 8, 1, '#4b434f');
+    });
+    m((s) => { const x = X(s, 13); for (let i = -5; i <= 5; i++) px(g, x + i, Math.round(21 + brow * s * i * -.35 + (eyes === 'wide' ? -3 : 0)), 1, 2, '#57505f'); }); // brows
+    hard(g, 64, 64);
+  }, 11);
+}
+const FACE_SPECS = { open: ['open', 0], closed: ['closed', 0], wide: ['wide', -.3], happy: ['happy', -.5], smug: ['half', -.5], cross: ['open', .9] };
+const FACES = Object.fromEntries(Object.entries(FACE_SPECS).map(([k, v]) => [k, faceTex(...v)]));
+const furT = tex(32, 32, (g, r) => { px(g, 0, 0, 32, 32, FUR); grain(g, r, 32, 32, 60, [FUR2, FUR3], 2); for (let i = 0; i < 22; i++) px(g, r() * 32 | 0, r() * 28 | 0, 1, 3 + (r() * 4 | 0), [FUR3, '#665f6c'][r() * 2 | 0]); }, 13);
+const muzT = tex(64, 32, (g, r) => { px(g, 0, 0, 64, 32, PALE); grain(g, r, 64, 32, 60, [PALE2, '#f4eee8'], 2); px(g, 30, 0, 4, 32, '#5b5462'); for (const [x, y] of [[20, 18], [24, 22], [18, 24], [44, 18], [40, 22], [46, 24]]) px(g, x, y, 1, 1, DARK2); }, 3);
+const earT = tex(32, 32, (g, r) => { px(g, 0, 0, 32, 32, FUR3); grain(g, r, 32, 32, 40, [FUR, DARK2], 2); poly(g, [[7, 32], [25, 32], [16, 9]], '#d9b3ac'); poly(g, [[11, 32], [21, 32], [16, 18]], '#b98d8a'); hard(g, 32, 32); }, 4);
+// the yellow suit jacket: 'face' mapping, so x 0..32 is the front, 32..64 the back
+const bodyT = tex(64, 64, (g, r) => {
+  px(g, 0, 0, 64, 64, SUIT); grain(g, r, 64, 64, 150, [SUIT2, SUIT3, SUIT], 1);
+  for (const x of [3, 28, 36, 60]) px(g, x, 0, 1, 64, SUIT2);
+  poly(g, [[10, 0], [22, 0], [19, 24], [16, 28], [13, 24]], SHIRT); grain(g, r, 6, 20, 8, ['#e2dccd'], 1, 13, 2);
+  poly(g, [[8, 0], [11, 0], [16, 26], [14, 24], [10, 12], [6, 9]], SUIT3); poly(g, [[24, 0], [21, 0], [16, 26], [18, 24], [22, 12], [26, 9]], SUIT3);
+  poly(g, [[8, 0], [9, 0], [16, 26], [15, 26], [9, 12]], SUIT2); poly(g, [[24, 0], [23, 0], [16, 26], [17, 26], [23, 12]], SUIT2);
+  px(g, 16, 26, 1, 38, SUIT2); px(g, 17, 32, 2, 2, SUIT4); px(g, 17, 40, 2, 2, SUIT4);
+  px(g, 4, 46, 7, 1, SUIT4); px(g, 22, 46, 7, 1, SUIT4); px(g, 22, 14, 5, 1, SUIT4); px(g, 23, 11, 3, 3, SHIRT); px(g, 24, 11, 1, 1, RED);
+  px(g, 0, 61, 64, 3, SUIT2); px(g, 47, 0, 1, 64, SUIT2); px(g, 47, 50, 1, 14, SUIT4);
+}, 5);
+const slvT = tex(32, 32, (g, r) => { px(g, 0, 0, 32, 32, SUIT); grain(g, r, 32, 32, 60, [SUIT2, SUIT3], 2); px(g, 0, 26, 32, 2, SUIT2); px(g, 0, 28, 32, 4, SHIRT); }, 6);
+const pantT = tex(32, 32, (g, r) => { px(g, 0, 0, 32, 32, '#e0b024'); grain(g, r, 32, 32, 60, [SUIT2, '#eec244', SUIT4], 1); px(g, 0, 28, 32, 4, SUIT4); for (const x of [7, 23]) px(g, x, 0, 1, 28, SUIT3); }, 8);
+const tieT = tex(16, 32, (g) => { px(g, 0, 0, 16, 32, RED); for (let i = -2; i < 8; i++) for (let k = 0; k < 16; k++) px(g, k, i * 7 + ((k * .6) | 0), 1, 2, '#3a2a5c'); }, 9);
+const tailT = tex(32, 64, (g, r) => { for (let i = 0; i < 6; i++) px(g, 0, 64 - (i + 1) * 11, 32, 11, i % 2 === 0 ? FUR2 : DARK); px(g, 0, 0, 32, 6, DARK); grain(g, r, 32, 64, 70, [FUR3, '#4a4352', '#b1a9b5'], 2); }, 10);
+const pawT = tex(16, 16, (g, r) => { px(g, 0, 0, 16, 16, DARK); grain(g, r, 16, 16, 20, [DARK2, '#1e1a23'], 1); for (const x of [4, 8, 12]) px(g, x, 0, 1, 6, '#1a161f'); }, 12);
+
+const REST = { x: 0, y: 0, z: 0, ry: 0, sq: 1, hip: 0, tw: 0, lean: 0, side: 0, hx: 0, hy: 0, hz: 0, lz: .3, lx: 0, le: -.4, ly: 0, rz_: .3, rx_: 0, re: -.4, ry_: 0, lh: 0, rh: 0, ll: 0, rl: 0, jaw: 0, tail: 0, tl: .5, ear: 0, eL: 0, eR: 0, face: 'open' };
+function makeRaccoon() {
+  const root = new THREE.Group(), mats = []; let tris = 0;
+  const M = (o) => { const m = mat({ affine: 1, fog: 0, ...o }); mats.push(m); return m; }; // affine mapping on the whole character
+  const add = (parent, geo, m, pos) => { tris += geo.tris; const o = new THREE.Mesh(geo.build(), m); o.frustumCulled = false; if (pos) o.position.set(...pos); parent.add(o); return o; };
+  const grp = (parent, x, y, z) => { const o = new THREE.Group(); o.position.set(x, y, z); parent.add(o); return o; };
+  const mBody = M({ map: bodyT }), mFace = M({ map: FACES.open }), mFur = M({ map: furT }), mMuz = M({ map: muzT }), mEar = M({ map: earT }), mSlv = M({ map: slvT }),
+    mPant = M({ map: pantT }), mPaw = M({ map: pawT }), mTie = M({ map: tieT }), mTail = M({ map: tailT }), mIn = M({ color: 0x7a2432 }), mNose = M({ color: 0x1d1822 });
+  const bod = grp(root, 0, .52, 0);
+  // torso: a pear (6 sides)
+  add(bod, new Geo().loft([{ y: -.02, rx: .30, rz: .24 }, { y: .16, rx: .37, rz: .30 }, { y: .40, rx: .33, rz: .26 }, { y: .60, rx: .21, rz: .17 }], 6, { map: 'face', rot: Math.PI / 6, cap1: false }), mBody);
+  add(bod, new Geo().hexa((x, y, z) => [x * (y > 0 ? .035 : .062), y > 0 ? .56 : .22, (y > 0 ? .19 : .315) + z * .012], { back: null, left: null, right: null, top: null, bottom: null }), mTie);
+  // legs: rigid trouser cylinders, box feet
+  const leg = (s) => { const g = grp(bod, s * .155, .02, 0); add(g, new Geo().loft([{ y: -.40, rx: .105, rz: .105 }, { y: 0, rx: .15, rz: .15 }], 4, { rot: Math.PI / 4, cap0: false, cap1: false }), mPant); add(g, new Geo().hexa((x, y, z) => [x * (z > 0 ? .13 : .10), -.45 + y * (z > 0 ? .055 : .07), .06 + z * .17]), mPaw); return g; };
+  const LL = leg(-1), RL = leg(1);
+  // head: wide and 8-sided; 3 flat front sides carry the 64x64 face, the other 5 are fur
+  const neck = grp(bod, 0, .56, 0), head = grp(neck, 0, .02, 0);
+  const HR = [{ y: -.03, rx: .17, rz: .17 }, { y: .14, rx: .42, rz: .32 }, { y: .30, rx: .50, rz: .36 }, { y: .52, rx: .42, rz: .34 }, { y: .68, rx: .22, rz: .20 }], A8 = Math.PI / 8;
+  add(head, new Geo().loft(HR, 3, { map: 'planar', a0: -3 * A8, a1: 3 * A8, box: { x: .50, y0: -.03, y1: .68 }, cap0: false }), mFace);
+  add(head, new Geo().loft(HR, 5, { map: 'cyl', a0: 3 * A8, a1: 13 * A8, cap0: false }), mFur);
+  add(head, new Geo().hexa((x, y, z) => z > 0 ? [x * (y > 0 ? .055 : .085), .185 + y * .05, .57] : [x * (y > 0 ? .11 : .20), .17 + (y > 0 ? .13 : -.05), .30], { back: null }), mMuz); // box muzzle
+  add(head, new Geo().hexa((x, y, z) => [x * (z > 0 ? .028 : .062) * (y > 0 ? 1.15 : .7), .215 + y * (z > 0 ? .022 : .042), .59 + z * .045], { back: null }), mNose);
+  const jaw = grp(head, 0, .13, .30); add(jaw, new Geo().hexa((x, y, z) => z > 0 ? [x * .062, -.01 + y * .022, .22] : [x * .14, -.02 + y * .045, 0], { back: null, top: null }), mMuz);
+  add(jaw, new Geo().hexa((x, y, z) => z > 0 ? [x * .05, .02 + y * .004, .22] : [x * .11, .03 + y * .004, .02], { left: null, right: null, bottom: null, back: null, front: null }), mIn);
+  const ear = (s) => { const g = grp(head, s * .34, .56, -.02); add(g, new Geo().tri([-.15, -.06, .07], [.15, -.06, .07], [s * .05, .30, 0], [0, 0], [1, 0], [.5, 1]).tri([.15, -.06, .07], [.13, -.06, -.10], [s * .05, .30, 0]).tri([.13, -.06, -.10], [-.13, -.06, -.10], [s * .05, .30, 0], [0, .9], [.05, .9], [0, 1]).tri([-.13, -.06, -.10], [-.15, -.06, .07], [s * .05, .30, 0]), mEar); g.rotation.z = -s * .28; return g; };
+  const EL = ear(-1), ER = ear(1);
+  // arms: shoulder, elbow, box hand, each a separate rigid part
+  const arm = (s) => {
+    const sh = grp(bod, s * .20, .52, 0); add(sh, new Geo().loft([{ y: -.30, rx: .095, rz: .095 }, { y: .03, rx: .115, rz: .115 }], 4, { rot: Math.PI / 4, cap0: false, cap1: false, vr: [.3, 1] }), mSlv);
+    const el = grp(sh, 0, -.29, 0); add(el, new Geo().loft([{ y: -.26, rx: .085, rz: .085 }, { y: .01, rx: .095, rz: .095 }], 4, { rot: Math.PI / 4, cap0: false, cap1: false, vr: [0, .7] }), mSlv);
+    const hd = grp(el, 0, -.26, 0); add(hd, new Geo().hexa((x, y, z) => [x * (y > 0 ? .075 : .10), -.08 + y * .09, z * (y > 0 ? .06 : .05)]), mPaw);
+    add(hd, new Geo().tri([-s * .06, -.01, .05], [-s * .06, -.10, .05], [-s * .16, -.07, .03]).tri([-s * .06, -.01, -.02], [-s * .06, -.10, -.02], [-s * .16, -.07, .03]).tri([-s * .06, -.01, .05], [-s * .06, -.01, -.02], [-s * .16, -.07, .03]).tri([-s * .06, -.10, .05], [-s * .06, -.10, -.02], [-s * .16, -.07, .03]), mPaw);
+    return { sh, el, hd };
+  };
+  const AL = arm(-1), AR = arm(1);
+  // tail: one strip rebuilt from the pose
+  const tailG = new Geo(), tm = new THREE.Mesh(new THREE.BufferGeometry(), mTail); tm.frustumCulled = false; bod.add(tm);
+  function tailAt(sw, lift) {
+    tailG.p.length = 0; tailG.uv.length = 0; const R = [.07, .14, .18, .19, .15, .03], n = 6, S = 4, P = [];
+    let x = 0, y = .10, z = -.24, a = -1.15, b = 0;
+    for (let i = 0; i < n; i++) { P.push({ x, y, z, a, r: R[i] }); a += .30 + lift * .12; b += sw * .22; const L = .20; x += Math.sin(b) * L; y += Math.sin(a) * L * .9; z -= Math.cos(a) * L * .8; }
+    const pt = (q, j) => { const t = j / S * Math.PI * 2 + Math.PI / 4; return [q.x + Math.cos(t) * q.r, q.y + Math.sin(t) * q.r * Math.cos(q.a), q.z + Math.sin(t) * q.r * Math.sin(q.a)]; };
+    for (let i = 0; i < n - 1; i++) for (let j = 0; j < S; j++) tailG.quad(pt(P[i], j), pt(P[i], j + 1), pt(P[i + 1], j + 1), pt(P[i + 1], j), [j / S, i / 5], [(j + 1) / S, i / 5], [(j + 1) / S, (i + 1) / 5], [j / S, (i + 1) / 5]);
+    tailG.fill(tm.geometry);
+  }
+  tailAt(0, 0); tris += tailG.tris;
+  function pose(q) {
+    const p = { ...REST, ...q };
+    root.position.set(p.x, p.y, p.z); root.rotation.set(0, p.ry, 0); root.scale.set(1 / Math.sqrt(p.sq), p.sq, 1 / Math.sqrt(p.sq));
+    bod.position.y = .52 + p.hip; bod.rotation.set(p.lean, p.tw, p.side); head.rotation.set(p.hx, p.hy, p.hz);
+    AL.sh.rotation.set(p.lx, p.ly, -p.lz); AL.el.rotation.set(p.le, 0, 0); AL.hd.rotation.set(p.lh, 0, 0);
+    AR.sh.rotation.set(p.rx_, p.ry_, p.rz_); AR.el.rotation.set(p.re, 0, 0); AR.hd.rotation.set(p.rh, 0, 0);
+    LL.rotation.set(p.ll - p.lean, 0, -p.side); RL.rotation.set(p.rl - p.lean, 0, -p.side); jaw.rotation.x = p.jaw * .55;
+    EL.rotation.x = p.ear + p.eL; ER.rotation.x = p.ear + p.eR;
+    tailAt(p.tail, p.tl); mFace.uniforms.map.value = FACES[p.face] || FACES.open;
+  }
+  pose({});
+  return { root, pose, get tris() { return tris; } };
+}
+
+// ============================================================ the subject: a beetle grub, sliced open
+const grubT = tex(32, 32, (g, r) => {
+  px(g, 0, 0, 32, 32, '#efe3c4'); grain(g, r, 32, 32, 50, ['#f8f0dc', '#dccfae', '#e6d7b4'], 1);
+  for (let y = 0; y < 32; y += 4) px(g, 0, y, 32, 1, '#cdbb92');                 // segment creases
+  px(g, 0, 0, 32, 9, '#8c8a96'); grain(g, r, 32, 9, 26, ['#77737f', '#a19eaa'], 1); // the dark, full rear
+  for (let i = 0; i < 10; i++) px(g, r() * 32 | 0, 10 + (r() * 22 | 0), 1, 1, '#b9a57a');
+}, 31);
+const grubHeadT = tex(16, 16, (g, r) => { px(g, 0, 0, 16, 16, '#b8662a'); grain(g, r, 16, 16, 24, ['#9a5020', '#cf7c38'], 1); px(g, 0, 13, 16, 3, '#6b3414'); }, 32);
+const rootT = tex(8, 32, (g, r) => { px(g, 0, 0, 8, 32, '#c9a46a'); grain(g, r, 8, 32, 16, ['#a8834c', '#e2c48a', '#8f6c3c'], 1); }, 33);
+const GR = .30; // radius of the grub's curl
+function makeGrub(side) {
+  const root = new THREE.Group(), mats = [];
+  const M = (o) => { const m = mat({ affine: 1, fog: 0, inside: [.34, .14, .10], ...o }); mats.push(m); return m; };
+  const mB = M({ map: grubT }), mH = M({ map: grubHeadT }), mLeg = M({ color: 0x8a4a22 });
+  // centerline: a C lying on its back, from the head (upper left) round the bottom to the rear (upper right)
+  const N = 8, th = (s) => Math.PI * (.93 + 1.12 * s), R = [.10, .145, .16, .165, .17, .18, .19, .17, .11];
+  const frame = (s) => { const a = th(s); return { o: [Math.cos(a) * GR, Math.sin(a) * GR, 0], n: [Math.cos(a), Math.sin(a), 0], t: [-Math.sin(a), Math.cos(a), 0] }; };
+  const ring = (i) => { const f = frame(i / N), r = R[i]; return Array.from({ length: 7 }, (_, j) => { const p = j / 6 * Math.PI * 2; return [f.o[0] + f.n[0] * Math.cos(p) * r, f.o[1] + f.n[1] * Math.cos(p) * r, Math.sin(p) * r * 1.05]; }); };
+  const body = new Geo(); for (let i = 0; i < N; i++) { const a = ring(i), b = ring(i + 1); for (let j = 0; j < 6; j++) body.quad(a[j], b[j], b[j + 1], a[j + 1], [j / 6, i / N], [j / 6, (i + 1) / N], [(j + 1) / 6, (i + 1) / N], [(j + 1) / 6, i / N]); } // outward winding
+  { const e = ring(N), f = frame(1), m = [f.o[0] + f.t[0] * .05, f.o[1] + f.t[1] * .05, 0]; for (let j = 0; j < 6; j++) body.tri(e[j + 1], e[j], m, [(j + 1) / 6, 1], [j / 6, 1], [.5, .97]); }
+  const mesh = (geo, m) => { const o = new THREE.Mesh(geo.build(), m); o.frustumCulled = false; root.add(o); return o; };
+  mesh(body, mB);
+  const f0 = frame(0), at = (f, x, y, z) => [f.o[0] + f.t[0] * x + f.n[0] * y, f.o[1] + f.t[1] * x + f.n[1] * y, z];
+  mesh(new Geo().hexa((x, y, z) => at(f0, -.05 + x * .09 * (x > 0 ? 1 : .8), y * .11, -z * .11)), mH); // box head
+  const legs = new Geo(); for (let k = 0; k < 3; k++) { const f = frame(.06 + k * .07); for (const zz of [-1, 1]) legs.tri(at(f, -.02, -.12, zz * .08), at(f, .03, -.12, zz * .08), at(f, .0, -.24, zz * .14)); }
+  mesh(legs, mLeg);
+  const set = (k, v) => { for (const m of mats) m.uniforms[k].value = v; };
+  set('uSide', side); set('uHz', -.2);
+  return { root, set, mats };
+}
+// what the grub ate: a wad of grass roots inside its gut (only seen when it is open)
+function makeRoots() {
+  const g = new Geo(), r = rnd(41);
+  for (let i = 0; i < 6; i++) { const y = (r() - .5) * .11, z = (r() - .5) * .12, L = .16 + r() * .1, w = .018 + r() * .012, tw = (r() - .5) * .5;
+    g.hexa((x, yy, zz) => [x * L, y + yy * w + x * L * tw, z + zz * w - x * L * tw * .6], { all: [0, 0, 1, 1] }); }
+  const o = new THREE.Mesh(g.build(), mat({ map: rootT, affine: 1, fog: 0, em: .15 })); o.frustumCulled = false; return o;
+}
+
+// ============================================================ the backyard
+const grassT = tex(64, 64, (g, r) => { px(g, 0, 0, 64, 64, '#7db347'); grain(g, r, 64, 64, 380, ['#8bc152', '#6fa33e', '#99cf5c', '#65973a'], 2); for (let i = 0; i < 46; i++) { const x = r() * 62 | 0, y = r() * 58 | 0; px(g, x, y, 1, 4, '#aadb68'); px(g, x + 1, y + 2, 1, 3, '#5a8a36'); } }, 21);
+// cut dirt: grass, the root zone (with grubs), topsoil, subsoil with stones, clay. 64 px = 3.2 m, square texels.
+const strataT = tex(64, 64, (g, r) => {
+  const bands = [[0, 3, '#6a9a3e'], [3, 15, '#4a3626'], [15, 30, '#7a5436'], [30, 46, '#946a44'], [46, 64, '#6f5e56']];
+  for (const [a, b, c] of bands) px(g, 0, a, 64, b - a, c);
+  for (let x = 0; x < 64; x++) { px(g, x, 2 + (r() * 3 | 0), 1, 2, '#5c8a36'); px(g, x, 14 + (Math.sin(x * .3) * 1.4 | 0), 1, 2, '#614330'); px(g, x, 29 + (Math.sin(x * .2 + 1) * 1.6 | 0), 1, 2, '#6a4a30'); px(g, x, 45 + (Math.sin(x * .17 + 2) * 1.5 | 0), 1, 2, '#5c4e48'); }
+  for (let x = 1; x < 64; x += 2 + (r() * 3 | 0)) { let y = 4; for (let k = 0, n = 3 + (r() * 7 | 0); k < n; k++) { px(g, x, y, 1, 1, k % 3 ? '#b6915a' : '#d4b27a'); y++; if (r() < .3) x += r() < .5 ? 1 : -1; } } // roots
+  grain(g, r, 64, 49, 150, ['#3d2c1f', '#8c6644', '#a57a4e'], 1, 0, 15);
+  for (let i = 0; i < 16; i++) { const x = r() * 62 | 0, y = 32 + (r() * 30 | 0), w = 1 + (r() * 3 | 0); px(g, x, y, w + 1, 2, ['#8d8580', '#a49a90', '#756c68'][r() * 3 | 0]); px(g, x, y, w, 1, '#c1b6aa'); } // stones
+  for (const [x, y] of [[30, 9], [52, 7], [14, 11]]) { px(g, x, y, 3, 1, '#efe3c4'); px(g, x - 1, y + 1, 1, 1, '#efe3c4'); px(g, x, y + 2, 3, 1, '#efe3c4'); px(g, x + 3, y, 1, 1, '#b8662a'); } // tiny grubs
+}, 22);
+const dirtT = tex(32, 32, (g, r) => { px(g, 0, 0, 32, 32, '#5a412c'); grain(g, r, 32, 32, 120, ['#4a3423', '#6e5136', '#7f6040'], 1); for (let i = 0; i < 8; i++) px(g, r() * 32 | 0, r() * 32 | 0, 2, 1, '#9a8a7c'); }, 34);
+const sodUnderT = tex(32, 32, (g, r) => { px(g, 0, 0, 32, 32, '#4e3a28'); for (let x = 0; x < 32; x += 2) px(g, x, 0, 1, 5 + (r() * 22 | 0), '#c9a46a'); grain(g, r, 32, 32, 40, ['#3d2c1f', '#6e5136'], 1); }, 35);
+const woodT = tex(64, 64, (g, r) => { px(g, 0, 0, 64, 64, '#a9764a'); for (let i = 0; i < 60; i++) px(g, r() * 64 | 0, r() * 64 | 0, 1, 6 + (r() * 22 | 0), ['#97663e', '#b9865a', '#8a5c38'][r() * 3 | 0]); px(g, 0, 0, 2, 64, '#6f4728'); px(g, 62, 0, 2, 64, '#6f4728'); px(g, 30, 8, 2, 2, '#4a2e1a'); px(g, 30, 54, 2, 2, '#4a2e1a'); }, 23);
+const wallT = tex(64, 64, (g, r) => { px(g, 0, 0, 64, 64, '#c9a9b0'); for (let y = 0; y < 64; y += 8) { px(g, 0, y, 64, 1, '#9c7d8a'); px(g, 0, y + 1, 64, 1, '#dcc0c4'); } grain(g, r, 64, 64, 80, ['#b898a0', '#d6bac0'], 2); }, 24);
+const winT = tex(32, 32, (g) => { px(g, 0, 0, 32, 32, '#5b3a3a'); px(g, 3, 3, 26, 26, '#ffd873'); px(g, 3, 3, 26, 8, '#ffe9a8'); px(g, 15, 3, 2, 26, '#5b3a3a'); px(g, 3, 15, 26, 2, '#5b3a3a'); px(g, 4, 4, 7, 22, '#f2b660'); px(g, 21, 4, 7, 22, '#f2b660'); }, 25);
+const roofT = tex(64, 64, (g, r) => { px(g, 0, 0, 64, 64, '#7a3f4c'); for (let y = 0; y < 64; y += 8) for (let x = -4; x < 64; x += 8) { px(g, x + ((y / 8) % 2) * 4, y, 7, 7, ['#86485a', '#6f3846', '#7f4252'][r() * 3 | 0]); px(g, x + ((y / 8) % 2) * 4, y + 6, 7, 1, '#542a36'); } }, 26);
+const leafT = tex(64, 64, (g, r) => { px(g, 0, 0, 64, 64, '#3f7d4c'); grain(g, r, 64, 64, 420, ['#4c8f58', '#32683f', '#5fa566', '#2b5a38'], 3); for (let i = 0; i < 30; i++) px(g, r() * 64 | 0, r() * 64 | 0, 2, 1, '#d98a5a'); }, 27);
+const canT = tex(64, 32, (g, r) => { for (let x = 0; x < 64; x++) px(g, x, 0, 1, 32, x % 8 < 2 ? '#6f7888' : x % 8 < 5 ? '#9aa4b4' : '#b7c0cc'); px(g, 0, 4, 64, 2, '#6f7888'); px(g, 0, 26, 64, 2, '#6f7888'); grain(g, r, 64, 32, 30, ['#7c5a48', '#66707f'], 2); }, 28);
+const lidT = tex(32, 32, (g, r) => { px(g, 0, 0, 32, 32, '#8e98a8'); for (let i = 0; i < 5; i++) px(g, 2 + i * 6, 0, 2, 32, '#b7c0cc'); grain(g, r, 32, 32, 20, ['#6f7888'], 2); }, 29);
+// sky: one 64x64 painting, scrolled with the camera
+const skyT = tex(64, 64, (g, r) => {
+  const S = [[0, [86, 124, 212]], [.22, [104, 146, 226]], [.40, [143, 166, 234]], [.52, [201, 163, 220]], [.62, [243, 166, 180]], [.72, [255, 191, 143]], [.84, [255, 223, 154]], [1, [255, 240, 192]]];
+  for (let y = 0; y < 64; y++) { const v = y / 63; let i = 0; while (i < S.length - 2 && v > S[i + 1][0]) i++; const k = (v - S[i][0]) / (S[i + 1][0] - S[i][0]); const c = S[i][1].map((a, j) => Math.round(a + (S[i + 1][1][j] - a) * k)); px(g, 0, y, 64, 1, `rgb(${c})`); }
+  for (let y = -4; y <= 4; y++) { const w = Math.sqrt(16 - y * y) | 0; px(g, 22 - w, 47 + y, w * 2, 1, y < -1 ? '#fff6cf' : y < 2 ? '#ffeaa0' : '#ffd773'); }
+  const cloud = (x, y, n) => { for (let k = 0; k < n; k++) { const w = 5 + (r() * 6 | 0), cx = x + ((r() - .5) * 12 | 0), cy = y + ((r() - .5) * 3 | 0); // puffs: 3 rows, widest in the middle
+    px(g, cx + 2, cy - 1, w - 4, 1, '#ffffff'); px(g, cx, cy, w, 1, '#fff6f0'); px(g, cx + 1, cy + 1, w - 2, 1, '#f6d6e0'); px(g, cx + 2, cy + 2, w - 4, 1, '#e7b3cf'); } };
+  cloud(10, 18, 4); cloud(34, 12, 4); cloud(54, 22, 4); cloud(22, 30, 3); cloud(46, 34, 3); cloud(4, 38, 3);
+}, 30);
+skyT.wrapT = THREE.ClampToEdgeWrapping;
+function makeSky() {
+  const m = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { map: { value: skyT }, uO: { value: new THREE.Vector2(.2, 0) } },
+    vertexShader: 'varying vec2 u; void main(){ u = uv; gl_Position = vec4(position.xy, 1., 1.); }',
+    fragmentShader: 'uniform sampler2D map; uniform vec2 uO; varying vec2 u; void main(){ gl_FragColor = vec4(texture2D(map, vec2(u.x * 1.25 + uO.x, clamp(u.y * .62 + .3 + uO.y, 0., 1.))).rgb, 1.); }' });
+  const o = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), m); o.frustumCulled = false; o.renderOrder = -10; o.userData.m = m; return o;
+}
+function makeYard() {
+  const g = new THREE.Group();
+  const add = (p, geo, m, x = 0, y = 0, z = 0, ry = 0) => { const o = new THREE.Mesh(geo.build(), m); o.frustumCulled = false; o.position.set(x, y, z); o.rotation.y = ry; p.add(o); return o; };
+  const mG = mat({ map: grassT }), mS = mat({ map: strataT, fog: 0 }), mW = mat({ map: woodT, affine: .5 }), mH = mat({ map: wallT }), mR = mat({ map: roofT }), mL = mat({ map: leafT, affine: .5 }),
+    mC = mat({ map: canT, affine: .5 }), mD = mat({ map: lidT }), mWin = mat({ map: winT, em: .9, fog: .3 }), mB = mat({ color: 0x6f4a30 }), mP = mat({ color: 0x46404e }), mDirt = mat({ map: dirtT }), mSod = mat({ map: sodUnderT });
+  const ground = (x0, x1, z0, z1, n, k) => { const q = new Geo(); for (let i = 0; i < n; i++) for (let j = 0; j < k; j++) { const a = x0 + (x1 - x0) * i / n, b = x0 + (x1 - x0) * (i + 1) / n, c = z0 + (z1 - z0) * j / k, d = z0 + (z1 - z0) * (j + 1) / k; q.quad([a, 0, d], [b, 0, d], [b, 0, c], [a, 0, c], [a / 2, -d / 2], [b / 2, -d / 2], [b / 2, -c / 2], [a / 2, -c / 2]); } return q; };
+  // ground behind the cut, the painted cut face, and the front slab that drops away
+  add(g, ground(-14, 14, -16, 0, 14, 8), mG);
+  const faceQ = new Geo(); for (let i = 0; i < 10; i++) { const a = -10 + i * 2, b = a + 2; faceQ.quad([a, -3.2, 0], [b, -3.2, 0], [b, 0, 0], [a, 0, 0], [a / 3.2, 0], [b / 3.2, 0], [b / 3.2, 1], [a / 3.2, 1]); }
+  add(g, faceQ, mS);
+  const front = new THREE.Group(); g.add(front); add(front, ground(-14, 14, 0, 9, 14, 5), mG);
+  // torn-up turf on the front slab: bare dirt and flipped-over strips of sod
+  for (const [x, z, w, d, a] of [[-1.05, .7, .5, .32, .3], [.95, 1.1, .55, .34, -.25], [.05, 1.9, .45, .3, .6]]) {
+    const o = add(front, new Geo().quad([-w / 2, .012, d / 2], [w / 2, .012, d / 2], [w / 2, .012, -d / 2], [-w / 2, .012, -d / 2]), mDirt, x, 0, z, a);
+    const flap = new THREE.Group(); flap.position.set(0, .012, -d / 2); flap.rotation.x = -2.75; o.add(flap);
+    add(flap, new Geo().quad([-w / 2, 0, 0], [w / 2, 0, 0], [w / 2, 0, d], [-w / 2, 0, d]), mSod); add(flap, new Geo().quad([-w / 2, .02, d], [w / 2, .02, d], [w / 2, .02, 0], [-w / 2, .02, 0]), mG);
+  }
+  // fence planks
+  for (let i = -13; i <= 13; i++) add(g, new Geo().hexa((a, b, c) => [a * .26, b > 0 ? 1.5 : 0, c * .05]).tri([-.26, 1.5, .05], [.26, 1.5, .05], [0, 1.78, .05], [0, 0], [1, 0], [.5, .2]), mW, i * .62, (i * 37 % 5) * .02, -4.4);
+  add(g, new Geo().box(17, .14, .1, 0, 1.1, -4.34), mW); add(g, new Geo().box(17, .14, .1, 0, .45, -4.34), mW);
+  // house with lit windows and shingles
+  const house = new THREE.Group(); house.position.set(-6.4, 0, -12); house.rotation.y = .5; g.add(house);
+  add(house, new Geo().box(6, 3.6, 4.4, 0, 1.8, 0, { all: [0, 0, 3, 2] }), mH);
+  add(house, new Geo().quad([-3.4, 3.5, 2.6], [3.4, 3.5, 2.6], [3.4, 5.6, 0], [-3.4, 5.6, 0], [0, 0], [3, 0], [3, 1.4], [0, 1.4]).quad([3.4, 3.5, -2.6], [-3.4, 3.5, -2.6], [-3.4, 5.6, 0], [3.4, 5.6, 0], [0, 0], [3, 0], [3, 1.4], [0, 1.4]).tri([3, 3.5, 2.2], [3, 3.5, -2.2], [3, 5.3, 0]).tri([-3, 3.5, -2.2], [-3, 3.5, 2.2], [-3, 5.3, 0]), mR);
+  for (const x of [-1.7, 1.3]) add(house, new Geo().box(1.2, 1.3, .1, x, 2.1, 2.24), mWin);
+  add(house, new Geo().box(.6, 1.4, .6, 1.6, 5.4, -.4), mB);
+  // cone trees
+  const trees = [];
+  const tree = (x, z, s, r) => { const t = new THREE.Group(); t.position.set(x, 0, z); t.scale.setScalar(s); t.rotation.y = r; g.add(t); add(t, new Geo().loft([{ y: 0, rx: .22, rz: .22 }, { y: 1.1, rx: .16, rz: .16 }], 5), mB); for (const [y, a, h] of [[.8, 1.5, 1.7], [1.9, 1.15, 1.5], [2.9, .8, 1.5]]) add(t, new Geo().loft([{ y, rx: a, rz: a }, { y: y + h, rx: .02, rz: .02 }], 6, { cap1: false }), mL); trees.push(t); };
+  tree(4.4, -8, 1.15, .3); tree(6.6, -10.5, 1.4, 1); tree(3.4, -14, 1.2, .7); tree(-9.5, -8, 1.4, .2); tree(-1.6, -16, 1.0, .1); tree(8.2, -6.2, 1.1, .5);
+  const hill = new Geo(); for (let i = -9; i < 9; i++) { const a = i * 3.2, b = a + 3.2, f = (q) => 1.8 + 1.3 * Math.sin(q * .7) + .8 * Math.sin(q * 1.9 + 1); hill.quad([a, -.2, -24], [b, -.2, -24], [b, f(i + 1), -24], [a, f(i), -24]); } add(g, hill, mat({ color: 0x8f86c8, em: .75, fog: .4 }));
+  const pole = new THREE.Group(); pole.position.set(3.2, 0, -5.4); g.add(pole); add(pole, new Geo().box(.16, 6, .16, 0, 3, 0), mP); add(pole, new Geo().box(1.5, .12, .12, 0, 5.3, 0), mP);
+  const wires = new Geo(); for (const x0 of [-.6, .6]) for (let i = 0; i < 8; i++) { const f = (u) => [x0 - u * 13, 5.3 - Math.sin(u * Math.PI) * .9 + u * .4, u * -1.2], a = f(i / 8), b = f((i + 1) / 8); wires.quad([a[0], a[1] - .03, a[2]], [b[0], b[1] - .03, b[2]], [b[0], b[1] + .03, b[2]], [a[0], a[1] + .03, a[2]]); } add(pole, wires, mP);
+  // trash cans (one knocked over, obviously)
+  const cans = [];
+  const can = (x, z, ry, tipped) => { const t = new THREE.Group(); t.position.set(x, 0, z); t.rotation.y = ry; g.add(t); const b = new THREE.Group(); t.add(b); if (tipped) { b.rotation.z = Math.PI / 2; b.position.set(.42, .36, 0); }
+    add(b, new Geo().loft([{ y: 0, rx: .34, rz: .34 }, { y: .86, rx: .40, rz: .40 }], 8, { cap1: false }), mC);
+    const lid = new THREE.Group(); if (tipped) { lid.position.set(-.5, .05, .55); lid.rotation.set(-.08, 0, .1); t.add(lid); } else { lid.position.y = .88; b.add(lid); }
+    add(lid, new Geo().loft([{ y: -.03, rx: .45, rz: .45 }, { y: .05, rx: .42, rz: .42 }, { y: .13, rx: .12, rz: .12 }], 8), mD); add(lid, new Geo().box(.2, .07, .06, 0, .17, 0), mP); cans.push({ t, lid }); };
+  can(-1.7, -1.9, .3); can(-2.7, -2.3, 1); can(1.9, -2.0, .6, true);
+  return { g, front, cans, trees };
+}
+function makeShadow() {
+  const c = tex(32, 32, (g) => { for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) { const d = Math.hypot(x - 15.5, y - 15.5) / 16; if (d < 1) px(g, x, y, 1, 1, `rgba(0,0,0,${d < .6 ? 1 : 0})`); } });
+  const m = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, uniforms: { map: { value: c } },
+    vertexShader: 'varying vec2 u; void main(){ u = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
+    fragmentShader: 'uniform sampler2D map; varying vec2 u; void main(){ if (texture2D(map, u).a < .5) discard; gl_FragColor = vec4(.24, .22, .22, .45); }' });
+  const o = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.0).rotateX(-Math.PI / 2), m); o.position.y = .015; o.renderOrder = 2; return o;
+}
+
+// ============================================================ the script
+// One sentence = one new pose. *word = the stressed word: the pose lands on it and the head nods. ^word = a nod only.
+// ev: something that happens on that sentence's stressed word.
+const SCRIPT = [
+  { text: 'Why is your lawn *torn up every ^morning?', face: 'wide', pose: { lz: 1.0, rz_: 1.0, le: -1.0, re: -1.0, lx: -.5, rx_: -.5, hz: .1, side: .04 } },
+  { text: 'Okay. That was *me.', face: 'smug', pose: { rx_: -1.0, rz_: -.35, re: -1.9, lz: .25, le: -.3, hx: -.08, hz: -.1, lean: -.05 } },
+  { text: 'But I had a ^really good *reason.', face: 'happy', pose: { rx_: -2.7, rz_: .35, re: -.4, lz: .75, le: -1.6, lx: .1, side: .08, hz: -.06 } },
+  { text: 'Look *under the grass.', face: 'wide', ev: 'cut', pose: { lx: -.55, rx_: -.55, le: -.25, re: -.25, lz: .2, rz_: .2, lean: .12, hx: .32 } },
+  { text: 'Beetle *grubs live right ^here.', face: 'open', pose: { rx_: -.35, rz_: .5, re: -.05, lz: .7, le: -1.6, lean: .1, hx: .3, hy: -.15, tw: -.1 } },
+  { text: 'They eat your grass from the *roots up.', face: 'cross', ev: 'slice', pose: { lx: -1.15, rx_: -1.15, le: -1.7, re: -1.7, lz: -.25, rz_: -.25, hx: .12, hz: .08, side: -.04 } },
+  { text: 'So the grass ^dies, and peels back like a *carpet.', face: 'open', pose: { lz: 1.35, rz_: 1.35, le: -.1, re: -.1, lx: -.35, rx_: -.35, rl: -.25, hz: -.06 } },
+  { text: 'And I can *smell every grub from up here.', face: 'closed', pose: { lx: .55, rx_: .55, le: -.35, re: -.35, lz: .15, rz_: .15, lean: .18, hx: -.22 } },
+  { text: 'So I\'m *not wrecking your ^lawn.', face: 'wide', ev: 'close', pose: { lx: -1.4, rx_: -1.4, le: -.55, re: -.55, lz: .38, rz_: .38, lean: -.08, hx: -.05 } },
+  { text: 'I\'m doing *free pest ^control.', face: 'smug', pose: { rx_: -1.0, re: -2.0, rz_: -.3, lz: .75, le: -1.6, side: -.08, hz: -.12, hx: -.06 } },
+  { text: 'Fix the grubs, and I\'ll find a *new ^yard.', face: 'happy', wave: true, pose: { rx_: -2.6, rz_: .95, re: -.9, lz: .3, le: -.4, side: .06, hz: .08 } },
+];
+// Word times [start, end] in seconds, one per word, in script order. These are hand-timed at a natural pace;
+// paste the times from your own recording (scripts/words_to_js.py) here and every cue, pose and caption follows.
+const VOICE_TIMES = null;
+
+const sylls = (w) => Math.max(1, (w.toLowerCase().replace(/[^a-z]/g, '').replace(/e$/, '').match(/[aeiouy]+/g) || []).length);
+const WORDS = []; // { s, e, text, syl, stress: 0|1|2, sent, amp[] }
+const SENT = [];
+{
+  const r = rnd(77); let t = .35;
+  SCRIPT.forEach((S, si) => {
+    const sent = { ...S, words: [] };
+    for (const raw of S.text.split(' ')) {
+      const stress = raw[0] === '*' ? 2 : raw[0] === '^' ? 1 : 0, text = raw.replace(/^[*^]/, ''), syl = sylls(text);
+      const d = (.13 + .12 * syl) * (stress === 2 ? 1.25 : stress ? 1.1 : 1);
+      const w = { s: t, e: t + d, text, syl, stress, sent: si, amp: Array.from({ length: syl }, () => .45 + .55 * r()) };
+      const last = raw === S.text.split(' ').pop();
+      t += d + .05 + (/,$/.test(text) ? .18 : 0) + (/[.?]$/.test(text) && !last ? .3 : 0);
+      WORDS.push(w); sent.words.push(w);
+    }
+    t += .42; SENT.push(sent);
+  });
+  if (VOICE_TIMES) VOICE_TIMES.forEach(([s, e], i) => { if (WORDS[i]) { WORDS[i].s = s; WORDS[i].e = e; } });
+  for (const S of SENT) { S.hit = (S.words.find((w) => w.stress === 2) || S.words[0]).s; S.start = S.words[0].s; S.end = S.words[S.words.length - 1].e; }
+}
+const END = Math.ceil((WORDS[WORDS.length - 1].e + 1.3) * 30) / 30;
+const evAt = (k) => SENT.find((S) => S.ev === k);
+const T_CUT = evAt('cut').hit, T_SLICE = evAt('slice').hit, T_CLOSE = evAt('close').start, T_SHUT = evAt('close').words.find((w) => w.stress === 1).s;
+
+// ============================================================ scene
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(34, W / H, .1, 80);
+const sky = makeSky(); scene.add(sky); const yard = makeYard(); scene.add(yard.g);
+const coon = makeRaccoon(); scene.add(coon.root);
+const shadow = makeShadow(); scene.add(shadow);
+const GRUB_POS = new THREE.Vector3(.42, -.42, .16);
+const grubW = makeGrub(0), grubL = makeGrub(-1), grubR = makeGrub(1), roots = makeRoots();
+const grubPivot = new THREE.Group(); grubPivot.position.copy(GRUB_POS); scene.add(grubPivot);
+for (const gq of [grubW, grubL, grubR]) grubPivot.add(gq.root); grubPivot.add(roots); roots.position.set(0, -GR, 0);
+console.log(`raccoon: ${coon.tris} triangles · length ${END.toFixed(2)} s · ${WORDS.length} words`);
+
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x)), smooth = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
+const overshoot = (x) => { x = clamp(x) - 1; return 1 + x * x * (2.7 * x + 1.7); }; // fast in, ~10% past, settle
+const lerp = (a, b, k) => a + (b - a) * k, lerp3 = (a, b, k) => a.map((v, i) => lerp(v, b[i], k));
+const mixPose = (a, b, k) => { const o = { ...a }; for (const q in b) o[q] = typeof b[q] === 'number' ? (a[q] ?? REST[q]) + (b[q] - (a[q] ?? REST[q])) * k : (k > .5 ? b[q] : a[q]); return o; };
+
+// seeded idle life: blinks and ear flicks
+const BLINKS = [], FLICKS = []; { const r = rnd(9); for (let t = 1.1; t < END; t += 1.8 + r() * 2.2) BLINKS.push(t); for (let t = .7; t < END; t += 1.2 + r() * 2) FLICKS.push([t, r() < .5 ? 'eL' : 'eR']); }
+const hump = (k, d) => (k >= 0 && k < d ? Math.sin(Math.PI * k / d) : 0);
+
+function mouth(t) { // jaw follows the syllables of the word being spoken
+  const w = WORDS.find((x) => t >= x.s && t < x.e); if (!w) return .03;
+  const ph = (t - w.s) / (w.e - w.s) * w.syl, i = Math.min(w.syl - 1, ph | 0), f = ph - i;
+  return .1 + w.amp[i] * (w.stress === 2 ? 1 : .8) * Math.pow(Math.sin(Math.PI * f), .6);
+}
+function poseAt(t) {
+  const LEAD = .14, DUR = .26; // start the move just before the stressed word, so the overshoot lands on it
+  let i = -1; for (let k = 0; k < SENT.length; k++) if (t >= SENT[k].hit - LEAD) i = k;
+  const P = (k) => (k < 0 ? { face: 'open' } : { face: SENT[k].face, ...SENT[k].pose });
+  let q = i < 0 ? { ...REST } : mixPose({ ...REST, ...P(i - 1) }, { ...REST, ...P(i) }, overshoot((t - SENT[i].hit + LEAD) / DUR));
+  if (i >= 0 && SENT[i].wave) q.rz_ += .32 * Math.sin((t - SENT[i].hit) * 13) * smooth((t - SENT[i].hit) / .2);
+  // head nods on stressed words
+  let nod = 0; for (const w of WORDS) if (w.stress) nod += (w.stress === 2 ? .16 : .1) * hump(t - w.s + .03, .38);
+  // always moving: breath, tail, ears, a slow head drift, blinks
+  q.hx += nod; q.hz += Math.sin(t * 1.4) * .04; q.hy += Math.sin(t * .9 + 1) * .05;
+  q.sq = 1 + .014 * Math.sin(t * Math.PI * 2 / 2.4); q.hip -= .008 * (1 + Math.sin(t * Math.PI * 2 / 2.4));
+  q.tail = Math.sin(t * Math.PI * 1.1) * .85 + .15 * Math.sin(t * 3.7); q.tl = .5 + .25 * Math.sin(t * 1.3);
+  q.ear = .05 * Math.sin(t * 2.1); for (const [ft, k] of FLICKS) q[k] = (q[k] || 0) - .55 * hump(t - ft, .22);
+  if (BLINKS.some((b) => t >= b && t < b + .11) && ['open', 'wide', 'smug', 'cross'].includes(q.face)) q.face = 'closed';
+  q.jaw = mouth(t);
+  return q;
+}
+
+// ============================================================ captions & label, drawn at 270x480 and scaled 4x like the picture
+const cap = document.createElement('canvas'); cap.width = LW; cap.height = LH; const cg = cap.getContext('2d', { willReadFrequently: true });
+const FONT = '"Arial Black", "Arial Rounded MT Bold", "Trebuchet MS", "DejaVu Sans", "Verdana", sans-serif', INK = [26, 19, 32], PAL = [INK, [255, 255, 255], [255, 210, 63]];
+function chunky(text, x, y, size, fill, ow) {
+  cg.font = `900 ${size}px ${FONT}`; const w = cg.measureText(text).width; if (w > LW - 24) { size = Math.floor(size * (LW - 24) / w); cg.font = `900 ${size}px ${FONT}`; }
+  cg.textAlign = 'center'; cg.textBaseline = 'middle'; cg.lineJoin = 'round'; cg.lineWidth = ow; cg.strokeStyle = `rgb(${INK})`; cg.strokeText(text, x, y); cg.fillStyle = fill; cg.fillText(text, x, y);
+}
+function crunch() { // hard alpha + snap every pixel to the caption palette: no anti-aliasing survives
+  const d = cg.getImageData(0, 0, LW, LH), a = d.data;
+  for (let i = 0; i < a.length; i += 4) { if (a[i + 3] < 120) { a[i + 3] = 0; continue; } let best = 0, bd = 1e9; for (let k = 0; k < PAL.length; k++) { const p = PAL[k], dd = (a[i] - p[0]) ** 2 + (a[i + 1] - p[1]) ** 2 + (a[i + 2] - p[2]) ** 2; if (dd < bd) { bd = dd; best = k; } } a[i] = PAL[best][0]; a[i + 1] = PAL[best][1]; a[i + 2] = PAL[best][2]; a[i + 3] = 255; }
+  cg.putImageData(d, 0, 0);
+}
+const v3 = new THREE.Vector3();
+function overlay(t, labelK) {
+  cg.clearRect(0, 0, LW, LH); let any = false;
+  // the one label, in yellow
+  if (labelK > 0) {
+    v3.set(0, 0, .05).applyMatrix4(roots.matrixWorld).project(cam); const tx = Math.round((v3.x * .5 + .5) * LW), ty = Math.round((-v3.y * .5 + .5) * LH);
+    const lx = tx - 92, ly = ty - 24, k = smooth(labelK / .12), ax = lx + 30, ay = ly + 8, ex = Math.round(lerp(ax, tx - 4, k)), ey = Math.round(lerp(ay, ty + 2, k));
+    cg.lineCap = 'round'; cg.strokeStyle = `rgb(${INK})`; cg.lineWidth = 5; cg.beginPath(); cg.moveTo(ax, ay); cg.lineTo(ex, ey); cg.stroke();
+    cg.strokeStyle = 'rgb(255,210,63)'; cg.lineWidth = 2; cg.beginPath(); cg.moveTo(ax, ay); cg.lineTo(ex, ey); cg.stroke();
+    if (k > .95) { cg.fillStyle = `rgb(${INK})`; cg.fillRect(tx - 4, ty - 1, 6, 6); cg.fillStyle = 'rgb(255,210,63)'; cg.fillRect(tx - 3, ty, 4, 4); }
+    chunky('ROOTS', lx, ly + 4, Math.round(22 * (1 + .3 * (1 - smooth(labelK / .1)))), 'rgb(255,210,63)', 6); any = true;
+  }
+  // captions: one word at a time, timed to the voice
+  let w = null; for (const x of WORDS) if (t >= x.s) w = x; const next = w && WORDS[WORDS.indexOf(w) + 1];
+  if (w && t < Math.min(w.e + .35, next ? next.s : 1e9)) {
+    const k = t - w.s, size = Math.round((w.stress === 2 ? 36 : 31) * (1 + .22 * (1 - smooth(k / .08))));
+    chunky(w.text.replace(/[.,!]+$/, '').toUpperCase(), LW / 2, 404 - Math.round(3 * (1 - smooth(k / .08))), size, 'rgb(255,255,255)', 7); any = true;
+  }
+  if (!any) return; crunch(); ctx.imageSmoothingEnabled = false; ctx.drawImage(cap, 0, 0, W, H);
+}
+
+// ============================================================ the frame
+function drawFrame(t) {
+  t = clamp(t, 0, END);
+  const q = poseAt(t); coon.pose({ ...q, x: -.2, z: -.42 }); shadow.position.set(-.2, .015, -.42);
+  // the cut: the front of the ground drops away to show the layers; then the grub opens like a book
+  const cutA = clamp((t - T_CUT + .05) / .55), shut = smooth((t - T_SHUT) / .5), drop = cutA * cutA * (1 - shut); // falls, later rises back
+  yard.front.position.y = -6 * drop; yard.front.visible = drop < .99;
+  const view = smooth((t - T_CUT + .05) / .7) * (1 - smooth((t - T_SHUT) / .7));            // camera framing for the cutaway
+  const openG = t < T_SLICE - .08 ? 0 : overshoot((t - T_SLICE + .08) / .3) * (1 - smooth((t - T_CLOSE) / .25));
+  const sliced = openG > .01, grubOn = cutA > 0 && shut < .98;
+  grubPivot.visible = grubOn; grubW.root.visible = !sliced; grubL.root.visible = grubR.root.visible = roots.visible = sliced;
+  grubPivot.rotation.set(0, 0, .06 * Math.sin(t * 3.1)); grubPivot.position.y = GRUB_POS.y + .015 * Math.sin(t * 5.3); // it wriggles
+  for (const gq of [grubL, grubR]) { gq.set('uOpen', .46 * openG); gq.set('uShift', .1 * openG); }
+  // camera: gentle drift; drops and pulls back for the cutaway, leans in on the grub
+  const zoom = smooth((t - T_SLICE) / .6) * (1 - smooth((t - T_CLOSE) / .6));
+  let p = lerp3([0, 1.32, 5.5], [.05, .5, 6.6], view), l = lerp3([0, 1.02, 0], [.02, .3, 0], view);
+  p = lerp3(p, [.14, .4, 6.3], zoom); l = lerp3(l, [.1, .16, 0], zoom);
+  cam.position.set(p[0] + Math.sin(t * Math.PI / 4) * .12, p[1] + Math.sin(t * .9) * .03, p[2]); cam.lookAt(...l); cam.updateMatrixWorld();
+  sky.userData.m.uniforms.uO.value.set(.2 + cam.position.x * .04, -.08 * view);
+  scene.updateMatrixWorld(true);
+  for (const gq of [grubW, grubL, grubR]) { const inv = gq.root.matrixWorld.clone().invert(); for (const m of gq.mats) { m.uniforms.uRoot.value.copy(gq.root.matrixWorld); m.uniforms.uRootI.value.copy(inv); } }
+  shoot(ctx, scene, cam);
+  ctx.fillStyle = 'rgba(10,4,24,.055)'; for (let y = 4; y < H; y += 8) ctx.fillRect(0, y, W, 4); // very light scanlines
+  overlay(t, openG > .85 && t < T_CLOSE ? t - (T_SLICE + .12) : 0);
+}
+
+let auto = true, paused = false, t0 = performance.now(), tp = 0;
+window.drawFrame = (t) => { auto = false; drawFrame(t); };
+window.END = END; window.WORDS = WORDS.map((w) => [w.s, w.e, w.text]);
+window.ready = document.fonts.ready.then(() => { drawFrame(0); });
+cv.addEventListener('click', () => { paused = !paused; if (!paused) t0 = performance.now() - tp * 1000; });
+const loop = () => { if (!auto) return; if (!paused) { tp = ((performance.now() - t0) / 1000) % END; drawFrame(tp); } requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+</script></body></html>
