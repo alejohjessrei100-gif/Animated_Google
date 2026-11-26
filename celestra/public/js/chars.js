@@ -184,9 +184,121 @@ export const CHARS = {
       s3: D({ name: "Stomp Frenzy", skill: 3, ult: true, cd: 900, startup: 25, active: 8, recovery: 22, dmg: 118, hs: 30, bs: 18, kb: [2, -2], stun: 64, box: [-12, -36, 58, 36], stop: 12, vel: [[4, 28, 3.1]], hook: "leap", anim: "stomp", sfx: "slam", heavy: true, desc: "Leaping overhead stomp + ground stomps — STUNS and refreshes Sole Barrage." }),
     },
   },
+  // ======== Original Batch 30 fighters, rebuilt for the 1 + 3 kit ========
+  apsay: {
+    id: "apsay", name: "APSAY", title: "Teleport Rushdown", color: "#b56bff",
+    hp: 960, walk: 2.0, back: 1.7, jump: 6.5, scale: 0.98, hurtH: 67, dashMul: 1.2,
+    voice: "am_puck",
+    look: { skin: "#e3b796", hair: "#1b161d", hairStyle: "spike", top: "#5a32a3", top2: "#b56bff", bottom: "#1d2233", shoes: "#edeff7", accent: "#b56bff", prop: "none", bodyW: 7 },
+    passive: { name: "Afterimage", desc: "Dashes are 20% faster and pass through projectiles." },
+    basic: ["b1", "b2", "b3"], air: "air",
+    moves: {
+      b1: jab({ name: "Snap Jab", startup: 4, recovery: 8, dmg: 26 }),
+      b2: cross({ name: "Snap Kick", anim: "kick", sfx: "kick", box: [8, -54, 30, 16] }),
+      b3: fin({ name: "Rising Heel", anim: "highkick", sfx: "kick", lvl: "H", box: [6, -72, 32, 20], dmg: 50 }),
+      air: air({ name: "Dive Heel" }),
+      s1: D({ name: "Apsay Punch", skill: 1, cd: 450, startup: 18, active: 4, recovery: 20, dmg: 72, hs: 24, kb: [5, -1], box: [4, -62, 32, 22], stop: 8, hook: "teleport", tpAt: 9, anim: "tppunch", sfx: "heavy", heavy: true, desc: "Vanishes and reappears BEHIND the foe for a cross-up punch." }),
+      s2: D({ name: "Shadow Step", skill: 2, cd: 420, startup: 14, active: 5, recovery: 22, dmg: 56, hs: 40, kb: [1.5, -7], launch: true, box: [2, -72, 28, 52], stop: 8, hook: "teleport", tpAt: 7, tpBack: -30, anim: "uppercut", sfx: "kick", desc: "Teleports IN FRONT of the foe into a rising launcher." }),
+      s3: D({ name: "Phantom Barrage", skill: 3, ult: true, cd: 960, startup: 18, active: 28, recovery: 20, dmg: 24, hs: 20, kb: [0.8, 0], rehit: 5, maxHits: 5, finalKb: [5, -6.5], box: [4, -64, 34, 40], stop: 4, hook: "teleport", tpAt: 9, anim: "barrage", sfx: "punch", desc: "Teleports behind and unloads a 5-hit phantom flurry." }),
+    },
+  },
+
+  dap: {
+    id: "dap", name: "DAP", title: "Heavy Dive Bruiser", color: "#ff5a6a",
+    hp: 1060, walk: 1.55, back: 1.3, jump: 5.9, scale: 0.94, hurtH: 65,
+    voice: "af_nicole",
+    look: { skin: "#d8a37c", hair: "#211917", hairStyle: "bun", top: "#d63848", top2: "#ff7a33", bottom: "#252b3b", shoes: "#222530", accent: "#ff7a33", prop: "none", bodyW: 9 },
+    passive: { name: "Thick Skin", desc: "Takes 10% less damage from everything." },
+    basic: ["b1", "b2", "b3"], air: "air",
+    moves: {
+      b1: jab({ name: "Bruiser Jab", dmg: 32, startup: 6 }),
+      b2: cross({ name: "Gut Check", dmg: 36, startup: 7 }),
+      b3: fin({ name: "Heavy Haymaker", dmg: 64, startup: 12, kb: [7, -1] }),
+      air: air({ name: "Belly Drop", anim: "airknee" }),
+      s1: D({ name: "DAP Kick", skill: 1, cd: 450, startup: 14, active: 14, recovery: 22, dmg: 110, hs: 28, bs: 20, kb: [9, -2], wallBounce: true, stun: 80, box: [0, -56, 40, 30], stop: 12, vel: [[12, 27, 5.8]], anim: "dropkick", sfx: "heavy", heavy: true, desc: "Two-legged flying dropkick: wall bounce + STUN." }),
+      s2: D({ name: "Belly Uppercut", skill: 2, cd: 420, startup: 10, active: 6, recovery: 22, dmg: 70, hs: 40, kb: [1.5, -7.5], launch: true, box: [4, -76, 28, 54], stop: 9, anim: "uppercut", sfx: "heavy", heavy: true, desc: "Huge launcher uppercut." }),
+      s3: D({ name: "Bulldozer Dive", skill: 3, ult: true, cd: 1020, startup: 16, active: 16, recovery: 26, dmg: 150, hs: 40, bs: 22, kb: [12, -6], launch: true, wallBounce: true, armor: [1, 32], box: [0, -60, 34, 48], stop: 15, vel: [[14, 32, 6.6]], anim: "shoulder", sfx: "slam", heavy: true, desc: "ARMORED full-body dive across the stage — massive launch." }),
+    },
+  },
+
+  jog: {
+    id: "jog", name: "JOG", title: "Chair Lockdown", color: "#60d7ff",
+    hp: 1020, walk: 1.65, back: 1.45, jump: 6.0, scale: 1.04, hurtH: 70,
+    voice: "bm_george",
+    look: { skin: "#d9b08c", hair: "#a9b2c2", hairStyle: "neat", top: "#3e4b63", top2: "#60d7ff", bottom: "#1b1f2a", shoes: "#18181f", accent: "#60d7ff", prop: "chair", bodyW: 7 },
+    passive: { name: "Detention", desc: "SILENCED foes (can't use skills) take +15% damage from JOG." },
+    basic: ["b1", "b2", "b3"], air: "air",
+    moves: {
+      b1: jab({ name: "Stern Backhand", anim: "backhand" }),
+      b2: cross({ name: "Grumpy Side Kick", anim: "kick", sfx: "kick", box: [8, -54, 34, 16] }),
+      b3: fin({ name: "Cane Sweep", anim: "sweep", sfx: "kick", lvl: "L", box: [6, -16, 40, 16], dmg: 48, kb: [3, -3], kd: true }),
+      air: air({ name: "Chair Drop", anim: "airbat", sfx: "bat" }),
+      s1: D({ name: "JOG Smash: Encore", skill: 1, cd: 480, startup: 13, active: 6, recovery: 24, dmg: 64, hs: 40, kb: [1.5, 0], box: [6, -70, 44, 50], stop: 9, followup: "s1b", anim: "chairover", sfx: "heavybat", heavy: true, desc: "Folding-chair smash. Press S1 again on hit for Hit 2: SILENCE (5s)." }),
+      s1b: D({ name: "JOG Smash: Silence", startup: 9, active: 6, recovery: 22, dmg: 80, hs: 28, kb: [9, -4], wallBounce: true, box: [6, -66, 46, 40], stop: 12, fx: { silence: 300 }, anim: "chairswing", sfx: "heavybat", heavy: true }),
+      s2: D({ name: "Detention Grab", skill: 2, cd: 480, startup: 7, active: 3, recovery: 28, dmg: 92, hs: 34, kb: [5, -4], kd: true, unblock: true, box: [6, -62, 24, 52], stop: 10, anim: "push", sfx: "slam", desc: "UNBLOCKABLE short-range grab & slam (beats guarding)." }),
+      s3: D({ name: "Pop Quiz", skill: 3, ult: true, kind: "cast", cd: 960, startup: 18, active: 1, recovery: 22, hook: "quiz", anim: "cast2", sfx: "slam", desc: "Slams the desk: foes within range take damage, are SILENCED (4s) and SLOWED." }),
+      quizHit: D({ name: "Pop Quiz", dmg: 60, hs: 30, kb: [3, -4], launch: true, stop: 12, fx: { silence: 240, slow: 240 }, sfx: "slam", unblock: true, heavy: true }),
+    },
+  },
+
+  jaguilar: {
+    id: "jaguilar", name: "JAGUILAR", title: "Laptop DoT Specialist", color: "#32f0ff",
+    hp: 990, walk: 1.8, back: 1.5, jump: 6.2, scale: 1.06, hurtH: 71,
+    voice: "am_adam",
+    look: { skin: "#dfb594", hair: "#1d1c24", hairStyle: "neat", top: "#1f5a78", top2: "#32f0ff", bottom: "#232631", shoes: "#d8dce6", accent: "#32f0ff", prop: "laptop", bodyW: 7 },
+    passive: { name: "Firewall", desc: "Immune to BURN and BLIND." },
+    basic: ["b1", "b2", "b3"], air: "air",
+    moves: {
+      b1: jab({ name: "Keycap Jab" }),
+      b2: cross({ name: "Trackpad Poke", box: [8, -58, 32, 14] }),
+      b3: fin({ name: "Laptop Bash", anim: "batswing", sfx: "bat", box: [6, -64, 40, 26], dmg: 54 }),
+      air: air({ name: "Lid Slam", anim: "airslash", sfx: "bat" }),
+      s1: D({ name: "Vein Cut", skill: 1, cd: 330, startup: 11, active: 6, recovery: 18, dmg: 70, hs: 24, kb: [5, -2], box: [6, -64, 52, 30], stop: 8, fx: { bleed: 2 }, anim: "slashA", sfx: "slash", desc: "Long laptop-edge slash — +2 BLEED." }),
+      s2: D({ name: "Blue Screen", skill: 2, kind: "proj", cd: 480, startup: 11, active: 1, recovery: 16, anim: "throw", sfx: "disc",
+        proj: [{ at: 11, kind: "bsod", vx: 5, y: -56, w: 14, h: 12, life: 110, dmg: 44, hs: 18, kb: [2, 0], lvl: "M", stop: 4, fx: { blind: 210 } }],
+        desc: "Throws a crash window — BLINDS the foe (-30% dmg) for 3.5s." }),
+      s3: D({ name: "Overclock Beam", skill: 3, ult: true, cd: 960, startup: 16, active: 18, recovery: 22, dmg: 34, hs: 22, kb: [1, 0], rehit: 4, maxHits: 4, finalKb: [8, -3], box: [12, -64, 190, 20], stop: 5, fx: { bleed: 1 }, anim: "beam", sfx: "gravity", desc: "Full-screen laptop laser — 4 hits, each +1 BLEED." }),
+    },
+  },
+
+  paulite: {
+    id: "paulite", name: "PAULITE", title: "Body-Slam Debuff Tank", color: "#ffd24c",
+    hp: 1100, walk: 1.45, back: 1.2, jump: 5.6, scale: 0.86, hurtH: 60,
+    voice: "am_santa",
+    look: { skin: "#6d4534", hair: "#171418", hairStyle: "buzz", top: "#e09f2d", top2: "#ffd24c", bottom: "#2d3b4e", shoes: "#231f20", accent: "#ffd24c", prop: "none", bodyW: 11 },
+    passive: { name: "Bad Jokes", desc: "Every 12s tells a terrible joke: nearby foes get SAD (-25% speed, -20% dmg) for 2s." },
+    basic: ["b1", "b2", "b3"], air: "air",
+    moves: {
+      b1: jab({ name: "Belly Bump", anim: "push", dmg: 30, box: [4, -50, 26, 20] }),
+      b2: cross({ name: "Elbow Wobble", anim: "elbow", dmg: 32 }),
+      b3: fin({ name: "Hip Check", anim: "shoulder", dmg: 60, kb: [7, -1], box: [2, -54, 34, 30] }),
+      air: air({ name: "Cannonball", anim: "airknee" }),
+      s1: D({ name: "Belly Fat Flap", skill: 1, cd: 420, startup: 25, active: 8, recovery: 22, dmg: 98, hs: 30, bs: 18, kb: [3, -3], kd: true, box: [-10, -40, 56, 40], stop: 12, vel: [[4, 28, 2.8]], hook: "leap", anim: "stomp", sfx: "slam", heavy: true, desc: "Leaps and crashes down in a full-body belly slam (overhead)." }),
+      s2: D({ name: "Bad Joke", skill: 2, kind: "cast", cd: 540, startup: 10, active: 1, recovery: 14, hook: "joke", anim: "cast", sfx: "cast", desc: "Tells a joke so bad the foe is SAD for 4s (-25% speed, -20% dmg)." }),
+      s3: D({ name: "Body Slam Tsunami", skill: 3, ult: true, cd: 1020, startup: 14, active: 18, recovery: 26, dmg: 145, hs: 40, bs: 22, kb: [10, -6], launch: true, wallBounce: true, armor: [1, 32], box: [0, -54, 36, 52], stop: 15, vel: [[12, 30, 5.8]], fx: { sad: 240 }, anim: "shoulder", sfx: "slam", heavy: true, desc: "ARMORED belly charge — launches and leaves the foe SAD." }),
+    },
+  },
+
+  johan: {
+    id: "johan", name: "JOHAN BACORRO", title: "Rolling Juggernaut", color: "#65ff6e",
+    hp: 1160, walk: 1.4, back: 1.2, jump: 5.6, scale: 0.92, hurtH: 64,
+    voice: "am_fenrir",
+    look: { skin: "#e7be9e", hair: "#2b2320", hairStyle: "messy", top: "#4e8f52", top2: "#65ff6e", bottom: "#353d4b", shoes: "#2b2b33", accent: "#65ff6e", prop: "none", bodyW: 10 },
+    passive: { name: "Stench Poison", desc: "Toxic aura: foes standing close are POISONED (tick damage)." },
+    basic: ["b1", "b2", "b3"], air: "air",
+    moves: {
+      b1: jab({ name: "Shove", anim: "push", dmg: 30 }),
+      b2: cross({ name: "Shoulder Bump", anim: "shoulder", dmg: 34 }),
+      b3: fin({ name: "Wide Swing", anim: "hook", dmg: 62, kb: [7, -1] }),
+      air: air({ name: "Belly Drop", anim: "airknee" }),
+      s1: D({ name: "Boulder Roll", skill: 1, cd: 420, startup: 10, active: 30, recovery: 20, dmg: 58, hs: 26, kb: [6, -3.5], kd: true, rehit: 12, maxHits: 2, armor: [1, 40], box: [-14, -34, 40, 34], stop: 7, vel: [[10, 40, 5.6]], anim: "roll", sfx: "slam", desc: "Tucks into a spinning boulder with ARMOR and barrels across the stage." }),
+      s2: D({ name: "Stink Cloud", skill: 2, kind: "cast", cd: 540, startup: 12, active: 1, recovery: 14, hook: "stink", anim: "exhale", sfx: "smoke", desc: "Leaves a toxic cloud (4s): foes inside are POISONED and SLOWED." }),
+      s3: D({ name: "Avalanche", skill: 3, ult: true, cd: 1020, startup: 14, active: 44, recovery: 22, dmg: 46, hs: 26, kb: [2, -2], rehit: 8, maxHits: 4, finalKb: [9, -7], wallBounce: true, armor: [1, 58], box: [-16, -40, 46, 40], stop: 7, vel: [[14, 58, 6.8]], fx: { poison: 240 }, anim: "roll", sfx: "slam", heavy: true, desc: "Giant ARMORED boulder rampage — 4 hits, poisons, launches." }),
+    },
+  },
 };
 
-export const ROSTER = ["jiross", "lian", "dumdum", "gayle", "dapsay", "william", "tanoy", "acar"];
+export const ROSTER = ["jiross", "lian", "dumdum", "gayle", "dapsay", "william", "tanoy", "acar", "apsay", "dap", "jog", "jaguilar", "paulite", "johan"];
 
 export function getMove(ref) {
   const i = ref.indexOf(":");
@@ -205,4 +317,13 @@ export const STAGES = [
   { id: "skyline", name: "Celestra Skyline" },
   { id: "arcade", name: "Neon Arcade" },
   { id: "classroom", name: "Batch 30 Classroom" },
+];
+
+export const PAULITE_JOKES = [
+  "Why did the CSS break? No class!",
+  "My code has no bugs, just surprise features!",
+  "I'm on a seafood diet. I see food and crash!",
+  "Batch 30? More like 30 FPS on your main!",
+  "Why did the array break up? Too many arguments!",
+  "You call that a combo? Internet Explorer loads faster!",
 ];

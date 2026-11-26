@@ -22,6 +22,8 @@ Hold back to guard (down-back for lows). Esc pauses, M mutes. Touch controls can
 ## Roster (1 basic + 3 skills each)
 Jiross (Javatar skill-steal, Smack Talk passive) · Lian Angelo (frisbee) · Dumdum (bleed/laceration) · Gayle Monana (softball bat) · DAPSAY (DAP/APSAY stances: DAP buffed with long stun, APSAY nerfed) · William (gravity, "wait class" confusion every 4s) · Tanoy (smoke & burn) · Acar (kicks).
 
+Original Batch 30 fighters, rebuilt in the pixel style: APSAY (teleports) · DAP (dropkick, armored dive) · JOG (chair smash, Silence) · JAGUILAR (laptop bleed, Blue Screen blind) · PAULITE (belly slam, Bad Jokes → Sad) · JOHAN BACORRO (boulder roll, stench poison aura).
+
 ## Architecture
 - `public/js/sim.js`: deterministic 60 fps simulation (no trig or `Math.random`; seeded PRNG), so peers stay bit-identical.
 - `public/js/net.js`: GGPO-style rollback (input delay adapts to ping, prediction, resimulation, time-sync, desync checksums every 120 frames).

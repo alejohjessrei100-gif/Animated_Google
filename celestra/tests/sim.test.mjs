@@ -25,7 +25,7 @@ for (const a of ROSTER) for (const b of ROSTER) {
   assert.equal(hashState(S3), hashState(snap), `clone mismatch ${a} v ${b}`);
   kos += ev1.filter((e) => e.type === "ko").length;
 }
-console.log(`ok determinism: 64 matchups, ${kos} KOs`);
+console.log(`ok determinism: ${ROSTER.length ** 2} matchups, ${kos} KOs`);
 
 // 2) two rollback sessions over a laggy, jittery (out-of-order) fake network must match
 //    a ground-truth replay of the real inputs on every confirmed frame.

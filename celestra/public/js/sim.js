@@ -1,7 +1,7 @@
 // Celestra Chronicles — deterministic fighting simulation.
 // Pure state + inputs -> next state. No Math.sin/random/Date here so that both
 // online peers compute bit-identical results (required for rollback netcode).
-import { CHARS, getMove, PARRY, SMACK_TALK } from "./chars.js";
+import { CHARS, getMove, PARRY, SMACK_TALK, PAULITE_JOKES } from "./chars.js";
 
 export const VIEW_W = 480, VIEW_H = 270, STAGE_W = 768;
 export const B = { L: 1, R: 2, U: 4, D: 8, A: 16, P: 32, S1: 64, S2: 128, S3: 256, DASH: 512 };
@@ -27,8 +27,8 @@ function newFighter(ch, side) {
     hp: c.hp, maxHp: c.hp, st: "intro", t: 0, act: null, stun: 0,
     cd: [0, 0, 0], buf: { A: 0, P: 0, S1: 0, S2: 0, S3: 0, DASH: 0, U: 0 }, prev: 0,
     tapDir: 0, tapT: 0, chainNext: false, combo: 0, juggle: 0, inv: 0, kd: false,
-    sx: { bleed: 0, bleedT: 0, burn: 0, burnT: 0, blind: 0, confuse: 0, slow: 0, rattled: 0, floaty: 0, momentum: 0, counter: 0, smoke: 0 },
-    dizzy: 0, lastSkill: null, stance: "dap", passiveT: ch === "william" ? 240 : 600,
+    sx: { bleed: 0, bleedT: 0, burn: 0, burnT: 0, blind: 0, confuse: 0, slow: 0, rattled: 0, floaty: 0, momentum: 0, counter: 0, smoke: 0, silence: 0, sad: 0, poison: 0, poisonT: 0 },
+    dizzy: 0, lastSkill: null, stance: "dap", passiveT: ch === "william" ? 240 : ch === "paulite" ? 720 : 600,
     armor: 0, flash: 0, sinceHit: 999, wallBounced: false, crouch: false, guard: false, anim: 0,
     stolen: null, talk: null, talkT: 0, wins: 0,
   };
@@ -175,9 +175,39 @@ const HOOKS = {
       if (f.act.t === 4) { f.vy = -4.3; }
       if (f.act.t === 26) { S.shake = Math.max(S.shake, 8); emit(S, { type: "stomp", who: f.side, x: f.x, y: 0 }); }
     },
-    onHit(S, f, op) { f.cd[0] = 0; },
+    onHit(S, f, op) { if (f.act && f.act.ref === "acar:s3") f.cd[0] = 0; },
+  },
+  joke: {
+    frame(S, f, op) {
+      if (f.act.t === 10) tellJoke(S, f, op, 240, 200);
+    },
+  },
+  quiz: {
+    frame(S, f, op) {
+      if (f.act.t === 18) {
+        S.shake = Math.max(S.shake, 10);
+        emit(S, { type: "stomp", who: f.side, x: f.x, y: 0 });
+        emit(S, { type: "quiz", who: f.side, x: f.x });
+        if (Math.abs(op.x - f.x) < 110 && op.y > -60) applyHit(S, f, op, getMove("jog:quizHit"), { zone: true, x: op.x, y: op.y - 40 });
+      }
+    },
+  },
+  stink: {
+    frame(S, f, op) {
+      if (f.act.t === 12) {
+        S.zones.push({ id: S.nextId++, kind: "stink", owner: f.side, x: clamp(f.x + f.face * 40, 20, STAGE_W - 20), y: 0, w: 120, t: 0, life: 240 });
+        emit(S, { type: "zone", kind: "smoke", who: f.side });
+      }
+    },
   },
 };
+
+function tellJoke(S, f, op, sad, range) {
+  const line = Math.floor(rnd(S) * PAULITE_JOKES.length);
+  f.talk = PAULITE_JOKES[line]; f.talkT = 150;
+  emit(S, { type: "joke", who: f.side, line });
+  if (Math.abs(op.x - f.x) < range) { op.sx.sad = Math.max(op.sx.sad, sad); emit(S, { type: "sad", who: op.side }); }
+}
 
 // ---------------- status ----------------
 function applyStun(S, d, frames) {
@@ -196,7 +226,12 @@ function dot(S, d, amount, kind) {
 function addFx(S, d, fx) {
   if (!fx) return;
   if (fx.bleed) { d.sx.bleed = Math.min(6, d.sx.bleed + fx.bleed); d.sx.bleedT = 300; emit(S, { type: "bleed", who: d.side, stacks: d.sx.bleed }); }
-  if (fx.burn) { d.sx.burn = Math.min(3, d.sx.burn + fx.burn); d.sx.burnT = 210; }
+  if (fx.burn && d.ch !== "jaguilar") { d.sx.burn = Math.min(3, d.sx.burn + fx.burn); d.sx.burnT = 210; }
+  if (fx.blind && d.ch !== "jaguilar") d.sx.blind = Math.max(d.sx.blind, fx.blind);
+  if (fx.silence) { d.sx.silence = Math.max(d.sx.silence, fx.silence); emit(S, { type: "silence", who: d.side }); }
+  if (fx.sad) d.sx.sad = Math.max(d.sx.sad, fx.sad);
+  if (fx.slow) d.sx.slow = Math.max(d.sx.slow, fx.slow);
+  if (fx.poison) d.sx.poison = Math.max(d.sx.poison, fx.poison);
 }
 
 // ---------------- hits ----------------
@@ -207,6 +242,7 @@ function applyHit(S, a, d, m, opt = {}) {
   if (d.hp <= 0) return null;
   if (d.inv > 0 || d.st === "down" || d.st === "wake" || d.st === "ko") return null;
   if (d.st === "air" && d.juggle >= 7) return null;
+  if (opt.proj && d.ch === "apsay" && (d.st === "dash" || d.st === "bdash")) return null;
   if (opt.proj && d.act && getMove(d.act.ref).projInv) {
     const [p0, p1] = getMove(d.act.ref).projInv;
     if (d.act.t >= p0 && d.act.t <= p1) return null;
@@ -262,6 +298,9 @@ function applyHit(S, a, d, m, opt = {}) {
   let counter = false;
   if (a.sx.counter > 0) { mult *= 1.25; a.sx.counter = 0; counter = true; }
   if (a.ch === "dapsay" && (d.st === "dizzy" || d.dizzy > 0)) mult *= 1.3;
+  if (a.sx.sad > 0) mult *= 0.8;
+  if (d.ch === "dap") mult *= 0.9;
+  if (a.ch === "jog" && d.sx.silence > 0) mult *= 1.15;
   const dmg = Math.max(1, Math.round(base * mult));
   d.hp -= dmg; d.combo += 1; d.sinceHit = 0; d.flash = 5;
   d.act = null; d.chainNext = false; d.armor = 0;
@@ -402,6 +441,7 @@ function stepFighter(S, f, op, raw) {
 function neutral(S, f, op, raw, fwdBit, backBit, dashReq, cancel) {
   const c = CHARS[f.ch];
   // skills
+  if (f.sx.silence > 0) { f.buf.S1 = f.buf.S2 = f.buf.S3 = 0; }
   for (let i = 3; i >= 1; i--) {
     const k = "S" + i;
     if (f.buf[k] && f.cd[i - 1] <= 0 && grounded(f)) { f.buf[k] = 0; startMove(S, f, op, f.ch + ":s" + i); return; }
@@ -413,7 +453,8 @@ function neutral(S, f, op, raw, fwdBit, backBit, dashReq, cancel) {
     emit(S, { type: "parryStart", who: f.side }); return;
   }
   if (dashReq && grounded(f)) {
-    if (dashReq === fwdBit) { f.st = "dash"; f.vx = f.face * 4.4; } else { f.st = "bdash"; f.vx = -f.face * 3.8; }
+    const dm = c.dashMul || 1;
+    if (dashReq === fwdBit) { f.st = "dash"; f.vx = f.face * 4.4 * dm; } else { f.st = "bdash"; f.vx = -f.face * 3.8 * dm; }
     f.t = 0; emit(S, { type: "dash", who: f.side, back: dashReq !== fwdBit }); return;
   }
   if ((f.buf.U || raw & B.U) && grounded(f)) {
@@ -424,7 +465,7 @@ function neutral(S, f, op, raw, fwdBit, backBit, dashReq, cancel) {
   }
   if (raw & B.D) { f.st = "crouch"; f.crouch = true; f.vx = 0; return; }
   f.crouch = false;
-  const slow = f.sx.slow > 0 ? 0.5 : 1;
+  const slow = (f.sx.slow > 0 ? 0.5 : 1) * (f.sx.sad > 0 ? 0.75 : 1);
   const smoke = f.sx.smoke > 0 ? 1.15 : 1;
   if (raw & fwdBit) { f.st = "walk"; f.vx = f.face * c.walk * slow * smoke; }
   else if (raw & backBit) { f.st = "walk"; f.vx = -f.face * c.back * slow * smoke; }
@@ -460,8 +501,12 @@ function stepAct(S, f, op, raw) {
     startMove(S, f, op, f.ch + ":" + m.chain);
     return;
   }
+  // skill follow-up (e.g. JOG Smash Encore -> Silence)
+  if (m.followup && a.hit && a.t >= activeEnd && f.buf.S1) {
+    f.buf.S1 = 0; startMove(S, f, op, a.ref.split(":")[0] + ":" + m.followup, { free: true }); return;
+  }
   // hit-confirm cancel: basic -> skill
-  if (!m.skill && a.hit && a.t >= activeEnd) {
+  if (!m.skill && a.hit && a.t >= activeEnd && f.sx.silence <= 0) {
     for (let i = 3; i >= 1; i--) {
       if (f.buf["S" + i] && f.cd[i - 1] <= 0) { f.buf["S" + i] = 0; startMove(S, f, op, f.ch + ":s" + i); return; }
     }
@@ -560,8 +605,10 @@ function stepZones(S) {
       }
     } else if (z.kind === "antigrav") {
       if (inside) { tgt.sx.floaty = 2; tgt.sx.slow = 2; if (z.t % 30 === 0) dot(S, tgt, 7, "gravity"); }
+    } else if (z.kind === "stink") {
+      if (inside) { tgt.sx.poison = Math.max(tgt.sx.poison, 40); tgt.sx.slow = 2; }
     } else if (z.kind === "smoke") {
-      if (inside) tgt.sx.blind = 2;
+      if (inside && tgt.ch !== "jaguilar") tgt.sx.blind = 2;
       if (Math.abs(owner.x - z.x) < z.w / 2) owner.sx.smoke = 2;
     }
   }
@@ -612,7 +659,11 @@ function stepProjs(S) {
 // ---------------- status ticks & passives ----------------
 function stepStatus(S, f, op) {
   const s = f.sx;
-  for (const k of ["blind", "confuse", "slow", "rattled", "floaty", "counter", "smoke"]) if (s[k] > 0) s[k]--;
+  for (const k of ["blind", "confuse", "slow", "rattled", "floaty", "counter", "smoke", "silence", "sad"]) if (s[k] > 0) s[k]--;
+  if (s.poison > 0) {
+    s.poison--; s.poisonT++;
+    if (s.poisonT % 30 === 0) dot(S, f, 5, "poison");
+  } else s.poisonT = 0;
   for (let i = 0; i < 3; i++) if (f.cd[i] > 0) f.cd[i]--;
   if (f.sinceHit < 999) f.sinceHit++;
   if (s.bleed > 0) {
@@ -638,6 +689,14 @@ function stepStatus(S, f, op) {
         emit(S, { type: "taunt", who: f.side, line });
       } else f.passiveT = 30;
     }
+  } else if (f.ch === "paulite") {
+    f.passiveT--;
+    if (f.passiveT <= 0) {
+      if (canAct(f) && op.hp > 0) { f.passiveT = 720; tellJoke(S, f, op, 120, 170); }
+      else f.passiveT = 30;
+    }
+  } else if (f.ch === "johan") {
+    if (Math.abs(op.x - f.x) < 58 && op.hp > 0) op.sx.poison = Math.max(op.sx.poison, 30);
   } else if (f.ch === "william") {
     f.passiveT--;
     if (f.passiveT <= 0) {

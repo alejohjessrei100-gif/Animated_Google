@@ -41,7 +41,7 @@ function refreshFocus() { const f = focusables(); f.forEach((b, i) => b.classLis
 
 // ================= title / attract =================
 function startAttract() {
-  const a = ROSTER[Math.floor(Math.random() * 8)], b = ROSTER[Math.floor(Math.random() * 8)];
+  const a = ROSTER[Math.floor(Math.random() * ROSTER.length)], b = ROSTER[Math.floor(Math.random() * ROSTER.length)];
   app.attract = newMatch({ chars: [a, b], seed: (Math.random() * 1e9) | 0, mode: "vs", stage: Math.floor(Math.random() * 3) });
   app.attractAI = [new AI("hard", 0), new AI("hard", 1)];
   R.setStage(STAGES[app.attract.stage].id); R.resetFx();
@@ -92,6 +92,16 @@ ROSTER.forEach((id, i) => {
   b.addEventListener("mouseenter", () => { const p = activePicker(); if (p < 0) return; app.cursor[p] = i; sfx("move"); renderSelect(); });
   grid.appendChild(b);
 });
+const NCELL = ROSTER.length + 1, RANDOM = ROSTER.length, COLS = 5;
+{
+  const b = document.createElement("button");
+  b.className = "cell rnd"; b.dataset.i = RANDOM;
+  b.innerHTML = `<span class="q">?</span><span class="lbl">RANDOM</span>`;
+  b.addEventListener("click", () => { const p = activePicker(); if (p < 0) return; app.cursor[p] = RANDOM; confirmPick(p); });
+  b.addEventListener("mouseenter", () => { const p = activePicker(); if (p < 0) return; app.cursor[p] = RANDOM; sfx("move"); renderSelect(); });
+  grid.appendChild(b);
+}
+const cellId = (i) => (i < ROSTER.length ? ROSTER[i] : null);
 function activePicker() {
   if (app.mode === "online") return app.locked[app.slot] ? -1 : app.slot;
   if (app.mode === "local") return !app.locked[0] ? 0 : !app.locked[1] ? 1 : -1;
@@ -109,6 +119,8 @@ function openSelect() {
   };
   $(".sel-hint").innerHTML = hints[app.mode];
   $("#btnReady").textContent = app.mode === "online" ? "READY" : "FIGHT!";
+  $("#selRoom").classList.toggle("hidden", app.mode !== "online");
+  if (app.mode === "online") $("#selCode").textContent = app.code || "-----";
   show("select");
   if (app.voiceOn) voice("choose");
   renderSelect();
@@ -124,14 +136,17 @@ function kitHTML(id) {
 let selAnim = 0;
 function renderSelect() {
   $$(".cell").forEach((cell, i) => {
-    const hov = [0, 1].filter((p) => app.cursor[p] === i && (app.mode !== "online" || p === app.slot || app.picks[p] === ROSTER[i]));
-    cell.classList.toggle("c1", hov.includes(0) || app.picks[0] === ROSTER[i] && app.locked[0]);
-    cell.classList.toggle("c2", hov.includes(1) || app.picks[1] === ROSTER[i] && app.locked[1]);
+    const hov = [0, 1].filter((p) => app.cursor[p] === i && (app.mode !== "online" || p === app.slot || app.picks[p] === cellId(i)));
+    cell.classList.toggle("c1", hov.includes(0) || !!cellId(i) && app.picks[0] === cellId(i) && app.locked[0]);
+    cell.classList.toggle("c2", hov.includes(1) || !!cellId(i) && app.picks[1] === cellId(i) && app.locked[1]);
   });
   for (const p of [0, 1]) {
     const side = $(p === 0 ? "#select .s1" : "#select .s2");
     let id = app.picks[p];
-    if (!app.locked[p] && (app.mode !== "online" || p === app.slot)) id = ROSTER[app.cursor[p]];
+    if (!app.locked[p] && (app.mode !== "online" || p === app.slot)) {
+      id = cellId(app.cursor[p]);
+      if (!id) { side.querySelector(".cname").textContent = "RANDOM"; side.querySelector(".cname").style.color = "#fff"; side.querySelector(".ctitle").textContent = "Leave it to fate"; side.querySelector(".kitlist").innerHTML = ""; side.dataset.ch = ""; side.querySelector(".big-spr").getContext("2d").clearRect(0, 0, 160, 192); continue; }
+    }
     if (app.mode === "online" && p !== app.slot && !app.room?.players?.[p]) { side.querySelector(".cname").textContent = "WAITING…"; side.querySelector(".ctitle").textContent = "Share the room code"; side.querySelector(".kitlist").innerHTML = ""; side.querySelector(".big-spr").getContext("2d").clearRect(0, 0, 160, 192); side.querySelector(".rdy").classList.add("hidden"); continue; }
     if (!id) { side.querySelector(".cname").textContent = "—"; continue; }
     const c = CHARS[id];
@@ -158,6 +173,7 @@ function animSelect() {
   }
 }
 function confirmPick(p) {
+  if (app.cursor[p] === RANDOM) app.cursor[p] = Math.floor(Math.random() * ROSTER.length);
   const id = ROSTER[app.cursor[p]];
   app.picks[p] = id; sfx("confirm");
   if (app.voiceOn) voice("n_" + id);
@@ -195,8 +211,9 @@ function selectInput() {
       ? { l: local ? ["KeyA"] : ["KeyA", "ArrowLeft"], r: local ? ["KeyD"] : ["KeyD", "ArrowRight"], u: local ? ["KeyW"] : ["KeyW", "ArrowUp"], d: local ? ["KeyS"] : ["KeyS", "ArrowDown"], ok: local ? ["KeyF"] : ["KeyF", "KeyJ", "Enter", "Space"] }
       : { l: ["ArrowLeft"], r: ["ArrowRight"], u: ["ArrowUp"], d: ["ArrowDown"], ok: ["Numpad1", "KeyK", "Enter"] };
     let c = app.cursor[p];
-    if (pk(K.l)) c = (c + 7) % 8; if (pk(K.r)) c = (c + 1) % 8;
-    if (pk(K.u) || pk(K.d)) c = (c + 4) % 8;
+    if (pk(K.l)) c = (c + NCELL - 1) % NCELL; if (pk(K.r)) c = (c + 1) % NCELL;
+    if (pk(K.u)) c = c - COLS < 0 ? c + COLS * Math.floor((NCELL - 1 - c) / COLS) : c - COLS;
+    if (pk(K.d)) c = c + COLS >= NCELL ? c % COLS : c + COLS;
     if (c !== app.cursor[p]) { app.cursor[p] = c; sfx("move"); renderSelect(); }
     if (pk(K.ok)) confirmPick(p);
   }
@@ -221,7 +238,7 @@ function startMatch(chars, stage, seed) {
   buildHud();
   show("fight");
   music("fight");
-  preloadVoices(["round1", "round2", "final", "fight", "ko", "perfect", "parry", "counter", "timeup", "youwin", "youlose", "p1wins", "p2wins", "draw", "doubleko", ...chars.flatMap((c) => [c + "_ult", c + "_win"]), "william_wait", "dapsay_s1", "jiross_t0", "jiross_t1", "jiross_t2", "jiross_t3", "jiross_t4"]);
+  preloadVoices(["round1", "round2", "final", "fight", "ko", "perfect", "parry", "counter", "timeup", "youwin", "youlose", "p1wins", "p2wins", "draw", "doubleko", ...chars.flatMap((c) => [c + "_ult", c + "_win"]), "william_wait", "dapsay_s1", "jiross_t0", "jiross_t1", "jiross_t2", "jiross_t3", "jiross_t4", "dap_s1", "apsay_s1", "jog_s1b", ...(chars.includes("paulite") ? [0, 1, 2, 3, 4, 5].map((n) => "paulite_j" + n) : [])]);
   clearPressed();
 }
 
@@ -274,6 +291,9 @@ function updateHud() {
     if (s.momentum) st.push(["MOMENTUM x" + s.momentum, "#ffcf5a"]);
     if (s.counter) st.push(["COUNTER!", "#7fd3ff"]);
     if (s.smoke) st.push(["HIDDEN", "#8a8a96"]);
+    if (s.silence) st.push(["SILENCED " + Math.ceil(s.silence / 60), "#60d7ff"]);
+    if (s.sad) st.push(["SAD", "#76a9ff"]);
+    if (s.poison) st.push(["POISON", "#65ff6e"]);
     if (f.ch === "dapsay") st.push([f.stance === "dap" ? "DAP STANCE" : "APSAY STANCE", f.stance === "dap" ? "#ff5a6a" : "#b56bff"]);
     const html = st.map(([t, c]) => `<span class="st" style="color:${c}">${t}</span>`).join("");
     if (app.hudCache["st" + i] !== html) { app.hudCache["st" + i] = html; $(`.pl${side} .status`).innerHTML = html; }
@@ -293,6 +313,7 @@ function updateHud() {
       setCls(el, `rdy${i}${n}`, "ready", cd <= 0);
       setCls(el, `cool${i}${n}`, "cool", cd > 0);
       setCls(el, `bl${i}${n}`, "blind", s.blind > 0);
+      setCls(el, `si${i}${n}`, "sil", s.silence > 0);
     }
   }
   const secs = Math.ceil(S.timer / 60);
@@ -331,6 +352,9 @@ function handleEvents(evs, S) {
         sfx(e.ult ? "ult" : "cast");
         if (e.ult && !e.stolen && ch !== "jiross") say(ch + "_ult");
         if (ch === "dapsay" && e.ref === "dapsay:s1") say("dapsay_s1", 800);
+        if (e.ref === "dap:s1") say("dap_s1", 800);
+        if (e.ref === "apsay:s1") say("apsay_s1", 800);
+        if (e.ref === "jog:s1b") say("jog_s1b", 800);
         break;
       }
       case "javatar": say("jiross_ult"); break;
@@ -348,6 +372,9 @@ function handleEvents(evs, S) {
       case "armor": sfx("block"); break;
       case "taunt": say("jiross_t" + e.line); break;
       case "waitclass": say("william_wait"); break;
+      case "joke": say("paulite_j" + e.line); break;
+      case "silence": sfx("stun"); break;
+      case "sad": sfx("dot"); break;
       case "detonate": sfx("heavyslash"); break;
       case "round": banner(e.final ? "FINAL ROUND" : "ROUND " + e.n, "", "", 1150); say(e.final ? "final" : "round" + Math.min(3, e.n)); break;
       case "fight": banner("FIGHT!", "", "fight", 750); say("fight"); break;
@@ -414,9 +441,13 @@ $("#btnQuick").addEventListener("click", () => quickMatch());
 $("#btnCreate").addEventListener("click", async () => { initAudio(); lobbyMsg("CREATING ROOM…"); try { const { code } = await (await fetch("/api/new")).json(); joinRoom(code); } catch { lobbyMsg("COULD NOT REACH SERVER", true); } });
 $("#btnJoin").addEventListener("click", () => { const c = $("#jcode").value.trim().toUpperCase(); if (c.length >= 4) joinRoom(c); else lobbyMsg("ENTER A ROOM CODE", true); });
 $("#jcode").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#btnJoin").click(); });
+$("#selCopy").addEventListener("click", () => $("#btnCopy").click());
 $("#btnCopy").addEventListener("click", async () => {
   const link = `${location.origin}/?room=${app.code}`;
-  try { await navigator.clipboard.writeText(link); lobbyMsg("INVITE LINK COPIED!"); } catch { lobbyMsg(link); }
+  let ok = false;
+  try { await navigator.clipboard.writeText(link); ok = true; } catch {}
+  lobbyMsg(ok ? "INVITE LINK COPIED!" : link);
+  if (app.screen === "select") { const b = $("#selCopy"); b.textContent = ok ? "LINK COPIED!" : link; setTimeout(() => (b.textContent = "COPY INVITE LINK"), 2500); }
 });
 async function quickMatch(skip = "") {
   initAudio(); lobbyMsg("SEARCHING FOR A CHALLENGER…");

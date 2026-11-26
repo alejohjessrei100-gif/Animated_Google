@@ -1,22 +1,169 @@
 {
-  "announcer": { "voice": "am_fenrir", "speed": 0.88, "lines": {
-    "title": "Celestra Chronicles!", "choose": "Choose your fighter!",
-    "round1": "Round one!", "round2": "Round two!", "round3": "Round three!", "final": "Final round!",
-    "fight": "Fight!", "ko": "K. O.!", "parry": "Parry!", "perfect": "Perfect!", "timeup": "Time!",
-    "counter": "Counter!", "p1wins": "Player one wins!", "p2wins": "Player two wins!", "youwin": "You win!",
-    "youlose": "You lose!", "draw": "Draw game!", "doubleko": "Double K. O.!", "rematch": "Here comes a new challenger!",
-    "n_jiross": "Jiross!", "n_lian": "Lian Angelo!", "n_dumdum": "Dumdum!", "n_gayle": "Gayle Monana!",
-    "n_dapsay": "Dapsay!", "n_william": "William!", "n_tanoy": "Tanoy!", "n_acar": "Acar!"
-  }},
-  "jiross": { "voice": "am_puck", "speed": 1.08, "lines": {
-    "jiross_t0": "Is that all you got?", "jiross_t1": "My grandma hits harder!", "jiross_t2": "You fight like a loading screen!",
-    "jiross_t3": "Too slow, try again!", "jiross_t4": "Sit down, rookie!", "jiross_ult": "Javatar! That's mine now!", "jiross_win": "Told you. Too easy."
-  }},
-  "lian": { "voice": "am_eric", "speed": 1.05, "lines": { "lian_ult": "Dash catch!", "lian_win": "Clean catch. Game over." }},
-  "dumdum": { "voice": "am_onyx", "speed": 0.95, "lines": { "dumdum_ult": "Hemorrhage!", "dumdum_win": "Bleed out." }},
-  "gayle": { "voice": "af_bella", "speed": 1.0, "lines": { "gayle_ult": "Home run!", "gayle_win": "Batter up, next!" }},
-  "dapsay": { "voice": "af_nicole", "speed": 1.0, "lines": { "dapsay_s1": "Dap kick!", "dapsay_ult": "Dapsay fusion!", "dapsay_win": "Two styles, one winner." }},
-  "william": { "voice": "am_michael", "speed": 0.95, "lines": { "william_wait": "Wait class.", "william_ult": "Anti gravity!", "william_win": "Class dismissed." }},
-  "tanoy": { "voice": "am_liam", "speed": 0.95, "lines": { "tanoy_ult": "Chain smoker!", "tanoy_win": "Up in smoke." }},
-  "acar": { "voice": "am_echo", "speed": 1.05, "lines": { "acar_ult": "Stomp frenzy!", "acar_win": "Feet don't fail me now." }}
+ "announcer": {
+  "voice": "am_fenrir",
+  "speed": 0.88,
+  "lines": {
+   "title": "Celestra Chronicles!",
+   "choose": "Choose your fighter!",
+   "round1": "Round one!",
+   "round2": "Round two!",
+   "round3": "Round three!",
+   "final": "Final round!",
+   "fight": "Fight!",
+   "ko": "K. O.!",
+   "parry": "Parry!",
+   "perfect": "Perfect!",
+   "timeup": "Time!",
+   "counter": "Counter!",
+   "p1wins": "Player one wins!",
+   "p2wins": "Player two wins!",
+   "youwin": "You win!",
+   "youlose": "You lose!",
+   "draw": "Draw game!",
+   "doubleko": "Double K. O.!",
+   "rematch": "Here comes a new challenger!",
+   "n_jiross": "Jiross!",
+   "n_lian": "Lian Angelo!",
+   "n_dumdum": "Dumdum!",
+   "n_gayle": "Gayle Monana!",
+   "n_dapsay": "Dapsay!",
+   "n_william": "William!",
+   "n_tanoy": "Tanoy!",
+   "n_acar": "Acar!",
+   "n_apsay": "Apsay!",
+   "n_dap": "Dap!",
+   "n_jog": "Jog!",
+   "n_jaguilar": "Jaguilar!",
+   "n_paulite": "Paulite!",
+   "n_johan": "Johan Bacorro!"
+  }
+ },
+ "jiross": {
+  "voice": "am_puck",
+  "speed": 1.08,
+  "lines": {
+   "jiross_t0": "Is that all you got?",
+   "jiross_t1": "My grandma hits harder!",
+   "jiross_t2": "You fight like a loading screen!",
+   "jiross_t3": "Too slow, try again!",
+   "jiross_t4": "Sit down, rookie!",
+   "jiross_ult": "Javatar! That's mine now!",
+   "jiross_win": "Told you. Too easy."
+  }
+ },
+ "lian": {
+  "voice": "am_eric",
+  "speed": 1.05,
+  "lines": {
+   "lian_ult": "Dash catch!",
+   "lian_win": "Clean catch. Game over."
+  }
+ },
+ "dumdum": {
+  "voice": "am_onyx",
+  "speed": 0.95,
+  "lines": {
+   "dumdum_ult": "Hemorrhage!",
+   "dumdum_win": "Bleed out."
+  }
+ },
+ "gayle": {
+  "voice": "af_bella",
+  "speed": 1.0,
+  "lines": {
+   "gayle_ult": "Home run!",
+   "gayle_win": "Batter up, next!"
+  }
+ },
+ "dapsay": {
+  "voice": "af_nicole",
+  "speed": 1.0,
+  "lines": {
+   "dapsay_s1": "Dap kick!",
+   "dapsay_ult": "Dapsay fusion!",
+   "dapsay_win": "Two styles, one winner."
+  }
+ },
+ "william": {
+  "voice": "am_michael",
+  "speed": 0.95,
+  "lines": {
+   "william_wait": "Wait class.",
+   "william_ult": "Anti gravity!",
+   "william_win": "Class dismissed."
+  }
+ },
+ "tanoy": {
+  "voice": "am_liam",
+  "speed": 0.95,
+  "lines": {
+   "tanoy_ult": "Chain smoker!",
+   "tanoy_win": "Up in smoke."
+  }
+ },
+ "acar": {
+  "voice": "am_echo",
+  "speed": 1.05,
+  "lines": {
+   "acar_ult": "Stomp frenzy!",
+   "acar_win": "Feet don't fail me now."
+  }
+ },
+ "apsay": {
+  "voice": "am_puck",
+  "speed": 1.1,
+  "lines": {
+   "apsay_s1": "Apsay punch!",
+   "apsay_ult": "Phantom barrage!",
+   "apsay_win": "Blink and you missed it."
+  }
+ },
+ "dap": {
+  "voice": "af_nicole",
+  "speed": 1.0,
+  "lines": {
+   "dap_s1": "Dap kick!",
+   "dap_ult": "Bulldozer dive!",
+   "dap_win": "Too heavy for you."
+  }
+ },
+ "jog": {
+  "voice": "bm_george",
+  "speed": 0.92,
+  "lines": {
+   "jog_s1b": "Silence!",
+   "jog_ult": "Pop quiz!",
+   "jog_win": "Detention. All of you."
+  }
+ },
+ "jaguilar": {
+  "voice": "am_adam",
+  "speed": 1.0,
+  "lines": {
+   "jaguilar_ult": "Overclock!",
+   "jaguilar_win": "Task failed successfully."
+  }
+ },
+ "paulite": {
+  "voice": "am_santa",
+  "speed": 1.0,
+  "lines": {
+   "paulite_ult": "Body slam tsunami!",
+   "paulite_win": "Ha! Get it? No? Okay.",
+   "paulite_j0": "Why did the C S S break? No class!",
+   "paulite_j1": "My code has no bugs, just surprise features!",
+   "paulite_j2": "I'm on a seafood diet. I see food and crash!",
+   "paulite_j3": "Batch thirty? More like thirty F P S on your main!",
+   "paulite_j4": "Why did the array break up? Too many arguments!",
+   "paulite_j5": "You call that a combo? Internet Explorer loads faster!"
+  }
+ },
+ "johan": {
+  "voice": "am_fenrir",
+  "speed": 0.95,
+  "lines": {
+   "johan_ult": "Avalanche!",
+   "johan_win": "Smell you later!"
+  }
+ }
 }

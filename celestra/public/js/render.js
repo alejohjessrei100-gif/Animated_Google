@@ -121,6 +121,10 @@ export class Renderer {
       case "implode": fx.ring(e.x, oy - 30, 40, 2, "#9b8cff", 14, 2); fx.burst(e.x, oy - 30, 20, ["#ffffff", "#9b8cff", "#3a2aff"], 3, 18, 0); break;
       case "stomp": fx.burst(e.x, oy - 1, 18, ["#c8bfa8", "#8a8070", "#5cff7a"], 3, 22, 0.06, 1, "smoke"); fx.ring(e.x, oy - 2, 4, 44, "#5cff7a", 14, 1); break;
       case "taunt": break;
+      case "joke": { const f = P(e.who); fx.burst(f.x, oy - 80, 8, ["#ffd24c", "#ffffff"], 1.2, 20, -0.02); break; }
+      case "sad": { const f = P(e.who); fx.text(f.x, oy + f.y - 84, "SAD...", "#76a9ff", 60, 1, -0.2); break; }
+      case "silence": { const f = P(e.who); fx.text(f.x, oy + f.y - 90, "SILENCED!", "#60d7ff", 70, 1, -0.2); fx.ring(f.x, oy + f.y - 44, 4, 30, "#60d7ff", 14, 1); break; }
+      case "quiz": fx.ring(e.x, oy - 4, 6, 110, "#60d7ff", 18, 2); fx.burst(e.x, oy - 4, 24, ["#c8bfa8", "#60d7ff", "#ffffff"], 3.5, 22, 0.08, 1, "smoke"); fx.text(e.x, oy - 104, "POP QUIZ!", "#60d7ff", 70, 2, -0.2); break;
       case "waitclass": { const f = P(e.who); fx.ring(f.x, oy - 40, 6, 40, "#9b8cff", 14, 1); break; }
       case "ko": {
         this.flash = 12;
@@ -131,8 +135,9 @@ export class Renderer {
       case "dot": {
         const f = P(e.who);
         if (e.kind === "burn") fx.burst(f.x + (Math.random() - 0.5) * 14, oy + f.y - 30 - Math.random() * 30, 2, ["#ffd27a", "#ff7a29"], 0.6, 16, -0.06);
+        if (e.kind === "poison") fx.add({ x: f.x + (Math.random() - 0.5) * 14, y: oy + f.y - 30 - Math.random() * 30, vy: -0.5, col: Math.random() < 0.5 ? "#65ff6e" : "#2f9b3a", life: 20, size: 2 });
         if (e.kind === "bleed") fx.add({ x: f.x + (Math.random() - 0.5) * 12, y: oy + f.y - 40, vy: 0.5, g: 0.12, col: "#c8102e", life: 22, size: 1 });
-        if (Math.random() < 0.6) fx.text(f.x + (Math.random() - 0.5) * 20, oy + f.y - 72, e.amount, e.kind === "burn" ? "#ff7a29" : e.kind === "bleed" ? "#ff3355" : "#9b8cff", 26, 1, -0.5);
+        if (Math.random() < 0.6) fx.text(f.x + (Math.random() - 0.5) * 20, oy + f.y - 72, e.amount, e.kind === "burn" ? "#ff7a29" : e.kind === "bleed" ? "#ff3355" : e.kind === "poison" ? "#65ff6e" : "#9b8cff", 26, 1, -0.5);
         break;
       }
     }
@@ -288,6 +293,11 @@ export class Renderer {
       const r = p.kind === "bigember" ? 6 : 3;
       disc(ctx, x, y, r + 1, "#5a1a08"); disc(ctx, x, y, r, (t >> 1) & 1 ? "#ff7a29" : "#ffb03a"); disc(ctx, x, y, Math.max(1, r - 2), "#fff3a0");
       if (t % 2 === 0) this.fx.add({ x: p.x - Math.sign(p.vx) * 4, y: FLOOR_Y + p.y + (Math.random() - 0.5) * 4, vx: -Math.sign(p.vx) * 0.5, vy: -0.3, col: Math.random() < 0.5 ? "#ff7a29" : "#6e6676", life: 14, type: Math.random() < 0.4 ? "smoke" : "px" });
+    } else if (p.kind === "bsod") {
+      ctx.fillStyle = "#120e18"; ctx.fillRect(x - 8, y - 7, 16, 13);
+      ctx.fillStyle = "#1f4fd8"; ctx.fillRect(x - 7, y - 6, 14, 11);
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(x - 5, y - 4, 3, 1); ctx.fillRect(x - 5, y - 1, 10, 1); ctx.fillRect(x - 5, y + 1, 7, 1); ctx.fillRect(x + 3, y - 4, 2, 2);
+      if (t % 3 === 0) this.fx.add({ x: p.x - Math.sign(p.vx) * 8, y: FLOOR_Y + p.y + (Math.random() - 0.5) * 8, col: "#32f0ff", life: 10 });
     } else {
       disc(ctx, x, y, 4, "#ffffff");
     }
@@ -309,6 +319,14 @@ export class Renderer {
       ctx.fillRect(x - w, oy - 2, z.w, 2);
       for (let i = 0; i < 16; i++) { const px = x - w + ((i * 37 + t) % z.w), py = oy - ((t * 1.2 + i * 23) % 130); ctx.fillStyle = i % 3 ? "#9b8cff" : "#ffffff"; ctx.fillRect(Math.round(px), Math.round(py), 1, 2); }
       for (let i = 0; i < 3; i++) { const yy = oy - ((t * 0.7 + i * 40) % 120); ctx.fillStyle = "#5a5aff"; for (let j = -w; j < w; j += 3) ctx.fillRect(x + j, Math.round(yy + Math.sin(j * 0.1) * 2), 2, 1); }
+    } else if (z.kind === "stink" && front) {
+      const w = z.w / 2, fade = k > 0.85 ? (1 - k) / 0.15 : Math.min(1, z.t / 12);
+      for (let i = 0; i < 18; i++) {
+        const px = x - w + ((i * 47) % z.w) + Math.sin(t * 0.04 + i) * 5, py = oy - 6 - ((i * 23) % 50) + Math.cos(t * 0.05 + i) * 3;
+        ctx.globalAlpha = 0.45 * fade; disc(ctx, px, py, 6 + (i % 3) * 2, i % 2 ? "#4e8f52" : "#7fbf5a");
+      }
+      ctx.globalAlpha = 1;
+      if (t % 5 === 0) this.fx.add({ x: z.x + (Math.random() - 0.5) * z.w, y: FLOOR_Y - Math.random() * 40, vy: -0.4, col: "#65ff6e", life: 24 });
     } else if (z.kind === "smoke" && front) {
       const w = z.w / 2, fade = k > 0.85 ? (1 - k) / 0.15 : Math.min(1, z.t / 12);
       for (let i = 0; i < 26; i++) {
@@ -333,6 +351,18 @@ export class Renderer {
         ctx.fillStyle = "#ffe14d"; ctx.fillRect(x, y - 1, 1, 3); ctx.fillRect(x - 1, y, 3, 1);
       }
     }
+    if (f.sx.silence > 0) { pixText(ctx, "...", hx - 5, hy - 22, "#60d7ff", 1); ctx.fillStyle = "#60d7ff"; ctx.fillRect(hx - 4, hy + 3, 9, 1); }
+    if (f.sx.sad > 0) {
+      const cy = hy - 26;
+      disc(ctx, hx - 5, cy, 4, "#5f7ba8"); disc(ctx, hx + 2, cy - 2, 5, "#5f7ba8"); disc(ctx, hx + 8, cy, 3, "#5f7ba8");
+      ctx.fillStyle = "#8ac0ff"; for (let i = -1; i <= 1; i++) ctx.fillRect(hx + i * 5, cy + 5 + ((t + i * 4) % 9), 1, 2);
+    }
+    if (f.sx.poison > 0 && t % 6 === 0) this.fx.add({ x: f.x + (Math.random() - 0.5) * 16, y: FLOOR_Y + f.y - 20 - Math.random() * 40, vy: -0.5, col: "#65ff6e", life: 16 });
+    if (f.ch === "johan" && f.st !== "down") {
+      ctx.fillStyle = "rgba(101,255,110,0.55)";
+      for (let i = 0; i < 14; i++) { const an = i / 14 * Math.PI * 2 + t * 0.03; const rr = 50 + Math.sin(t * 0.1 + i) * 3; ctx.fillRect(Math.round(ox + f.x + Math.cos(an) * rr), Math.round(oy + f.y - 30 + Math.sin(an) * 18), 2, 2); }
+      if (t % 7 === 0) this.fx.add({ x: f.x + (Math.random() - 0.5) * 60, y: FLOOR_Y + f.y - Math.random() * 50, vy: -0.4, col: Math.random() < 0.5 ? "#65ff6e" : "#2f9b3a", life: 26, size: 1 });
+    }
     if (f.sx.confuse > 0) pixText(ctx, "?", hx - 1 + Math.round(Math.sin(t * 0.3) * 2), hy - 20, "#9b8cff", 2);
     if (f.sx.bleed > 0 && t % 10 === 0) this.fx.add({ x: f.x + (Math.random() - 0.5) * 10, y: FLOOR_Y + f.y - 44, vy: 0.3, g: 0.12, col: "#c8102e", life: 20 });
     if (f.sx.burn > 0 && t % 4 === 0) this.fx.add({ x: f.x + (Math.random() - 0.5) * 16, y: FLOOR_Y + f.y - 10 - Math.random() * 50, vy: -0.6, col: Math.random() < 0.5 ? "#ff7a29" : "#ffd27a", life: 14 });
@@ -349,7 +379,7 @@ export class Renderer {
       ctx.fillStyle = "#120e18"; ctx.fillRect(bx - 1, by - 1, w + 2, 11);
       ctx.fillStyle = "#ffffff"; ctx.fillRect(bx, by, w, 9);
       ctx.fillRect(hx - 1, by + 9, 3, 2); ctx.fillRect(hx, by + 11, 1, 2);
-      pixText(ctx, txt, bx + 4, by + 2, f.ch === "william" ? "#3a2aff" : "#c4501a", 1, null);
+      pixText(ctx, txt, bx + 4, by + 2, f.ch === "william" ? "#3a2aff" : f.ch === "paulite" ? "#8a5a00" : "#c4501a", 1, null);
     }
   }
 }

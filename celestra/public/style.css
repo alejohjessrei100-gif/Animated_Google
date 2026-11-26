@@ -77,8 +77,8 @@ input { background: #0b0818; color: var(--gold); border: calc(var(--u) * .25) so
 .rdy { position: absolute; top: 34%; font-size: calc(var(--u) * 2.4); color: var(--gold); text-shadow: calc(var(--u) * .3) calc(var(--u) * .3) 0 var(--line); transform: rotate(-8deg); animation: pop .3s steps(3); }
 @keyframes pop { from { transform: scale(2) rotate(-8deg); } }
 .mid { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 1.2); }
-.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: calc(var(--u) * .6); }
-.cell { position: relative; width: calc(var(--u) * 8); height: calc(var(--u) * 8); background: #0b0818; border: calc(var(--u) * .25) solid var(--line); box-shadow: 0 0 0 calc(var(--u) * .2) #3a2d6e; padding: 0; overflow: hidden; }
+.grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: calc(var(--u) * .55); }
+.cell { position: relative; width: calc(var(--u) * 6.6); height: calc(var(--u) * 6.6); background: #0b0818; border: calc(var(--u) * .25) solid var(--line); box-shadow: 0 0 0 calc(var(--u) * .2) #3a2d6e; padding: 0; overflow: hidden; }
 .cell canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
 .cell .lbl { position: absolute; left: 0; right: 0; bottom: 0; font-size: calc(var(--u) * .6); background: rgba(0,0,0,.65); padding: calc(var(--u) * .25) 0; text-align: center; }
 .cell.c1 { box-shadow: 0 0 0 calc(var(--u) * .35) var(--red); }
@@ -190,3 +190,11 @@ input { background: #0b0818; color: var(--gold); border: calc(var(--u) * .25) so
 @media (max-aspect-ratio: 1/1) {
   #app { align-items: start; padding-top: 6vh; }
 }
+
+.cell.rnd { display: flex; align-items: center; justify-content: center; }
+.cell .q { font-size: calc(var(--u) * 3); color: var(--gold); margin-top: calc(var(--u) * -1); animation: blink 1.2s steps(2) infinite; }
+.cell .lbl { font-size: calc(var(--u) * .5); }
+.slot.sil::before { content: "⊘"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: calc(var(--u) * 2.4); color: #60d7ff; background: rgba(5,3,12,.7); z-index: 5; font-family: sans-serif; }
+#selRoom { display: flex; align-items: center; gap: calc(var(--u) * .8); padding: calc(var(--u) * .5) calc(var(--u) * .8); background: #0b0818; box-shadow: 0 0 0 calc(var(--u) * .2) var(--cyan); font-size: calc(var(--u) * .8); }
+#selRoom b { color: var(--gold); font-size: calc(var(--u) * 1.7); letter-spacing: .2em; font-weight: normal; }
+#selRoom button { font-size: calc(var(--u) * .7); padding: calc(var(--u) * .5) calc(var(--u) * .7); }

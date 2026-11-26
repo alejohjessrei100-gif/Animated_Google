@@ -120,6 +120,9 @@ const A = {
   fusion: { s: P({ hd: 10, tor: 20, flu: 60, flk: -110, blu: 40, blk: -110 }), a: [P({ hy: -32, tor: -82, hed: 20, flu: 92, flk: 0, blu: 88, blk: 0, fu: -120, fe: 20, bu: -140, be: 20 })], r: P({ hd: 10, tor: 20, flu: 50, flk: -90 }) },
 };
 
+A.chairswing = A.batswing; A.chairover = A.batover; A.beam = A.cast;
+A.roll = { s: P({ hd: 14, tor: 50, hed: 30, fu: 60, fe: 130, bu: 50, be: 130, flu: 90, flk: -140, blu: 70, blk: -140 }), a: [P({})], r: P({ hd: 10, tor: 30, flu: 60, flk: -100, blu: 30, blk: -100 }) };
+
 // ---------- pose selection ----------
 export function poseFor(f, S) {
   const t = f.anim;
@@ -207,8 +210,27 @@ function partPair(ctx, x1, y1, x2, y2, r1, r2, col, out = OUT) {
   capsule(ctx, x1, y1, x2, y2, r1, r2, col);
 }
 
+function drawBall(ctx, f, c, lk, ox, oy, white) {
+  const x = Math.round(ox + f.x), y = Math.round(oy + f.y - 17), r = 15;
+  disc(ctx, x, y, r + 1, OUT);
+  disc(ctx, x, y, r, white ? "#fff" : lk.top);
+  const a = (f.anim * 0.45) * f.face;
+  for (let i = 0; i < 3; i++) {
+    const an = a + i * 2.094;
+    capsule(ctx, x, y, x + Math.cos(an) * (r - 2), y + Math.sin(an) * (r - 2), 1, 1, white ? "#fff" : shade(lk.top, 0.6));
+  }
+  disc(ctx, x + Math.cos(a + 1) * 7, y + Math.sin(a + 1) * 7, 4, white ? "#fff" : lk.skin);
+  disc(ctx, x + Math.cos(a + 4) * 8, y + Math.sin(a + 4) * 8, 3, white ? "#fff" : lk.bottom);
+  ctx.fillStyle = white ? "#fff" : shade(lk.top, 1.35); ctx.fillRect(x - 6, y - 10, 5, 2); ctx.fillRect(x - 9, y - 7, 2, 3);
+  return { hand: [x, y], foot: [x, y + r], head: [x, y - r], chest: [x, y] };
+}
+
 export function drawFighter(ctx, f, ox, oy, opts = {}) {
   const c = CHARS[f.ch], lk = c.look, face = f.face;
+  if (!opts.pose && f.st === "act" && f.act) {
+    const m = getMove(f.act.ref);
+    if (m.anim === "roll" && f.act.t > m.startup && f.act.t <= m.startup + m.active) return drawBall(ctx, f, c, lk, ox, oy, opts.flash);
+  }
   const pose = opts.pose || poseFor(f, opts.S);
   const sk = skeleton(pose, face, c.scale);
   const X = (p) => ox + f.x + p[0], Y = (p) => oy + f.y + p[1];
@@ -331,6 +353,19 @@ function drawProp(ctx, f, lk, W, d, X, Y, isBack, pose, white) {
     capsule(ctx, x, y, ex, ey, 1, 1, OUT);
     capsule(ctx, x, y, ex, ey, 0, 0, white ? "#fff" : isBack ? "#9aa3b5" : "#dfe6f5");
     ctx.fillStyle = white ? "#fff" : "#ff3355"; ctx.fillRect(Math.round(ex), Math.round(ey), 1, 1);
+  } else if (lk.prop === "chair" && !isBack && f.st === "act" && f.act && f.act.ref && /^chair/.test(getMove(f.act.ref).anim || "")) {
+    const ax = d[0], ay = d[1], px = -ay, py = ax;
+    const ex = x + ax * 22, ey = y + ay * 22;
+    const fr = white ? "#fff" : "#9aa6b8", seat = white ? "#fff" : "#5b6a82";
+    capsule(ctx, x, y, ex, ey, 2, 2, OUT); capsule(ctx, x, y, ex, ey, 1, 1, fr);
+    capsule(ctx, x + px * 8, y + py * 8, ex + px * 8, ey + py * 8, 2, 2, OUT); capsule(ctx, x + px * 8, y + py * 8, ex + px * 8, ey + py * 8, 1, 1, fr);
+    for (const k of [0.45, 0.95]) capsule(ctx, x + ax * 22 * k, y + ay * 22 * k, x + ax * 22 * k + px * 8, y + ay * 22 * k + py * 8, k > 0.9 ? 2 : 1, k > 0.9 ? 2 : 1, seat);
+  } else if (lk.prop === "laptop" && !isBack) {
+    const bx = Math.round(x + d[0] * 3), by = Math.round(y + d[1] * 3);
+    ctx.fillStyle = OUT; ctx.fillRect(bx - 6, by - 6, 13, 9);
+    ctx.fillStyle = white ? "#fff" : "#2a3140"; ctx.fillRect(bx - 5, by - 5, 11, 7);
+    ctx.fillStyle = white ? "#fff" : (f.anim >> 3) & 1 ? "#32f0ff" : "#7ff8ff"; ctx.fillRect(bx - 4, by - 4, 9, 4);
+    ctx.fillStyle = white ? "#fff" : "#c7ccd6"; ctx.fillRect(bx - 6, by + 2, 13, 2);
   } else if (lk.prop === "disc" && !isBack && !f._discOut) {
     ctx.fillStyle = OUT; ctx.fillRect(Math.round(x) - 5, Math.round(y) - 2, 11, 4);
     ctx.fillStyle = white ? "#fff" : lk.accent; ctx.fillRect(Math.round(x) - 4, Math.round(y) - 1, 9, 2);

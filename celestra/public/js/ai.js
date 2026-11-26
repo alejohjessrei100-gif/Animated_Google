@@ -17,6 +17,12 @@ const RANGES = {
   william: [[60, 160], [20, 120], [0, 300]],
   tanoy: [[60, 400], [0, 80], [50, 400]],
   acar: [[0, 48], [0, 52], [40, 110]],
+  apsay: [[40, 260], [40, 200], [40, 260]],
+  dap: [[40, 120], [0, 46], [40, 150]],
+  jog: [[0, 60], [0, 36], [0, 100]],
+  jaguilar: [[0, 70], [70, 400], [20, 200]],
+  paulite: [[30, 90], [0, 190], [40, 150]],
+  johan: [[20, 160], [0, 90], [30, 200]],
 };
 
 export class AI {
@@ -61,6 +67,7 @@ export class AI {
     const ready = (i) => me.cd[i] <= 0;
     const inR = (i) => dist >= rng[i][0] && dist <= rng[i][1];
     if (me.st === "act") {
+      if (me.act.hit && getMove(me.act.ref).followup) return press(B.S1);
       // keep chaining basics / hit-confirm cancel
       if (me.act.hit || Math.random() < this.L.aggro * 0.5) {
         for (let i = 2; i >= 0; i--) if (ready(i) && inR(i) && Math.random() < this.L.skill * 0.25) return press(B["S" + (i + 1)]);
