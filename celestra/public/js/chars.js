@@ -19,11 +19,11 @@ export const PARRY = { window: 10, whiff: 22, counter: 50, stagger: 38 };
 
 export const CHARS = {
   jiross: {
-    id: "jiross", name: "JIROSS", title: "The Smack-Talk Brawler", color: "#ff9a3c",
+    id: "jiross", name: "JIROX", title: "The Smack-Talk Brawler", color: "#ff9a3c",
     hp: 1000, walk: 1.7, back: 1.35, jump: 6.2, scale: 1.0, hurtH: 68,
-    voice: "am_puck",
+    voice: "am_echo",
     look: { skin: "#d9a066", hair: "#2b1a12", hairStyle: "spike", top: "#e2722b", top2: "#ffd08a", bottom: "#3b3047", shoes: "#f2f2f2", accent: "#ffcf5a", prop: "mug", bodyW: 8 },
-    passive: { name: "Smack Talk", desc: "Every 10s Jiross taunts: foe is RATTLED (-15% dmg) for 3s. Landing hits builds MOMENTUM (+4% dmg per stack, max 5)." },
+    passive: { name: "Smack Talk", desc: "Every 10s Jirox taunts: foe is RATTLED (-15% dmg) for 3s. Landing hits builds MOMENTUM (+4% dmg per stack, max 5)." },
     basic: ["b1", "b2", "b3"], air: "air",
     moves: {
       b1: jab({ name: "Quick Jab" }),
@@ -37,9 +37,9 @@ export const CHARS = {
   },
 
   lian: {
-    id: "lian", name: "LIAN ANGELO", title: "Frisbee Ace", color: "#3fe0d0",
+    id: "lian", name: "LIAN AERO", title: "Frisbee Ace", color: "#3fe0d0",
     hp: 960, walk: 1.95, back: 1.6, jump: 6.4, scale: 0.98, hurtH: 67,
-    voice: "am_eric",
+    voice: "am_liam",
     look: { skin: "#e8b88a", hair: "#16141c", hairStyle: "cap", top: "#1fb5a8", top2: "#f4f7ff", bottom: "#1e2a44", shoes: "#ff4f6d", accent: "#fff36b", prop: "disc", bodyW: 7 },
     passive: { name: "Clean Catch", desc: "Catching a returning Boomerang Disc refunds 2s of its cooldown." },
     basic: ["b1", "b2", "b3"], air: "air",
@@ -61,9 +61,9 @@ export const CHARS = {
   },
 
   dumdum: {
-    id: "dumdum", name: "DUMDUM", title: "Laceration Maniac", color: "#ff3355",
+    id: "dumdum", name: "DUMBLADE", title: "Laceration Maniac", color: "#ff3355",
     hp: 980, walk: 1.8, back: 1.45, jump: 6.2, scale: 1.0, hurtH: 68,
-    voice: "am_onyx",
+    voice: "bm_daniel",
     look: { skin: "#c98b5e", hair: "#0d0b10", hairStyle: "long", top: "#2a1520", top2: "#ff3355", bottom: "#17131c", shoes: "#3a3a44", accent: "#ff3355", prop: "blades", bodyW: 7 },
     passive: { name: "Open Wounds", desc: "Slashes stack BLEED (max 6). Each stack ticks damage over time." },
     basic: ["b1", "b2", "b3"], air: "air",
@@ -79,9 +79,9 @@ export const CHARS = {
   },
 
   gayle: {
-    id: "gayle", name: "GAYLE MONANA", title: "Softball Slugger", color: "#ffd23f",
+    id: "gayle", name: "GALE SLUGGER", title: "Softball Slugger", color: "#ffd23f",
     hp: 1080, walk: 1.5, back: 1.25, jump: 5.9, scale: 1.04, hurtH: 70,
-    voice: "af_bella",
+    voice: "af_jessica",
     look: { skin: "#e3a77c", hair: "#5a2c16", hairStyle: "pony", top: "#ffd23f", top2: "#1c2a5c", bottom: "#1c2a5c", shoes: "#f5f5f5", accent: "#ff6b3d", prop: "bat", bodyW: 8 },
     passive: { name: "Clutch Hitter", desc: "Batter Up's stance has 1-hit ARMOR. Heavy swings wall-bounce." },
     basic: ["b1", "b2", "b3"], air: "air",
@@ -97,9 +97,9 @@ export const CHARS = {
   },
 
   dapsay: {
-    id: "dapsay", name: "DAPSAY", title: "Two-Stance Hybrid", color: "#d65cff",
+    id: "dapsay", name: "DAP-SAI", title: "Two-Stance Hybrid", color: "#d65cff",
     hp: 1000, walk: 1.75, back: 1.45, jump: 6.3, scale: 0.96, hurtH: 66,
-    voice: "af_nicole",
+    voice: "af_kore",
     look: { skin: "#ddaa82", hair: "#1b161d", hairStyle: "bun", top: "#d63848", top2: "#5a32a3", bottom: "#1d2233", shoes: "#edeff7", accent: "#b56bff", prop: "none", bodyW: 8, split: true },
     passive: { name: "DAP ⇄ APSAY", desc: "Using a DAP or APSAY skill switches stance (changes basics). Deals +30% damage to STUNNED foes." },
     basic: ["b1", "b2", "b3"], air: "air",
@@ -122,11 +122,11 @@ export const CHARS = {
   },
 
   william: {
-    id: "william", name: "WILLIAM", title: "Gravity Professor", color: "#7c7cff",
+    id: "william", name: "GRAVILLIAM", title: "Gravity Professor", color: "#7c7cff",
     hp: 990, walk: 1.6, back: 1.4, jump: 6.0, scale: 1.02, hurtH: 69,
-    voice: "am_michael",
+    voice: "bm_george",
     look: { skin: "#e0b08a", hair: "#3a2a20", hairStyle: "neat", top: "#2c2f7a", top2: "#a7a9ff", bottom: "#232433", shoes: "#2b2b2b", accent: "#9b8cff", prop: "glasses", bodyW: 7 },
-    passive: { name: "Confusion — \"wait class\"", desc: "Every 4s William says \"wait class\" — foe is CONFUSED (left/right reversed) for 0.75s." },
+    passive: { name: "Confusion — \"wait class\"", desc: "Every 4s Gravilliam says \"wait class\" — foe is CONFUSED (left/right reversed) for 0.75s." },
     basic: ["b1", "b2", "b3"], air: "air",
     moves: {
       b1: jab({ name: "Palm Tap", anim: "palm", sfx: "gravity" }),
@@ -142,11 +142,11 @@ export const CHARS = {
   },
 
   tanoy: {
-    id: "tanoy", name: "TANOY", title: "Smoke & Embers", color: "#ff7a29",
+    id: "tanoy", name: "TANOHAZE", title: "Smoke & Embers", color: "#ff7a29",
     hp: 990, walk: 1.75, back: 1.45, jump: 6.2, scale: 1.0, hurtH: 68,
-    voice: "am_liam",
+    voice: "am_onyx",
     look: { skin: "#c99168", hair: "#262323", hairStyle: "messy", top: "#4a4d57", top2: "#8a8f9c", bottom: "#24252c", shoes: "#5a3a26", accent: "#ff7a29", prop: "cig", bodyW: 7 },
-    passive: { name: "Chain Burn", desc: "Embers BURN (stacks to Lv3). Inside his smoke Tanoy is harder to see and 15% faster." },
+    passive: { name: "Chain Burn", desc: "Embers BURN (stacks to Lv3). Inside his smoke TanoHaze is harder to see and 15% faster." },
     basic: ["b1", "b2", "b3"], air: "air",
     moves: {
       b1: jab({ name: "Jab" }),
@@ -168,9 +168,9 @@ export const CHARS = {
   },
 
   acar: {
-    id: "acar", name: "ACAR", title: "Foot Fetish Kickboxer", color: "#5cff7a",
+    id: "acar", name: "SOLE-CAR", title: "Foot Fetish Kickboxer", color: "#5cff7a",
     hp: 970, walk: 1.9, back: 1.55, jump: 6.5, scale: 0.99, hurtH: 67,
-    voice: "am_echo",
+    voice: "am_eric",
     look: { skin: "#d4a07a", hair: "#121015", hairStyle: "buzz", top: "#1d1d24", top2: "#5cff7a", bottom: "#2e7d3a", shoes: "barefoot", accent: "#5cff7a", prop: "none", bodyW: 7 },
     passive: { name: "Foot Fetish", desc: "Kick specialist: every basic is a kick. Landing Stomp Frenzy refreshes Sole Barrage." },
     basic: ["b1", "b2", "b3"], air: "air",
@@ -186,7 +186,7 @@ export const CHARS = {
   },
   // ======== Original Batch 30 fighters, rebuilt for the 1 + 3 kit ========
   apsay: {
-    id: "apsay", name: "APSAY", title: "Teleport Rushdown", color: "#b56bff",
+    id: "apsay", name: "APSURGE", title: "Teleport Rushdown", color: "#b56bff",
     hp: 960, walk: 2.0, back: 1.7, jump: 6.5, scale: 0.98, hurtH: 67, dashMul: 1.2,
     voice: "am_puck",
     look: { skin: "#e3b796", hair: "#1b161d", hairStyle: "spike", top: "#5a32a3", top2: "#b56bff", bottom: "#1d2233", shoes: "#edeff7", accent: "#b56bff", prop: "none", bodyW: 7 },
@@ -197,16 +197,16 @@ export const CHARS = {
       b2: cross({ name: "Snap Kick", anim: "kick", sfx: "kick", box: [8, -54, 30, 16] }),
       b3: fin({ name: "Rising Heel", anim: "highkick", sfx: "kick", lvl: "H", box: [6, -72, 32, 20], dmg: 50 }),
       air: air({ name: "Dive Heel" }),
-      s1: D({ name: "Apsay Punch", skill: 1, cd: 450, startup: 18, active: 4, recovery: 20, dmg: 72, hs: 24, kb: [5, -1], box: [4, -62, 32, 22], stop: 8, hook: "teleport", tpAt: 9, anim: "tppunch", sfx: "heavy", heavy: true, desc: "Vanishes and reappears BEHIND the foe for a cross-up punch." }),
+      s1: D({ name: "Apsurge Punch", skill: 1, cd: 450, startup: 18, active: 4, recovery: 20, dmg: 72, hs: 24, kb: [5, -1], box: [4, -62, 32, 22], stop: 8, hook: "teleport", tpAt: 9, anim: "tppunch", sfx: "heavy", heavy: true, desc: "Vanishes and reappears BEHIND the foe for a cross-up punch." }),
       s2: D({ name: "Shadow Step", skill: 2, cd: 420, startup: 14, active: 5, recovery: 22, dmg: 56, hs: 40, kb: [1.5, -7], launch: true, box: [2, -72, 28, 52], stop: 8, hook: "teleport", tpAt: 7, tpBack: -30, anim: "uppercut", sfx: "kick", desc: "Teleports IN FRONT of the foe into a rising launcher." }),
       s3: D({ name: "Phantom Barrage", skill: 3, ult: true, cd: 960, startup: 18, active: 28, recovery: 20, dmg: 24, hs: 20, kb: [0.8, 0], rehit: 5, maxHits: 5, finalKb: [5, -6.5], box: [4, -64, 34, 40], stop: 4, hook: "teleport", tpAt: 9, anim: "barrage", sfx: "punch", desc: "Teleports behind and unloads a 5-hit phantom flurry." }),
     },
   },
 
   dap: {
-    id: "dap", name: "DAP", title: "Heavy Dive Bruiser", color: "#ff5a6a",
+    id: "dap", name: "DAP-KRUSH", title: "Heavy Dive Bruiser", color: "#ff5a6a",
     hp: 1060, walk: 1.55, back: 1.3, jump: 5.9, scale: 0.94, hurtH: 65,
-    voice: "af_nicole",
+    voice: "af_sarah",
     look: { skin: "#d8a37c", hair: "#211917", hairStyle: "bun", top: "#d63848", top2: "#ff7a33", bottom: "#252b3b", shoes: "#222530", accent: "#ff7a33", prop: "none", bodyW: 9 },
     passive: { name: "Thick Skin", desc: "Takes 10% less damage from everything." },
     basic: ["b1", "b2", "b3"], air: "air",
@@ -215,26 +215,26 @@ export const CHARS = {
       b2: cross({ name: "Gut Check", dmg: 36, startup: 7 }),
       b3: fin({ name: "Heavy Haymaker", dmg: 64, startup: 12, kb: [7, -1] }),
       air: air({ name: "Belly Drop", anim: "airknee" }),
-      s1: D({ name: "DAP Kick", skill: 1, cd: 450, startup: 14, active: 14, recovery: 22, dmg: 110, hs: 28, bs: 20, kb: [9, -2], wallBounce: true, stun: 80, box: [0, -56, 40, 30], stop: 12, vel: [[12, 27, 5.8]], anim: "dropkick", sfx: "heavy", heavy: true, desc: "Two-legged flying dropkick: wall bounce + STUN." }),
+      s1: D({ name: "Krush Kick", skill: 1, cd: 450, startup: 14, active: 14, recovery: 22, dmg: 110, hs: 28, bs: 20, kb: [9, -2], wallBounce: true, stun: 80, box: [0, -56, 40, 30], stop: 12, vel: [[12, 27, 5.8]], anim: "dropkick", sfx: "heavy", heavy: true, desc: "Two-legged flying dropkick: wall bounce + STUN." }),
       s2: D({ name: "Belly Uppercut", skill: 2, cd: 420, startup: 10, active: 6, recovery: 22, dmg: 70, hs: 40, kb: [1.5, -7.5], launch: true, box: [4, -76, 28, 54], stop: 9, anim: "uppercut", sfx: "heavy", heavy: true, desc: "Huge launcher uppercut." }),
       s3: D({ name: "Bulldozer Dive", skill: 3, ult: true, cd: 1020, startup: 16, active: 16, recovery: 26, dmg: 150, hs: 40, bs: 22, kb: [12, -6], launch: true, wallBounce: true, armor: [1, 32], box: [0, -60, 34, 48], stop: 15, vel: [[14, 32, 6.6]], anim: "shoulder", sfx: "slam", heavy: true, desc: "ARMORED full-body dive across the stage — massive launch." }),
     },
   },
 
   jog: {
-    id: "jog", name: "JOG", title: "Chair Lockdown", color: "#60d7ff",
+    id: "jog", name: "JOGGERNAUT", title: "Chair Lockdown", color: "#60d7ff",
     hp: 1020, walk: 1.65, back: 1.45, jump: 6.0, scale: 1.04, hurtH: 70,
-    voice: "bm_george",
+    voice: "bm_fable",
     look: { skin: "#d9b08c", hair: "#a9b2c2", hairStyle: "neat", top: "#3e4b63", top2: "#60d7ff", bottom: "#1b1f2a", shoes: "#18181f", accent: "#60d7ff", prop: "chair", bodyW: 7 },
-    passive: { name: "Detention", desc: "SILENCED foes (can't use skills) take +15% damage from JOG." },
+    passive: { name: "Detention", desc: "SILENCED foes (can't use skills) take +15% damage from Joggernaut." },
     basic: ["b1", "b2", "b3"], air: "air",
     moves: {
       b1: jab({ name: "Stern Backhand", anim: "backhand" }),
       b2: cross({ name: "Grumpy Side Kick", anim: "kick", sfx: "kick", box: [8, -54, 34, 16] }),
       b3: fin({ name: "Cane Sweep", anim: "sweep", sfx: "kick", lvl: "L", box: [6, -16, 40, 16], dmg: 48, kb: [3, -3], kd: true }),
       air: air({ name: "Chair Drop", anim: "airbat", sfx: "bat" }),
-      s1: D({ name: "JOG Smash: Encore", skill: 1, cd: 480, startup: 13, active: 6, recovery: 24, dmg: 64, hs: 40, kb: [1.5, 0], box: [6, -70, 44, 50], stop: 9, followup: "s1b", anim: "chairover", sfx: "heavybat", heavy: true, desc: "Folding-chair smash. Press S1 again on hit for Hit 2: SILENCE (5s)." }),
-      s1b: D({ name: "JOG Smash: Silence", startup: 9, active: 6, recovery: 22, dmg: 80, hs: 28, kb: [9, -4], wallBounce: true, box: [6, -66, 46, 40], stop: 12, fx: { silence: 300 }, anim: "chairswing", sfx: "heavybat", heavy: true }),
+      s1: D({ name: "Joggernaut Smash: Encore", skill: 1, cd: 480, startup: 13, active: 6, recovery: 24, dmg: 64, hs: 40, kb: [1.5, 0], box: [6, -70, 44, 50], stop: 9, followup: "s1b", anim: "chairover", sfx: "heavybat", heavy: true, desc: "Folding-chair smash. Press S1 again on hit for Hit 2: SILENCE (5s)." }),
+      s1b: D({ name: "Joggernaut Smash: Silence", startup: 9, active: 6, recovery: 22, dmg: 80, hs: 28, kb: [9, -4], wallBounce: true, box: [6, -66, 46, 40], stop: 12, fx: { silence: 300 }, anim: "chairswing", sfx: "heavybat", heavy: true }),
       s2: D({ name: "Detention Grab", skill: 2, cd: 480, startup: 7, active: 3, recovery: 28, dmg: 92, hs: 34, kb: [5, -4], kd: true, unblock: true, box: [6, -62, 24, 52], stop: 10, anim: "push", sfx: "slam", desc: "UNBLOCKABLE short-range grab & slam (beats guarding)." }),
       s3: D({ name: "Pop Quiz", skill: 3, ult: true, kind: "cast", cd: 960, startup: 18, active: 1, recovery: 22, hook: "quiz", anim: "cast2", sfx: "slam", desc: "Slams the desk: foes within range take damage, are SILENCED (4s) and SLOWED." }),
       quizHit: D({ name: "Pop Quiz", dmg: 60, hs: 30, kb: [3, -4], launch: true, stop: 12, fx: { silence: 240, slow: 240 }, sfx: "slam", unblock: true, heavy: true }),
@@ -242,7 +242,7 @@ export const CHARS = {
   },
 
   jaguilar: {
-    id: "jaguilar", name: "JAGUILAR", title: "Laptop DoT Specialist", color: "#32f0ff",
+    id: "jaguilar", name: "JAGUARO", title: "Laptop DoT Specialist", color: "#32f0ff",
     hp: 990, walk: 1.8, back: 1.5, jump: 6.2, scale: 1.06, hurtH: 71,
     voice: "am_adam",
     look: { skin: "#dfb594", hair: "#1d1c24", hairStyle: "neat", top: "#1f5a78", top2: "#32f0ff", bottom: "#232631", shoes: "#d8dce6", accent: "#32f0ff", prop: "laptop", bodyW: 7 },
@@ -262,9 +262,9 @@ export const CHARS = {
   },
 
   paulite: {
-    id: "paulite", name: "PAULITE", title: "Body-Slam Debuff Tank", color: "#ffd24c",
+    id: "paulite", name: "POLITE", title: "Body-Slam Debuff Tank", color: "#ffd24c",
     hp: 1100, walk: 1.45, back: 1.2, jump: 5.6, scale: 0.86, hurtH: 60,
-    voice: "am_santa",
+    voice: "am_fenrir",
     look: { skin: "#6d4534", hair: "#171418", hairStyle: "buzz", top: "#e09f2d", top2: "#ffd24c", bottom: "#2d3b4e", shoes: "#231f20", accent: "#ffd24c", prop: "none", bodyW: 11 },
     passive: { name: "Bad Jokes", desc: "Every 12s tells a terrible joke: nearby foes get SAD (-25% speed, -20% dmg) for 2s." },
     basic: ["b1", "b2", "b3"], air: "air",
@@ -280,9 +280,9 @@ export const CHARS = {
   },
 
   johan: {
-    id: "johan", name: "JOHAN BACORRO", title: "Rolling Juggernaut", color: "#65ff6e",
+    id: "johan", name: "JOBACUR", title: "Rolling Juggernaut", color: "#65ff6e",
     hp: 1160, walk: 1.4, back: 1.2, jump: 5.6, scale: 0.92, hurtH: 64,
-    voice: "am_fenrir",
+    voice: "am_michael",
     look: { skin: "#e7be9e", hair: "#2b2320", hairStyle: "messy", top: "#4e8f52", top2: "#65ff6e", bottom: "#353d4b", shoes: "#2b2b33", accent: "#65ff6e", prop: "none", bodyW: 10 },
     passive: { name: "Stench Poison", desc: "Toxic aura: foes standing close are POISONED (tick damage)." },
     basic: ["b1", "b2", "b3"], air: "air",

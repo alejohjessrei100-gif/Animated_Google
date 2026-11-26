@@ -20,9 +20,11 @@
 Hold back to guard (down-back for lows). Esc pauses, M mutes. Touch controls can be enabled in Settings.
 
 ## Roster (1 basic + 3 skills each)
-Jiross (Javatar skill-steal, Smack Talk passive) · Lian Angelo (frisbee) · Dumdum (bleed/laceration) · Gayle Monana (softball bat) · DAPSAY (DAP/APSAY stances: DAP buffed with long stun, APSAY nerfed) · William (gravity, "wait class" confusion every 4s) · Tanoy (smoke & burn) · Acar (kicks).
+Jirox (Javatar skill-steal, Smack Talk passive) · Lian Aero (frisbee) · Dumblade (bleed/laceration) · Gale Slugger (softball bat) · Dap-Sai (DAP/APSAY stances: DAP buffed with long stun, APSAY nerfed) · Gravilliam (gravity, "wait class" confusion every 4s) · TanoHaze (smoke & burn) · Sole-Car (kicks).
 
-Original Batch 30 fighters, rebuilt in the pixel style: APSAY (teleports) · DAP (dropkick, armored dive) · JOG (chair smash, Silence) · JAGUILAR (laptop bleed, Blue Screen blind) · PAULITE (belly slam, Bad Jokes → Sad) · JOHAN BACORRO (boulder roll, stench poison aura).
+Original Batch 30 fighters, rebuilt in the pixel style: Apsurge (teleports) · Dap-Krush (dropkick, armored dive) · Joggernaut (chair smash, Silence) · Jaguaro (laptop bleed, Blue Screen blind) · Polite (belly slam, Bad Jokes → Sad) · Jobacur (boulder roll, stench poison aura).
+
+Internal ids (e.g. `jiross`, `dapsay`) keep the original names; only display names changed.
 
 ## Architecture
 - `public/js/sim.js`: deterministic 60 fps simulation (no trig or `Math.random`; seeded PRNG), so peers stay bit-identical.

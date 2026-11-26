@@ -1,7 +1,7 @@
 {
  "announcer": {
-  "voice": "am_fenrir",
-  "speed": 0.88,
+  "voice": "bm_lewis",
+  "speed": 0.9,
   "lines": {
    "title": "Celestra Chronicles!",
    "choose": "Choose your fighter!",
@@ -22,24 +22,24 @@
    "draw": "Draw game!",
    "doubleko": "Double K. O.!",
    "rematch": "Here comes a new challenger!",
-   "n_jiross": "Jiross!",
-   "n_lian": "Lian Angelo!",
-   "n_dumdum": "Dumdum!",
-   "n_gayle": "Gayle Monana!",
-   "n_dapsay": "Dapsay!",
-   "n_william": "William!",
-   "n_tanoy": "Tanoy!",
-   "n_acar": "Acar!",
-   "n_apsay": "Apsay!",
-   "n_dap": "Dap!",
-   "n_jog": "Jog!",
-   "n_jaguilar": "Jaguilar!",
-   "n_paulite": "Paulite!",
-   "n_johan": "Johan Bacorro!"
+   "n_jiross": "Jirox!",
+   "n_lian": "Lian Aero!",
+   "n_dumdum": "Dumblade!",
+   "n_gayle": "Gale Slugger!",
+   "n_dapsay": "Dap Sai!",
+   "n_william": "Gravilliam!",
+   "n_tanoy": "Tano Haze!",
+   "n_acar": "Sole Car!",
+   "n_apsay": "Apsurge!",
+   "n_dap": "Dap Krush!",
+   "n_jog": "Joggernaut!",
+   "n_jaguilar": "Jaguaro!",
+   "n_paulite": "Polite!",
+   "n_johan": "Jobacur!"
   }
  },
  "jiross": {
-  "voice": "am_puck",
+  "voice": "am_echo",
   "speed": 1.08,
   "lines": {
    "jiross_t0": "Is that all you got?",
@@ -52,7 +52,7 @@
   }
  },
  "lian": {
-  "voice": "am_eric",
+  "voice": "am_liam",
   "speed": 1.05,
   "lines": {
    "lian_ult": "Dash catch!",
@@ -60,7 +60,7 @@
   }
  },
  "dumdum": {
-  "voice": "am_onyx",
+  "voice": "bm_daniel",
   "speed": 0.95,
   "lines": {
    "dumdum_ult": "Hemorrhage!",
@@ -68,7 +68,7 @@
   }
  },
  "gayle": {
-  "voice": "af_bella",
+  "voice": "af_jessica",
   "speed": 1.0,
   "lines": {
    "gayle_ult": "Home run!",
@@ -76,7 +76,7 @@
   }
  },
  "dapsay": {
-  "voice": "af_nicole",
+  "voice": "af_kore",
   "speed": 1.0,
   "lines": {
    "dapsay_s1": "Dap kick!",
@@ -85,7 +85,7 @@
   }
  },
  "william": {
-  "voice": "am_michael",
+  "voice": "bm_george",
   "speed": 0.95,
   "lines": {
    "william_wait": "Wait class.",
@@ -94,7 +94,7 @@
   }
  },
  "tanoy": {
-  "voice": "am_liam",
+  "voice": "am_onyx",
   "speed": 0.95,
   "lines": {
    "tanoy_ult": "Chain smoker!",
@@ -102,7 +102,7 @@
   }
  },
  "acar": {
-  "voice": "am_echo",
+  "voice": "am_eric",
   "speed": 1.05,
   "lines": {
    "acar_ult": "Stomp frenzy!",
@@ -113,22 +113,22 @@
   "voice": "am_puck",
   "speed": 1.1,
   "lines": {
-   "apsay_s1": "Apsay punch!",
+   "apsay_s1": "Apsurge punch!",
    "apsay_ult": "Phantom barrage!",
    "apsay_win": "Blink and you missed it."
   }
  },
  "dap": {
-  "voice": "af_nicole",
+  "voice": "af_sarah",
   "speed": 1.0,
   "lines": {
-   "dap_s1": "Dap kick!",
+   "dap_s1": "Krush kick!",
    "dap_ult": "Bulldozer dive!",
    "dap_win": "Too heavy for you."
   }
  },
  "jog": {
-  "voice": "bm_george",
+  "voice": "bm_fable",
   "speed": 0.92,
   "lines": {
    "jog_s1b": "Silence!",
@@ -145,7 +145,7 @@
   }
  },
  "paulite": {
-  "voice": "am_santa",
+  "voice": "am_fenrir",
   "speed": 1.0,
   "lines": {
    "paulite_ult": "Body slam tsunami!",
@@ -159,7 +159,7 @@
   }
  },
  "johan": {
-  "voice": "am_fenrir",
+  "voice": "am_michael",
   "speed": 0.95,
   "lines": {
    "johan_ult": "Avalanche!",

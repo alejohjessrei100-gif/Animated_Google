@@ -86,7 +86,7 @@ ROSTER.forEach((id, i) => {
   const c = CHARS[id];
   const b = document.createElement("button");
   b.className = "cell"; b.dataset.i = i;
-  b.innerHTML = `<canvas width="32" height="32"></canvas><span class="lbl">${c.name.split(" ")[0]}</span>`;
+  b.innerHTML = `<canvas width="32" height="32"></canvas><span class="lbl">${c.name}</span>`;
   drawPortrait(b.querySelector("canvas"), id);
   b.addEventListener("click", () => { const p = activePicker(); if (p < 0) return; app.cursor[p] = i; confirmPick(p); });
   b.addEventListener("mouseenter", () => { const p = activePicker(); if (p < 0) return; app.cursor[p] = i; sfx("move"); renderSelect(); });
