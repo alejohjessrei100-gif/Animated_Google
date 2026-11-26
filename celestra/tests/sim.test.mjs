@@ -6,8 +6,8 @@ import assert from "node:assert/strict";
 
 let seedI = 12345;
 const r = () => (seedI = (seedI * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
-const BITS = [B.L, B.R, B.U, B.D, B.A, B.P, B.S1, B.S2, B.S3, B.DASH];
-const W = [0.35, 0.35, 0.05, 0.1, 0.3, 0.08, 0.06, 0.06, 0.05, 0.05];
+const BITS = [B.L, B.R, B.U, B.D, B.A, B.P, B.S1, B.S2, B.S3, B.DASH, B.ST];
+const W = [0.35, 0.35, 0.08, 0.1, 0.3, 0.08, 0.06, 0.06, 0.05, 0.05, 0.03];
 const randIn = (prev) => { if (r() < 0.85) return prev; let v = 0; BITS.forEach((b, i) => { if (r() < W[i]) v |= b; }); return v; };
 
 // 1) every matchup is deterministic and clone/resume-equivalent

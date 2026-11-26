@@ -8,6 +8,14 @@
 - **Online PvP**: private rooms (5-letter code / invite link `/?room=CODE`) or **Quick Match**.
 - **VS CPU** (Easy / Normal / Hard), **Local 2P** (shared keyboard or 2 gamepads), **Training** (HP refills; dummy can stand, block, parry or fight).
 
+## Features
+- Name prompt on every visit, player profiles and an online **leaderboard** (wins/losses, main fighter, recent matches).
+- **Open rooms** list in Online PvP, plus private codes / invite links and quick match.
+- **Replays**: save any match and share `/?replay=ID` (matches are deterministic, so a replay is just inputs).
+- **Tutorial** mode (10 steps), **customizable controls**, phone mode (thumbstick, big buttons, vibration, fullscreen, rotate prompt).
+- **Concerns & ideas** form; read them at `/admin.html?key=ADMIN_KEY` (Worker secret).
+- Every fighter: double jump, air slam (Down+Attack in the air), 3 stances (Balanced / Aggressive / Defensive), intro and victory animations.
+
 ## Controls
 | Action | P1 / solo | Solo alt | P2 (local) | Gamepad |
 |---|---|---|---|---|
@@ -16,6 +24,7 @@
 | Parry | G | K | Num2 / L | B |
 | Skill 1 / 2 / 3 (ult) | R / T / Y | U / I / O | Num4-6 / I O P | A / Y / RB |
 | Dash | H or double-tap | L | Num3 / ; | LB |
+| Stance | V | P | Num0 / ' | Back |
 
 Hold back to guard (down-back for lows). Esc pauses, M mutes. Touch controls can be enabled in Settings.
 

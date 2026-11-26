@@ -10,9 +10,10 @@ const D = (o) => ({
 });
 
 // Shared basic templates (overridden per fighter)
-const jab = (o) => D({ name: "Jab", startup: 5, active: 3, recovery: 9, dmg: 28, hs: 16, kb: [2, 0], lvl: "H", box: [8, -64, 26, 12], anim: "jab", chain: "b2", ...o });
-const cross = (o) => D({ name: "Cross", startup: 6, active: 3, recovery: 11, dmg: 30, hs: 18, kb: [2.5, 0], lvl: "M", box: [8, -58, 28, 14], anim: "cross", chain: "b3", ...o });
-const fin = (o) => D({ name: "Finisher", startup: 10, active: 4, recovery: 18, dmg: 52, hs: 24, bs: 14, kb: [5.5, 0], lvl: "M", box: [8, -56, 32, 18], stop: 7, anim: "hook", heavy: true, ...o });
+// chain hits push lightly and step forward so all 3 hits connect
+const jab = (o) => D({ name: "Jab", startup: 5, active: 3, recovery: 9, dmg: 28, hs: 18, kb: [1.1, 0], lvl: "H", box: [8, -64, 26, 12], anim: "jab", chain: "b2", vel: [[1, 5, 0.8]], ...o });
+const cross = (o) => D({ name: "Cross", startup: 6, active: 3, recovery: 11, dmg: 30, hs: 20, kb: [1.2, 0], lvl: "M", box: [8, -58, 28, 14], anim: "cross", chain: "b3", vel: [[1, 6, 1.2]], ...o });
+const fin = (o) => D({ name: "Finisher", startup: 10, active: 4, recovery: 18, dmg: 52, hs: 24, bs: 14, kb: [5.5, 0], lvl: "M", box: [8, -56, 32, 18], stop: 7, anim: "hook", heavy: true, vel: [[1, 10, 1.6]], ...o });
 const air = (o) => D({ name: "Air Strike", isAir: true, startup: 5, active: 8, recovery: 6, dmg: 40, hs: 18, kb: [3, 0], lvl: "M", box: [4, -46, 28, 24], anim: "airkick", sfx: "kick", ...o });
 
 export const PARRY = { window: 10, whiff: 22, counter: 50, stagger: 38 };
@@ -22,7 +23,7 @@ export const CHARS = {
     id: "jiross", name: "JIROX", title: "The Smack-Talk Brawler", color: "#ff9a3c",
     hp: 1000, walk: 1.7, back: 1.35, jump: 6.2, scale: 1.0, hurtH: 68,
     voice: "am_echo",
-    look: { skin: "#d9a066", hair: "#2b1a12", hairStyle: "spike", top: "#e2722b", top2: "#ffd08a", bottom: "#3b3047", shoes: "#f2f2f2", accent: "#ffcf5a", prop: "mug", bodyW: 8 },
+    look: { skin: "#c68a5a", hair: "#121014", hairStyle: "flat", top: "#18171d", top2: "#d9d9e3", bottom: "#2a2a33", shoes: "#f2f2f2", accent: "#ff9a3c", prop: "mug", bodyW: 8, glasses: true },
     passive: { name: "Smack Talk", desc: "Every 10s Jirox taunts: foe is RATTLED (-15% dmg) for 3s. Landing hits builds MOMENTUM (+4% dmg per stack, max 5)." },
     basic: ["b1", "b2", "b3"], air: "air",
     moves: {
@@ -40,7 +41,7 @@ export const CHARS = {
     id: "lian", name: "LIAN AERO", title: "Frisbee Ace", color: "#3fe0d0",
     hp: 960, walk: 1.95, back: 1.6, jump: 6.4, scale: 0.98, hurtH: 67,
     voice: "am_liam",
-    look: { skin: "#e8b88a", hair: "#16141c", hairStyle: "cap", top: "#1fb5a8", top2: "#f4f7ff", bottom: "#1e2a44", shoes: "#ff4f6d", accent: "#fff36b", prop: "disc", bodyW: 7 },
+    look: { skin: "#e2b48c", hair: "#1a1614", hairStyle: "sidepart", top: "#1fb5a8", top2: "#f4f7ff", bottom: "#1e2a44", shoes: "#ff4f6d", accent: "#fff36b", prop: "disc", bodyW: 7, nose: "big", acne: 7 },
     passive: { name: "Clean Catch", desc: "Catching a returning Boomerang Disc refunds 2s of its cooldown." },
     basic: ["b1", "b2", "b3"], air: "air",
     moves: {
@@ -64,7 +65,7 @@ export const CHARS = {
     id: "dumdum", name: "DUMBLADE", title: "Laceration Maniac", color: "#ff3355",
     hp: 980, walk: 1.8, back: 1.45, jump: 6.2, scale: 1.0, hurtH: 68,
     voice: "bm_daniel",
-    look: { skin: "#c98b5e", hair: "#0d0b10", hairStyle: "long", top: "#2a1520", top2: "#ff3355", bottom: "#17131c", shoes: "#3a3a44", accent: "#ff3355", prop: "blades", bodyW: 7 },
+    look: { skin: "#9c6a45", hair: "#0b0a0e", hairStyle: "long", top: "#151318", top2: "#6b2d8f", bottom: "#0c0b10", shoes: "#26232b", accent: "#8a8a9c", prop: "blades", bodyW: 11, belly: 3, limb: 1, goth: true },
     passive: { name: "Open Wounds", desc: "Slashes stack BLEED (max 6). Each stack ticks damage over time." },
     basic: ["b1", "b2", "b3"], air: "air",
     moves: {
@@ -82,7 +83,7 @@ export const CHARS = {
     id: "gayle", name: "GALE SLUGGER", title: "Softball Slugger", color: "#ffd23f",
     hp: 1080, walk: 1.5, back: 1.25, jump: 5.9, scale: 1.04, hurtH: 70,
     voice: "af_jessica",
-    look: { skin: "#e3a77c", hair: "#5a2c16", hairStyle: "pony", top: "#ffd23f", top2: "#1c2a5c", bottom: "#1c2a5c", shoes: "#f5f5f5", accent: "#ff6b3d", prop: "bat", bodyW: 8 },
+    look: { skin: "#e3a77c", hair: "#5a2c16", hairStyle: "short", top: "#ffd23f", top2: "#1c2a5c", bottom: "#1c2a5c", shoes: "#f5f5f5", accent: "#ff6b3d", prop: "bat", bodyW: 11, belly: 3, limb: 1, glasses: true },
     passive: { name: "Clutch Hitter", desc: "Batter Up's stance has 1-hit ARMOR. Heavy swings wall-bounce." },
     basic: ["b1", "b2", "b3"], air: "air",
     moves: {
@@ -125,7 +126,7 @@ export const CHARS = {
     id: "william", name: "GRAVILLIAM", title: "Gravity Professor", color: "#7c7cff",
     hp: 990, walk: 1.6, back: 1.4, jump: 6.0, scale: 1.02, hurtH: 69,
     voice: "bm_george",
-    look: { skin: "#e0b08a", hair: "#3a2a20", hairStyle: "neat", top: "#2c2f7a", top2: "#a7a9ff", bottom: "#232433", shoes: "#2b2b2b", accent: "#9b8cff", prop: "glasses", bodyW: 7 },
+    look: { skin: "#e0b08a", hair: "#3a2a20", hairStyle: "neat", top: "#f0f0f4", top2: "#c9c9dd", bottom: "#22222c", shoes: "#1a1a1a", accent: "#9b8cff", prop: "none", bodyW: 9, upper: 6, thinLegs: true, glasses: true },
     passive: { name: "Confusion — \"wait class\"", desc: "Every 4s Gravilliam says \"wait class\" — foe is CONFUSED (left/right reversed) for 0.75s." },
     basic: ["b1", "b2", "b3"], air: "air",
     moves: {
@@ -145,7 +146,7 @@ export const CHARS = {
     id: "tanoy", name: "TANOHAZE", title: "Smoke & Embers", color: "#ff7a29",
     hp: 990, walk: 1.75, back: 1.45, jump: 6.2, scale: 1.0, hurtH: 68,
     voice: "am_onyx",
-    look: { skin: "#c99168", hair: "#262323", hairStyle: "messy", top: "#4a4d57", top2: "#8a8f9c", bottom: "#24252c", shoes: "#5a3a26", accent: "#ff7a29", prop: "cig", bodyW: 7 },
+    look: { skin: "#8a5a3a", hair: "#e9e9ee", hairStyle: "old", top: "#4a4d57", top2: "#8a8f9c", bottom: "#24252c", shoes: "#5a3a26", accent: "#ff7a29", prop: "cig", bodyW: 8, belly: 4 },
     passive: { name: "Chain Burn", desc: "Embers BURN (stacks to Lv3). Inside his smoke TanoHaze is harder to see and 15% faster." },
     basic: ["b1", "b2", "b3"], air: "air",
     moves: {
@@ -170,8 +171,8 @@ export const CHARS = {
   acar: {
     id: "acar", name: "SOLE-CAR", title: "Foot Fetish Kickboxer", color: "#5cff7a",
     hp: 970, walk: 1.9, back: 1.55, jump: 6.5, scale: 0.99, hurtH: 67,
-    voice: "am_eric",
-    look: { skin: "#d4a07a", hair: "#121015", hairStyle: "buzz", top: "#1d1d24", top2: "#5cff7a", bottom: "#2e7d3a", shoes: "barefoot", accent: "#5cff7a", prop: "none", bodyW: 7 },
+    voice: "af_nova",
+    look: { skin: "#d4a07a", hair: "#1a1210", hairStyle: "curly", top: "#1d1d24", top2: "#5cff7a", bottom: "#2e7d3a", shoes: "barefoot", accent: "#5cff7a", prop: "none", bodyW: 11, belly: 3, limb: 1 },
     passive: { name: "Foot Fetish", desc: "Kick specialist: every basic is a kick. Landing Stomp Frenzy refreshes Sole Barrage." },
     basic: ["b1", "b2", "b3"], air: "air",
     moves: {
@@ -189,7 +190,7 @@ export const CHARS = {
     id: "apsay", name: "APSURGE", title: "Teleport Rushdown", color: "#b56bff",
     hp: 960, walk: 2.0, back: 1.7, jump: 6.5, scale: 0.98, hurtH: 67, dashMul: 1.2,
     voice: "am_puck",
-    look: { skin: "#e3b796", hair: "#1b161d", hairStyle: "spike", top: "#5a32a3", top2: "#b56bff", bottom: "#1d2233", shoes: "#edeff7", accent: "#b56bff", prop: "none", bodyW: 7 },
+    look: { skin: "#f1d2bc", hair: "#1b161d", hairStyle: "spike", top: "#5a32a3", top2: "#b56bff", bottom: "#1d2233", shoes: "#edeff7", accent: "#b56bff", prop: "none", bodyW: 7, acne: 10 },
     passive: { name: "Afterimage", desc: "Dashes are 20% faster and pass through projectiles." },
     basic: ["b1", "b2", "b3"], air: "air",
     moves: {
@@ -207,7 +208,7 @@ export const CHARS = {
     id: "dap", name: "DAP-KRUSH", title: "Heavy Dive Bruiser", color: "#ff5a6a",
     hp: 1060, walk: 1.55, back: 1.3, jump: 5.9, scale: 0.94, hurtH: 65,
     voice: "af_sarah",
-    look: { skin: "#d8a37c", hair: "#211917", hairStyle: "bun", top: "#d63848", top2: "#ff7a33", bottom: "#252b3b", shoes: "#222530", accent: "#ff7a33", prop: "none", bodyW: 9 },
+    look: { skin: "#f0cfb5", hair: "#211917", hairStyle: "bun", top: "#f2f2f4", top2: "#ff7a33", bottom: "#111116", shoes: "#222530", accent: "#ff7a33", prop: "none", bodyW: 11, belly: 3, limb: 1, glasses: true },
     passive: { name: "Thick Skin", desc: "Takes 10% less damage from everything." },
     basic: ["b1", "b2", "b3"], air: "air",
     moves: {
@@ -300,9 +301,23 @@ export const CHARS = {
 
 export const ROSTER = ["jiross", "lian", "dumdum", "gayle", "dapsay", "william", "tanoy", "acar", "apsay", "dap", "jog", "jaguilar", "paulite", "johan"];
 
+// moves every fighter shares
+export const COMMON = {
+  slam: D({ name: "Air Slam", startup: 6, active: 70, recovery: 16, dmg: 52, hs: 26, kb: [3, -3], kd: true, box: [-8, -34, 32, 34], stop: 9, hook: "slam", anim: "slamair", sfx: "slam", heavy: true }),
+  slamWave: D({ name: "Shockwave", dmg: 34, hs: 24, kb: [4, -3], kd: true, lvl: "L", stop: 6, sfx: "slam" }),
+};
+
+// posture stances (every fighter): balanced / aggressive / defensive
+export const STANCES = [
+  { id: "bal", name: "BALANCED", dmg: 1, taken: 1, walk: 1, parry: 0, color: "#cfd3ff" },
+  { id: "agg", name: "AGGRESSIVE", dmg: 1.15, taken: 1.1, walk: 1.12, parry: -2, color: "#ff5a3c" },
+  { id: "def", name: "DEFENSIVE", dmg: 0.88, taken: 0.85, walk: 0.85, parry: 3, color: "#3fe0d0" },
+];
+
 export function getMove(ref) {
   const i = ref.indexOf(":");
-  return CHARS[ref.slice(0, i)].moves[ref.slice(i + 1)];
+  const k = ref.slice(i + 1);
+  return CHARS[ref.slice(0, i)].moves[k] || COMMON[k];
 }
 
 export const SMACK_TALK = [

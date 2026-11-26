@@ -35,7 +35,7 @@ const OUT = "#120e18";
 // ---------- poses ----------
 // angles in degrees. limbs measured from straight-down, + = toward facing.
 // torso measured from straight-up, + = lean forward. knee/elbow are relative.
-const BASE = { hx: 0, hd: 0, hy: null, tor: 6, hed: 0, bu: 25, be: 100, fu: 45, fe: 95, blu: -12, blk: 6, flu: 16, flk: -14, pa: 0, rot: 0 };
+const BASE = { hx: 0, hd: 0, hy: null, tor: 6, hed: 0, bu: 25, be: 100, fu: 45, fe: 95, blu: -12, blk: 6, flu: 16, flk: -14, pa: 0, rot: 0, lift: 0 };
 const P = (o) => ({ ...BASE, ...o });
 const lerpPose = (a, b, k) => {
   const o = {};
@@ -123,6 +123,37 @@ const A = {
 A.chairswing = A.batswing; A.chairover = A.batover; A.beam = A.cast;
 A.roll = { s: P({ hd: 14, tor: 50, hed: 30, fu: 60, fe: 130, bu: 50, be: 130, flu: 90, flk: -140, blu: 70, blk: -140 }), a: [P({})], r: P({ hd: 10, tor: 30, flu: 60, flk: -100, blu: 30, blk: -100 }) };
 
+// stances, double jump, air slam
+const STANCE_POSE = [null, { tor: 16, hed: -6, fu: 62, fe: 70, bu: 40, be: 80, flu: 26, flk: -26, blu: -22, blk: 12 }, { tor: -2, hed: 4, fu: 80, fe: 122, bu: 66, be: 128, flu: 14, flk: -18, blu: -16, blk: 8, hd: 3 }];
+const DJUMP = P({ flu: 95, flk: -135, blu: 80, blk: -135, tor: 26, hed: 10, fu: 70, fe: 120, bu: 60, be: 120 });
+const SLAM = {
+  s: P({ flu: 90, flk: -130, blu: 70, blk: -130, tor: 10, fu: 170, fe: 0, bu: 165, be: 0, hed: -6 }),
+  a: P({ tor: 36, hed: 10, fu: 30, fe: 0, bu: 20, be: 0, flu: -20, flk: -10, blu: -40, blk: -20 }),
+  land: P({ hd: 18, tor: 42, hed: 12, fu: 10, fe: 0, bu: 4, be: 0, flu: 75, flk: -120, blu: 35, blk: -115 }),
+};
+// per-fighter intro (pre-fight) and victory animations: lists of key poses
+const FLEX = P({ fu: 150, fe: 120, bu: 150, be: 120, tor: -4, hed: -4 });
+const POINT = P({ fu: 100, fe: -6, tor: -4, hed: -8, bu: 20, be: 60 });
+const ARMS_X = P({ fu: 80, fe: 150, bu: 80, be: 150, tor: -6, hed: -8 });
+const CHEER = P({ fu: 175, fe: 0, bu: 170, be: 0, tor: -6, hed: -12, hd: -2 });
+const INTRO = {
+  jiross: [ARMS_X, POINT], lian: [A.throw.s, A.spin.a[0]], dumdum: [A.xslash.s, A.xslash.a[1]],
+  gayle: [P({ fu: 160, fe: -40, bu: 150, be: -30, tor: -6 }), A.batpoke.a[0]], dapsay: [A.kick.a[0], A.jab.a[0]],
+  william: [{ ...A.cast2.a[0], lift: 8 }, { ...A.cast.a[0], lift: 6 }], tanoy: [A.exhale.s, A.exhale.a[0]],
+  acar: [A.highkick.a[0], A.highkick.s], apsay: [A.tppunch.s, POINT], dap: [FLEX, A.jab.a[0]],
+  jog: [A.cast.s, A.chairover.s], jaguilar: [A.cast.a[0], A.cast.s],
+  paulite: [P({ fu: 25, fe: 70, bu: 20, be: 80, tor: -8, hed: -6 }), P({ fu: 35, fe: 60, bu: 30, be: 70, tor: -12, hed: -10 })],
+  johan: [P({ fu: 165, fe: 20, tor: -4 }), P({ fu: 150, fe: -15, tor: -4 })],
+};
+const WIN = {
+  jiross: [POINT, ARMS_X], lian: [CHEER, A.spin.a[1]], dumdum: [A.xslash.a[0], ARMS_X],
+  gayle: [P({ fu: 175, fe: 0, bu: 170, be: 0, tor: -8, hed: -10 }), A.homerun.a[0]], dapsay: [A.highkick.a[0], CHEER],
+  william: [{ ...CHEER, lift: 12 }, { ...A.cast2.a[0], lift: 14 }], tanoy: [A.exhale.a[0], ARMS_X],
+  acar: [A.highkick.a[0], A.barrage.a[1]], apsay: [POINT, CHEER], dap: [FLEX, CHEER],
+  jog: [A.chairover.s, POINT], jaguilar: [A.cast.a[0], CHEER], paulite: [FLEX, P({ fu: 25, fe: 70, bu: 20, be: 80, tor: -10 })],
+  johan: [CHEER, P({ fu: 165, fe: 20, tor: -4 })],
+};
+
 // ---------- pose selection ----------
 export function poseFor(f, S) {
   const t = f.anim;
@@ -134,7 +165,8 @@ export function poseFor(f, S) {
     }
     case "dash": return POSES.dash[Math.floor(f.t / 4) % 2];
     case "bdash": return POSES.bdash[Math.floor(f.t / 5) % 2];
-    case "jump": return f.vy < 0 ? POSES.jumpUp : POSES.jumpDown;
+    case "jump": return f.dj && f.vy < 1 ? DJUMP : f.vy < 0 ? POSES.jumpUp : POSES.jumpDown;
+    case "intro": { const L = INTRO[f.ch]; return L ? L[Math.floor(t / 24) % L.length] : IDLE[0]; }
     case "crouch": return POSES.crouch;
     case "block": return f.crouch ? POSES.cblock : POSES.block;
     case "hit": return POSES.hit[f.stun > 8 ? 0 : 1];
@@ -144,10 +176,11 @@ export function poseFor(f, S) {
     case "wake": return POSES.wake[f.t < 7 ? 0 : 1];
     case "dizzy": return POSES.dizzy[Math.floor(t / 10) % 4];
     case "parry": return f.act && f.act.parried ? POSES.parryOk : POSES.parry;
-    case "win": return POSES.win[Math.floor(t / 18) % 2];
+    case "win": { const L = WIN[f.ch] || POSES.win; return L[Math.floor(t / 20) % L.length]; }
     case "act": {
       const m = getMove(f.act.ref), an = A[m.anim] || A.jab;
       const at = f.act.t;
+      if (m.anim === "slamair") return f.act.landed ? SLAM.land : at <= m.startup ? SLAM.s : SLAM.a;
       if (an.air && f.y < -6 && at <= m.startup) return an.air;
       if (at <= m.startup) {
         const k = at / Math.max(1, m.startup);
@@ -161,7 +194,7 @@ export function poseFor(f, S) {
       const k = (at - m.startup - m.active) / Math.max(1, m.recovery);
       return k < 0.5 ? an.r : lerpPose(an.r, IDLE[0], 0.5);
     }
-    default: return IDLE[Math.floor(t / 12) % 4];
+    default: { const b = IDLE[Math.floor(t / 12) % 4]; return f.pst ? { ...b, ...STANCE_POSE[f.pst] } : b; }
   }
 }
 
@@ -184,7 +217,7 @@ export function skeleton(pose, face, scale = 1) {
     // auto-ground: lowest foot rests on y=0
     const bf = (bl1[1] * L.th + bl2[1] * L.sh) * s, ff = (fl1[1] * L.th + fl2[1] * L.sh) * s;
     hipY = -Math.max(bf, ff) + pose.hd * 0.15;
-    hipY += 0;
+    hipY -= pose.lift || 0;
   }
   const H = [hipX, hipY];
   const S = [H[0] + Math.sin(tor) * face * L.torso * s, H[1] - Math.cos(tor) * L.torso * s];
@@ -240,24 +273,31 @@ export function drawFighter(ctx, f, ox, oy, opts = {}) {
   if (c.id === "dapsay") { if (f.stance === "apsay") { top = "#6b3fc4"; top2 = "#d63848"; } else { top = "#d63848"; top2 = "#6b3fc4"; } }
   const skin = lk.skin, shoes = lk.shoes === "barefoot" ? lk.skin : lk.shoes;
   const bw = lk.bodyW;
+  // body-shape knobs: limb (+thickness), upper (boulder chest), thinLegs, belly
+  const armR = 3 + (lk.limb || 0) + (lk.upper ? 2 : 0), foreR = 2 + (lk.limb || 0) + (lk.upper ? 1 : 0);
+  const thighR = Math.max(2, 4 + (lk.limb || 0) - (lk.thinLegs ? 2 : 0)), shinR = Math.max(1, 3 + (lk.limb || 0) - (lk.thinLegs ? 2 : 0));
 
   // --- back arm ---
   const [bE, bW, bD] = sk.bArm;
-  partPair(ctx, X(sk.S), Y(sk.S) + 2, X(bE), Y(bE), 3, 3, col(top, 0.7));
-  partPair(ctx, X(bE), Y(bE), X(bW), Y(bW), 3, 2, col(skin, 0.78));
-  disc(ctx, X(bW), Y(bW), 2, col(skin, 0.78));
+  partPair(ctx, X(sk.S), Y(sk.S) + 2, X(bE), Y(bE), armR, armR, col(top, 0.7));
+  partPair(ctx, X(bE), Y(bE), X(bW), Y(bW), armR, foreR, col(skin, 0.78));
+  disc(ctx, X(bW), Y(bW), foreR, col(skin, 0.78));
   drawProp(ctx, f, lk, bW, bD, X, Y, true, pose, white);
 
   // --- back leg ---
   const [bK, bF, bLD] = sk.bLeg;
-  partPair(ctx, X(sk.H), Y(sk.H), X(bK), Y(bK), 4, 3, col(lk.bottom, 0.72));
-  partPair(ctx, X(bK), Y(bK), X(bF), Y(bF), 3, 3, col(lk.bottom, 0.72));
+  partPair(ctx, X(sk.H), Y(sk.H), X(bK), Y(bK), thighR, shinR, col(lk.bottom, 0.72));
+  partPair(ctx, X(bK), Y(bK), X(bF), Y(bF), shinR, shinR, col(lk.bottom, 0.72));
   foot(ctx, X(bF), Y(bF), face, bLD, col(shoes, 0.75));
 
   // --- torso ---
   const tx1 = X(sk.H), ty1 = Y(sk.H) - 2, tx2 = X(sk.S), ty2 = Y(sk.S) + 2;
-  capsule(ctx, tx1, ty1, tx2, ty2, bw - 1 + 1, bw + 1, OUT);
-  capsule(ctx, tx1, ty1, tx2, ty2, bw - 1, bw, col(top));
+  const up = lk.upper || 0;
+  capsule(ctx, tx1, ty1, tx2, ty2, bw - 1 + 1, bw + up + 1, OUT);
+  capsule(ctx, tx1, ty1, tx2, ty2, bw - 1, bw + up, col(top));
+  if (up) { // boulder shoulders
+    for (const k of [1, -1]) { disc(ctx, tx2 + k * (bw + up - 2), ty2 + 2, 5, OUT); disc(ctx, tx2 + k * (bw + up - 2), ty2 + 2, 4, col(top, k === 1 ? 1 : 0.86)); }
+  }
   // shirt detail stripe / logo
   const mx = (tx1 + tx2) / 2, my = (ty1 + ty2) / 2;
   capsule(ctx, tx1 + (tx2 - tx1) * 0.25, ty1 + (ty2 - ty1) * 0.25, tx2, ty2, 2, 3, col(top2));
@@ -265,11 +305,18 @@ export function drawFighter(ctx, f, ox, oy, opts = {}) {
   // belt / hips
   disc(ctx, tx1, ty1 + 1, bw - 2, col(lk.bottom));
   ctx.fillStyle = col(lk.accent); ctx.fillRect(Math.round(tx1 - bw + 2), Math.round(ty1 - 3), bw * 2 - 3, 2);
+  if (lk.goth) { ctx.fillStyle = white ? "#fff" : "#c0c0d0"; for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(tx1 - bw + 3 + i * 3), Math.round(ty1 - 1 + (i & 1)), 1, 1); ctx.fillRect(Math.round(tx2 - 1), Math.round(ty2 + 3), 2, 2); }
+  // belly
+  if (lk.belly) {
+    const bx = tx1 + (tx2 - tx1) * 0.3 + face * (bw - 3), by = ty1 + (ty2 - ty1) * 0.3;
+    disc(ctx, bx, by, bw - 4 + lk.belly + 1, OUT); disc(ctx, bx, by, bw - 4 + lk.belly, col(top));
+    disc(ctx, bx + face * 2, by - 2, 2, col(top, 1.25));
+  }
 
   // --- front leg ---
   const [fK, fF, fLD] = sk.fLeg;
-  partPair(ctx, X(sk.H), Y(sk.H), X(fK), Y(fK), 4, 3, col(lk.bottom));
-  partPair(ctx, X(fK), Y(fK), X(fF), Y(fF), 3, 3, col(lk.bottom));
+  partPair(ctx, X(sk.H), Y(sk.H), X(fK), Y(fK), thighR, shinR, col(lk.bottom));
+  partPair(ctx, X(fK), Y(fK), X(fF), Y(fF), shinR, shinR, col(lk.bottom));
   foot(ctx, X(fF), Y(fF), face, fLD, col(shoes));
 
   // --- head ---
@@ -277,10 +324,10 @@ export function drawFighter(ctx, f, ox, oy, opts = {}) {
 
   // --- front arm ---
   const [fE, fW, fD] = sk.fArm;
-  partPair(ctx, X(sk.S), Y(sk.S) + 2, X(fE), Y(fE), 3, 3, col(top));
+  partPair(ctx, X(sk.S), Y(sk.S) + 2, X(fE), Y(fE), armR, armR, col(top));
   ctx.fillStyle = col(top2); ctx.fillRect(Math.round(X(fE)) - 1, Math.round(Y(fE)) - 1, 2, 2);
-  partPair(ctx, X(fE), Y(fE), X(fW), Y(fW), 3, 2, col(skin));
-  disc(ctx, X(fW), Y(fW), 2 + (pose === POSES.parry ? 0 : 0), col(skin, 1.08));
+  partPair(ctx, X(fE), Y(fE), X(fW), Y(fW), armR, foreR, col(skin));
+  disc(ctx, X(fW), Y(fW), foreR, col(skin, 1.08));
   drawProp(ctx, f, lk, fW, fD, X, Y, false, pose, white);
 
   return { hand: [X(fW), Y(fW)], foot: [X(fF), Y(fF)], head: [X(sk.Hd), Y(sk.Hd)], chest: [mx, my] };
@@ -303,6 +350,7 @@ function drawHead(ctx, x, y, face, ang, lk, c, f, white) {
   const st = lk.hairStyle;
   if (st === "long") { capsule(ctx, x - face * 3, y, x - face * 6, y + 12, 5, 3, OUT); capsule(ctx, x - face * 3, y, x - face * 6, y + 12, 4, 2, hc); }
   if (st === "pony") { const sw = Math.sin(f.anim * 0.15) * 2; capsule(ctx, x - face * 6, y - 3, x - face * (12 + sw), y + 6, 3, 2, OUT); capsule(ctx, x - face * 6, y - 3, x - face * (12 + sw), y + 6, 2, 1, hc); }
+  if (st === "curly") { for (const [dx, dy] of [[-6, -4], [-4, -8], [0, -9], [4, -8], [-8, 1], [-7, 5]]) { disc(ctx, x + face * dx, y + dy, 4, OUT); } for (const [dx, dy] of [[-6, -4], [-4, -8], [0, -9], [4, -8], [-8, 1], [-7, 5]]) disc(ctx, x + face * dx, y + dy, 3, hc); }
   if (st === "bun") { disc(ctx, x - face * 4, y - 8, 4, OUT); disc(ctx, x - face * 4, y - 8, 3, hc); ctx.fillStyle = white ? "#fff" : lk.accent; ctx.fillRect(x - face * 4 - 1, y - 6, 3, 1); }
   disc(ctx, x, y, 7, sk);
   // jaw shade
@@ -320,6 +368,11 @@ function drawHead(ctx, x, y, face, ang, lk, c, f, white) {
     case "neat": fl(-7, -8, 14, 4); fl(-8, -5, 3, 5); fl(0, -9, 6, 2); break;
     case "messy": fl(-7, -9, 14, 5); fl(-8, -5, 4, 6); fl(2, -10, 2, 2); fl(-4, -11, 2, 2); fl(5, -6, 2, 2); break;
     case "buzz": fl(-7, -7, 14, 3); fl(-7, -5, 2, 4); break;
+    case "flat": fl(-7, -8, 15, 4); fl(-8, -5, 3, 6); fl(2, -5, 6, 1); break;
+    case "sidepart": fl(-7, -8, 14, 3); fl(-8, -5, 3, 6); fl(-2, -6, 9, 2); fl(4, -4, 3, 1); ctx.fillStyle = white ? "#fff" : shade(lk.skin, 0.9); fl(-3, -8, 1, 2); break;
+    case "short": fl(-7, -8, 14, 4); fl(-8, -5, 3, 7); fl(1, -5, 5, 1); fl(-6, -10, 2, 2); break;
+    case "curly": fl(-7, -8, 14, 3); fl(2, -6, 3, 2); break;
+    case "old": ctx.fillStyle = white ? "#fff" : lk.hair; fl(-7, -7, 6, 2); fl(-8, -5, 3, 6); fl(3, -7, 3, 1); ctx.fillStyle = white ? "#fff" : shade(lk.skin, 0.8); fl(-2, -2, 6, 1); break;
   }
   // eye + brow + mouth
   const ex = face === 1 ? x + 3 : x - 4;
@@ -330,7 +383,14 @@ function drawHead(ctx, x, y, face, ang, lk, c, f, white) {
   else { ctx.fillRect(ex, y - 2, 2, 3); ctx.fillStyle = white ? "#fff" : "#ffffff"; ctx.fillRect(ex + (face === 1 ? 1 : 0), y - 2, 1, 1); }
   ctx.fillStyle = white ? "#fff" : OUT; ctx.fillRect(ex - (face === 1 ? 1 : 0), y - 4, 3, 1);
   ctx.fillStyle = white ? "#fff" : shade(lk.skin, 0.55); ctx.fillRect(face === 1 ? x + 2 : x - 4, y + 4, 3, 1);
-  if (lk.prop === "glasses") { ctx.fillStyle = white ? "#fff" : "#e9f0ff"; ctx.fillRect(ex - 2, y - 3, 5, 1); ctx.fillRect(ex - 2, y - 3, 1, 3); ctx.fillRect(ex + 2, y - 3, 1, 3); ctx.fillRect(ex - 2, y, 5, 1); }
+  if (lk.nose === "big") { ctx.fillStyle = white ? "#fff" : OUT; ctx.fillRect(face === 1 ? x + 7 : x - 9, y - 1, 3, 4); ctx.fillStyle = white ? "#fff" : shade(lk.skin, 0.95); ctx.fillRect(face === 1 ? x + 7 : x - 9, y - 1, 2, 3); }
+  if (lk.acne && !white) { ctx.fillStyle = "#c83a3a"; for (let i = 0; i < lk.acne; i++) { const ax = ((i * 37) % 9) - 3, ay = ((i * 53) % 7) - 2; ctx.fillRect(x + face * ax, y + ay + 1, 1, 1); } }
+  if (lk.glasses || lk.prop === "glasses") {
+    const fr = white ? "#fff" : "#1d1b26";
+    ctx.fillStyle = fr; ctx.fillRect(ex - 2, y - 4, 6, 1); ctx.fillRect(ex - 2, y + 1, 6, 1); ctx.fillRect(ex - 2, y - 4, 1, 6); ctx.fillRect(ex + 3, y - 4, 1, 6);
+    ctx.fillRect(face === 1 ? x - 4 : x + 1, y - 3, 4, 1); // temple arm
+    if (!white) { ctx.fillStyle = "rgba(200,230,255,0.55)"; ctx.fillRect(ex + (face === 1 ? 2 : -1), y - 3, 1, 1); }
+  }
   if (lk.prop === "cig" && f.st !== "down") {
     ctx.fillStyle = "#f2f2f2"; ctx.fillRect(face === 1 ? x + 5 : x - 8, y + 4, 4, 1);
     ctx.fillStyle = (f.anim >> 3) & 1 ? "#ff7a29" : "#ffd27a"; ctx.fillRect(face === 1 ? x + 9 : x - 9, y + 4, 1, 1);

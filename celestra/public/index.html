@@ -61,13 +61,18 @@
     <!-- ===== MODE MENU ===== -->
     <section id="menu" class="scr">
       <h2 class="sh">SELECT MODE</h2>
+      <div id="hello" class="hello"></div>
       <div class="menu-list">
-        <button class="mi" data-mode="online"><b>ONLINE PVP</b><i>Rooms, invite links &amp; quick match</i></button>
+        <button class="mi" data-mode="online"><b>ONLINE PVP</b><i>Rooms, open lobbies, quick match</i></button>
         <button class="mi" data-mode="cpu"><b>VS CPU</b><i>Arcade fight vs AI</i></button>
         <button class="mi" data-mode="local"><b>LOCAL 2P</b><i>Shared keyboard / 2 gamepads</i></button>
-        <button class="mi" data-mode="training"><b>TRAINING</b><i>Practice vs a dummy, HP refills</i></button>
-        <button class="mi" data-mode="howto"><b>HOW TO PLAY</b><i>Controls &amp; mechanics</i></button>
-        <button class="mi" data-mode="settings"><b>SETTINGS</b><i>CRT, audio, voice</i></button>
+        <button class="mi" data-mode="training"><b>TRAINING</b><i>Dummy practice, HP refills</i></button>
+        <button class="mi" data-mode="tutorial"><b>TUTORIAL</b><i>Learn every move step by step</i></button>
+        <button class="mi" data-mode="ranks"><b>RANKINGS</b><i>Leaderboard &amp; your profile</i></button>
+        <button class="mi" data-mode="feedback"><b>CONCERNS</b><i>Report bugs, ideas &amp; balance</i></button>
+        <button class="mi" data-mode="howto"><b>HOW TO PLAY</b><i>Moves &amp; mechanics</i></button>
+        <button class="mi" data-mode="controls"><b>CONTROLS</b><i>Remap keyboard keys</i></button>
+        <button class="mi" data-mode="settings"><b>SETTINGS</b><i>Display, audio, touch</i></button>
       </div>
       <div class="cpu-diff invis">
         <span>CPU LEVEL</span>
@@ -82,6 +87,7 @@
       <div class="lobby">
         <label class="fld">NAME <input id="pname" maxlength="14" autocomplete="off" spellcheck="false"></label>
         <button id="btnQuick" class="big">QUICK MATCH</button>
+        <label class="chk"><input type="checkbox" id="optPub" checked> LIST MY ROOM IN OPEN ROOMS</label>
         <button id="btnCreate" class="big">CREATE ROOM</button>
         <div class="join"><input id="jcode" maxlength="6" placeholder="CODE" autocomplete="off" spellcheck="false"><button id="btnJoin">JOIN</button></div>
         <div id="roomInfo" class="hidden">
@@ -90,6 +96,10 @@
         </div>
         <div id="lobbyMsg" class="msg"></div>
         <button class="back">BACK</button>
+      </div>
+      <div class="openrooms">
+        <h3>OPEN ROOMS</h3>
+        <div id="roomList" class="roomlist"><p class="dim">Loading…</p></div>
       </div>
     </section>
 
@@ -130,9 +140,57 @@
       <div class="res-btns">
         <button id="btnRematch" class="big">REMATCH</button>
         <button id="btnChange">CHANGE FIGHTER</button>
+        <button id="btnReplay">SAVE &amp; SHARE REPLAY</button>
         <button id="btnMenu">MAIN MENU</button>
       </div>
       <div class="res-msg msg"></div>
+    </section>
+
+    <!-- ===== NAME PROMPT ===== -->
+    <section id="namebox" class="scr">
+      <h2 class="sh">WHAT IS YOUR NAME?</h2>
+      <form id="nameForm" class="nameform">
+        <input id="nameInput" maxlength="14" autocomplete="nickname" spellcheck="false" placeholder="YOUR NAME">
+        <button class="big" type="submit">THAT'S ME</button>
+      </form>
+      <p class="dim" id="nameHint">Shown to rivals online and on the leaderboard.</p>
+    </section>
+
+    <!-- ===== RANKINGS ===== -->
+    <section id="ranks" class="scr scroll">
+      <h2 class="sh">RANKINGS</h2>
+      <div class="ranks">
+        <div class="profile" id="profile"></div>
+        <div class="board"><table id="board"></table></div>
+      </div>
+      <button class="back">BACK</button>
+    </section>
+
+    <!-- ===== CONCERNS / FEEDBACK ===== -->
+    <section id="feedback" class="scr">
+      <h2 class="sh">CONCERNS &amp; IDEAS</h2>
+      <form id="fbForm" class="fbform">
+        <div class="cats">
+          <label><input type="radio" name="cat" value="bug" checked> BUG</label>
+          <label><input type="radio" name="cat" value="lag"> LAG</label>
+          <label><input type="radio" name="cat" value="balance"> BALANCE</label>
+          <label><input type="radio" name="cat" value="controls"> CONTROLS</label>
+          <label><input type="radio" name="cat" value="idea"> IDEA</label>
+          <label><input type="radio" name="cat" value="other"> OTHER</label>
+        </div>
+        <textarea id="fbText" maxlength="1500" rows="5" placeholder="What should we fix or add? (e.g. Gale's Home Run is too strong)"></textarea>
+        <button class="big" type="submit">SEND</button>
+        <div id="fbMsg" class="msg"></div>
+      </form>
+      <button class="back">BACK</button>
+    </section>
+
+    <!-- ===== CONTROLS (remap) ===== -->
+    <section id="controls" class="scr scroll">
+      <h2 class="sh">CONTROLS</h2>
+      <p class="dim">Click a key, then press the new key. Gamepads and touch work automatically.</p>
+      <table id="bindTable" class="keys"></table>
+      <div class="res-btns row"><button id="btnResetBinds">RESET TO DEFAULT</button><button class="back">BACK</button></div>
     </section>
 
     <!-- ===== PAUSE ===== -->
@@ -159,12 +217,17 @@
           <tr><td>SKILL 2</td><td>T</td><td>I</td><td>NUM5 / O</td><td>Y</td></tr>
           <tr><td>SKILL 3 / ULTIMATE</td><td>Y</td><td>O</td><td>NUM6 / P</td><td>RB</td></tr>
           <tr><td>DASH</td><td>H or 2&times;TAP</td><td>L</td><td>NUM3 / ;</td><td>LB</td></tr>
+          <tr><td>STANCE</td><td>V</td><td>P</td><td>NUM0 / '</td><td>BACK</td></tr>
+          <tr><td>DOUBLE JUMP</td><td colspan="4">Press jump again in the air</td></tr>
+          <tr><td>AIR SLAM</td><td colspan="4">In the air: hold DOWN + ATTACK (dive + shockwave)</td></tr>
         </table>
         <div class="mech">
           <p><b>GUARD</b> Hold back to block HIGH &amp; MID. Hold down-back to block LOWs (crouching ducks HIGHs).</p>
           <p><b>PARRY</b> Tap parry just before a hit lands (10-frame window). Negates damage, staggers the attacker, reflects projectiles and opens a COUNTER window (+25% dmg). Whiffing leaves you open.</p>
           <p><b>COMBOS</b> Basic attack chains 3 hits. Land a basic, then cancel into any ready skill. Launchers pop foes airborne for juggles. Damage scales down over long combos.</p>
           <p><b>STATUS</b> BLEED / BURN tick damage &bull; STUN (dizzy, can't act) &bull; BLIND (-30% dmg) &bull; CONFUSE (left/right swap) &bull; SLOW &bull; RATTLED (-15% dmg).</p>
+          <p><b>STANCES</b> Cycle with STANCE: BALANCED &bull; AGGRESSIVE (+15% dmg, faster, take +10%, tighter parry) &bull; DEFENSIVE (take -15%, no chip, wider parry, slower, -12% dmg).</p>
+          <p><b>AIR</b> Double jump once per jump. DOWN + ATTACK in the air dives into a slam with a ground shockwave that knocks down.</p>
           <p><b>K.O.</b> The round-winning blow triggers a slow-motion finisher. Best of 3 rounds, 99s timer.</p>
         </div>
         <div id="movelist" class="movelist"></div>
@@ -181,25 +244,39 @@
         <label>MUSIC <input type="range" id="optMusic" min="0" max="1" step="0.05" value="0.35"></label>
         <label>VOICE <input type="range" id="optVoiceVol" min="0" max="1" step="0.05" value="0.9"></label>
         <label><input type="checkbox" id="optTouch"> TOUCH CONTROLS</label>
+        <label><input type="checkbox" id="optHaptic" checked> VIBRATE ON HITS (PHONE)</label>
+        <label>TOUCH BUTTON SIZE <input type="range" id="optTouchSize" min="0.8" max="1.4" step="0.05" value="1"></label>
+        <button id="btnName">CHANGE NAME</button>
         <p class="credit">Voices generated with Kokoro-82M (hexgrad/kokoro, Apache-2.0).</p>
       </div>
       <button class="back">BACK</button>
     </section>
 
+    <!-- tutorial checklist & replay bar -->
+    <div id="tut" class="hidden"><div class="tut-h">TUTORIAL</div><ol id="tutList"></ol></div>
+    <div id="replayBar" class="hidden"><span>▶ REPLAY</span><button id="rpSpeed">1x</button><button id="rpExit">EXIT</button></div>
+
     <div id="crt"></div>
   </div>
+  <div id="rotate" class="hidden"><div>⟳</div><p>ROTATE YOUR PHONE</p><small>Celestra plays best in landscape</small></div>
 
   <!-- touch controls -->
   <div id="touch" class="hidden">
-    <div class="tpad">
-      <button data-bit="U" class="tu">▲</button><button data-bit="L" class="tl">◀</button><button data-bit="R" class="tr">▶</button><button data-bit="D" class="td">▼</button>
-    </div>
+    <div class="tpad" id="tpad"><i class="knob"></i></div>
     <div class="tbtns">
-      <button data-bit="S1">S1</button><button data-bit="S2">S2</button><button data-bit="S3" class="ult">S3</button>
-      <button data-bit="A" class="atk">ATK</button><button data-bit="P">PRY</button><button data-bit="DASH">DSH</button>
+      <button data-bit="S1" class="sk"><span>S1</span><i class="cdv"></i><b class="cds"></b></button>
+      <button data-bit="S2" class="sk"><span>S2</span><i class="cdv"></i><b class="cds"></b></button>
+      <button data-bit="S3" class="sk ult"><span>ULT</span><i class="cdv"></i><b class="cds"></b></button>
+      <button data-bit="P" class="pry"><span>PRY</span></button>
+      <button data-bit="A" class="atk"><span>ATK</span></button>
+      <button data-bit="U" class="jmp"><span>JUMP</span></button>
+      <button data-bit="DASH" class="dsh"><span>DASH</span></button>
+      <button data-bit="ST" class="stc"><span>STN</span></button>
     </div>
+    <button id="tPause" class="tpause">II</button>
   </div>
   <button id="muteBtn" title="Mute (M)">♪</button>
+  <button id="fsBtn" title="Fullscreen">⛶</button>
 </div>
 <script type="module" src="js/main.js"></script>
 </body>

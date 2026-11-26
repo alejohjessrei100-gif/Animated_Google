@@ -37,6 +37,11 @@ export class AI {
     const dist = Math.abs(op.x - me.x);
     if (this.dummy === "stand") return 0;
     if (this.dummy === "block") return back | (op.act && getMove(op.act.ref).lvl === "L" ? B.D : 0);
+    if (this.dummy === "attack") { // tutorial: throws a slow jab every ~1.5s when close
+      this.cool = (this.cool || 0) + 1;
+      if (this.cool > 90 && dist < 70 && me.st !== "act") { this.cool = 0; return B.A; }
+      return 0;
+    }
     if (this.dummy === "parry") { const m = op.act && getMove(op.act.ref); if (m && op.act.t === Math.max(1, m.startup - 3) && dist < 120) return B.P; return 0; }
 
     let out = 0;
@@ -75,7 +80,16 @@ export class AI {
       }
       return 0;
     }
-    if (me.st === "jump") return Math.random() < 0.15 ? press(B.A) : 0;
+    if (me.st === "jump") {
+      if (!me.dj && me.vy > -2 && Math.random() < 0.04) return press(B.U);                 // double jump
+      if (dist < 50 && me.y < -20 && !me.slamUsed && Math.random() < 0.12 * this.L.aggro) return B.D | press(B.A); // air slam
+      return Math.random() < 0.15 ? press(B.A) : 0;
+    }
+    // occasionally switch stance: aggressive when ahead on life, defensive when behind
+    if (me.st === "idle" && Math.random() < 0.004) {
+      const want = me.hp > op.hp * 1.2 ? 1 : me.hp < op.hp * 0.8 ? 2 : 0;
+      if (want !== me.pst) return press(B.ST);
+    }
     if (vuln) {
       if (dist < 44) {
         for (let i = 2; i >= 0; i--) if (ready(i) && inR(i) && Math.random() < this.L.skill) return press(B["S" + (i + 1)]);

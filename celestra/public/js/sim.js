@@ -1,11 +1,11 @@
 // Celestra Chronicles — deterministic fighting simulation.
 // Pure state + inputs -> next state. No Math.sin/random/Date here so that both
 // online peers compute bit-identical results (required for rollback netcode).
-import { CHARS, getMove, PARRY, SMACK_TALK, PAULITE_JOKES } from "./chars.js";
+import { CHARS, getMove, PARRY, SMACK_TALK, PAULITE_JOKES, COMMON, STANCES } from "./chars.js";
 
 export const VIEW_W = 480, VIEW_H = 270, STAGE_W = 768;
-export const B = { L: 1, R: 2, U: 4, D: 8, A: 16, P: 32, S1: 64, S2: 128, S3: 256, DASH: 512 };
-const BTN = [["A", B.A], ["P", B.P], ["S1", B.S1], ["S2", B.S2], ["S3", B.S3], ["DASH", B.DASH], ["U", B.U]];
+export const B = { L: 1, R: 2, U: 4, D: 8, A: 16, P: 32, S1: 64, S2: 128, S3: 256, DASH: 512, ST: 1024 };
+const BTN = [["A", B.A], ["P", B.P], ["S1", B.S1], ["S2", B.S2], ["S3", B.S3], ["DASH", B.DASH], ["U", B.U], ["ST", B.ST]];
 const BUF = 8; // input buffer frames
 const GRAV = 0.34;
 const MAX_SEP = VIEW_W - 56;
@@ -25,7 +25,7 @@ function newFighter(ch, side) {
   return {
     ch, side, x: STAGE_W / 2 + (side === 0 ? -70 : 70), y: 0, vx: 0, vy: 0, face: side === 0 ? 1 : -1,
     hp: c.hp, maxHp: c.hp, st: "intro", t: 0, act: null, stun: 0,
-    cd: [0, 0, 0], buf: { A: 0, P: 0, S1: 0, S2: 0, S3: 0, DASH: 0, U: 0 }, prev: 0,
+    cd: [0, 0, 0], buf: { A: 0, P: 0, S1: 0, S2: 0, S3: 0, DASH: 0, U: 0, ST: 0 }, pst: 0, dj: false, slamUsed: false, prev: 0,
     tapDir: 0, tapT: 0, chainNext: false, combo: 0, juggle: 0, inv: 0, kd: false,
     sx: { bleed: 0, bleedT: 0, burn: 0, burnT: 0, blind: 0, confuse: 0, slow: 0, rattled: 0, floaty: 0, momentum: 0, counter: 0, smoke: 0, silence: 0, sad: 0, poison: 0, poisonT: 0 },
     dizzy: 0, lastSkill: null, stance: "dap", passiveT: ch === "william" ? 240 : ch === "paulite" ? 720 : 600,
@@ -46,8 +46,9 @@ export function newMatch({ chars, seed = 1, mode = "vs", stage = 0, rounds = 2 }
 }
 
 function resetRound(S) {
-  const chars = [S.p[0].ch, S.p[1].ch];
+  const chars = [S.p[0].ch, S.p[1].ch], pst = [S.p[0].pst, S.p[1].pst];
   S.p = [newFighter(chars[0], 0), newFighter(chars[1], 1)];
+  S.p[0].pst = pst[0]; S.p[1].pst = pst[1];
   S.projs = []; S.zones = [];
   S.phase = "intro"; S.phaseT = 0; S.timer = ROUND_TIME; S.hitstop = 0; S.slow = 0; S.winner = -1; S.koBy = -1;
 }
@@ -177,6 +178,21 @@ const HOOKS = {
     },
     onHit(S, f, op) { if (f.act && f.act.ref === "acar:s3") f.cd[0] = 0; },
   },
+  slam: {
+    frame(S, f, op) {
+      const a = f.act;
+      if (a.t < 6) { f.vy = -0.4; f.vx *= 0.8; }
+      if (a.t === 6) { f.vy = 7.4; f.vx = f.face * 0.8; }
+      if (a.t > 6 && !a.landed && grounded(f)) {
+        a.landed = a.t; a.noBox = true; f.vx = 0;
+        S.shake = Math.max(S.shake, 9);
+        emit(S, { type: "stomp", who: f.side, x: f.x, y: 0 });
+        emit(S, { type: "slam", who: f.side, x: f.x });
+        if (!a.hit && Math.abs(op.x - f.x) < 62 && op.y > -14) applyHit(S, f, op, COMMON.slamWave, { zone: true, x: op.x, y: op.y - 10 });
+      }
+      if (a.landed && a.t >= a.landed + 16) { f.act = null; f.st = "idle"; }
+    },
+  },
   joke: {
     frame(S, f, op) {
       if (f.act.t === 10) tellJoke(S, f, op, 240, 200);
@@ -250,7 +266,7 @@ function applyHit(S, a, d, m, opt = {}) {
   const hx = opt.x ?? (a.x + d.x) / 2, hy = opt.y ?? d.y - 44;
 
   // --- PARRY ---
-  if (d.st === "parry" && d.act && !d.act.parried && d.act.t >= 1 && d.act.t <= PARRY.window && !m.unblock) {
+  if (d.st === "parry" && d.act && !d.act.parried && d.act.t >= 1 && d.act.t <= PARRY.window + STANCES[d.pst].parry && !m.unblock) {
     d.act.parried = true; d.act.t = PARRY.window; // jump to success
     d.sx.counter = PARRY.counter; d.inv = 8;
     S.hitstop = Math.max(S.hitstop, 12); S.shake = Math.max(S.shake, 4);
@@ -281,7 +297,7 @@ function applyHit(S, a, d, m, opt = {}) {
     if (blocks) {
       d.st = "block"; d.stun = m.bs || 10; d.crouch = crouching; d.act = null;
       d.vx = sgn(d.x - a.x) * (Math.abs(m.kb[0]) * 0.6 + 1.2);
-      if (m.skill || opt.proj) { const chip = Math.round(m.dmg * 0.1); d.hp = Math.max(1, d.hp - chip); }
+      if ((m.skill || opt.proj) && d.pst !== 2) { const chip = Math.round(m.dmg * 0.1); d.hp = Math.max(1, d.hp - chip); }
       S.hitstop = Math.max(S.hitstop, 3);
       emit(S, { type: "block", who: d.side, x: hx, y: hy, heavy: !!m.heavy });
       return "block";
@@ -299,6 +315,7 @@ function applyHit(S, a, d, m, opt = {}) {
   if (a.sx.counter > 0) { mult *= 1.25; a.sx.counter = 0; counter = true; }
   if (a.ch === "dapsay" && (d.st === "dizzy" || d.dizzy > 0)) mult *= 1.3;
   if (a.sx.sad > 0) mult *= 0.8;
+  mult *= STANCES[a.pst].dmg * STANCES[d.pst].taken;
   if (d.ch === "dap") mult *= 0.9;
   if (a.ch === "jog" && d.sx.silence > 0) mult *= 1.15;
   const dmg = Math.max(1, Math.round(base * mult));
@@ -420,7 +437,17 @@ function stepFighter(S, f, op, raw) {
       break;
     }
     case "jump": {
-      if (live && f.buf.A && !f.act) { f.buf.A = 0; startMove(S, f, op, f.ch + ":" + c.air); f.st = "act"; }
+      if (live && f.buf.A && !f.act) {
+        f.buf.A = 0;
+        if (raw & B.D && !f.slamUsed) { f.slamUsed = true; startMove(S, f, op, f.ch + ":slam"); }
+        else startMove(S, f, op, f.ch + ":" + c.air);
+        f.st = "act";
+      } else if (live && f.buf.U && !f.dj && f.vy > -4.5) {
+        f.buf.U = 0; f.dj = true; f.vy = -c.jump * 0.88;
+        const dir = (raw & B.R ? 1 : 0) - (raw & B.L ? 1 : 0);
+        if (dir) f.vx = dir * c.walk * 1.2;
+        emit(S, { type: "djump", who: f.side });
+      }
       break;
     }
     case "act":
@@ -448,6 +475,7 @@ function neutral(S, f, op, raw, fwdBit, backBit, dashReq, cancel) {
   }
   if (f.buf.A) { f.buf.A = 0; if (grounded(f)) startMove(S, f, op, basicRef(f, 0)); return; }
   if (cancel) return;
+  if (f.buf.ST && grounded(f)) { f.buf.ST = 0; f.pst = (f.pst + 1) % 3; emit(S, { type: "stance", who: f.side, pst: f.pst }); }
   if (f.buf.P && grounded(f)) {
     f.buf.P = 0; f.st = "parry"; f.act = { ref: f.ch + ":b1", t: 0, parried: false }; f.vx = 0;
     emit(S, { type: "parryStart", who: f.side }); return;
@@ -465,7 +493,7 @@ function neutral(S, f, op, raw, fwdBit, backBit, dashReq, cancel) {
   }
   if (raw & B.D) { f.st = "crouch"; f.crouch = true; f.vx = 0; return; }
   f.crouch = false;
-  const slow = (f.sx.slow > 0 ? 0.5 : 1) * (f.sx.sad > 0 ? 0.75 : 1);
+  const slow = (f.sx.slow > 0 ? 0.5 : 1) * (f.sx.sad > 0 ? 0.75 : 1) * STANCES[f.pst].walk;
   const smoke = f.sx.smoke > 0 ? 1.15 : 1;
   if (raw & fwdBit) { f.st = "walk"; f.vx = f.face * c.walk * slow * smoke; }
   else if (raw & backBit) { f.st = "walk"; f.vx = -f.face * c.back * slow * smoke; }
@@ -523,7 +551,7 @@ function stepAct(S, f, op, raw) {
 function activeBox(f) {
   if (f.st !== "act" || !f.act) return null;
   const m = getMove(f.act.ref);
-  if (!m.box || m.kind === "proj" || m.kind === "cast") return null;
+  if (!m.box || m.kind === "proj" || m.kind === "cast" || f.act.noBox) return null;
   const t = f.act.t;
   if (t <= m.startup || t > m.startup + m.active) return null;
   if (m.maxHits) {
@@ -545,6 +573,7 @@ function physics(S, f, op) {
   f.x += f.vx; f.y += f.vy;
   if (f.y >= 0) {
     const wasAir = f.vy > 0;
+    f.dj = false; f.slamUsed = false;
     f.y = 0;
     if (f.st === "air") {
       if (f.hp <= 0) { f.st = "down"; f.t = 0; f.vx *= 0.3; f.vy = 0; emit(S, { type: "land", who: f.side, heavy: true }); }
@@ -730,9 +759,11 @@ export function step(S, inputs, events) {
   // phase machine
   S.phaseT++;
   if (S.phase === "intro") {
-    if (S.phaseT === 2) emit(S, { type: "round", n: S.round, final: S.wins[0] === S.roundsToWin - 1 && S.wins[1] === S.roundsToWin - 1 });
-    if (S.phaseT === 72) emit(S, { type: "fight" });
-    if (S.phaseT >= 76) { S.phase = "fight"; S.phaseT = 0; for (const f of S.p) { f.st = "idle"; f.t = 0; } }
+    const off = S.round === 1 && S.wins[0] === 0 && S.wins[1] === 0 ? 90 : 0; // round 1: VS card + intro animations first
+    if (off && S.phaseT === 2) emit(S, { type: "vs" });
+    if (S.phaseT === 2 + off) emit(S, { type: "round", n: S.round, final: S.wins[0] === S.roundsToWin - 1 && S.wins[1] === S.roundsToWin - 1 });
+    if (S.phaseT === 72 + off) emit(S, { type: "fight" });
+    if (S.phaseT >= 76 + off) { S.phase = "fight"; S.phaseT = 0; for (const f of S.p) { f.st = "idle"; f.t = 0; } }
   } else if (S.phase === "fight") {
     if (S.mode !== "training") {
       S.timer--;
@@ -796,7 +827,7 @@ export function hashState(S) {
   let h = 2166136261 >>> 0;
   const mix = (v) => { h ^= (v * 1000) | 0; h = Math.imul(h, 16777619) >>> 0; };
   mix(S.frame); mix(S.timer); mix(S.rng);
-  for (const f of S.p) { mix(f.x); mix(f.y); mix(f.hp); mix(f.vx); mix(f.vy); mix(f.cd[0]); mix(f.cd[1]); mix(f.cd[2]); }
+  for (const f of S.p) { mix(f.x); mix(f.y); mix(f.hp); mix(f.vx); mix(f.vy); mix(f.cd[0]); mix(f.cd[1]); mix(f.cd[2]); mix(f.pst); mix(f.dj ? 1 : 0); }
   mix(S.projs.length);
   return h >>> 0;
 }

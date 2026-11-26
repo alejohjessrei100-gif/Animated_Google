@@ -1,6 +1,6 @@
 // Renderer: stage, fighters, projectiles, zones, particles, in-world text.
 import { VIEW_W, VIEW_H, STAGE_W } from "./sim.js";
-import { CHARS, getMove } from "./chars.js";
+import { CHARS, getMove, STANCES } from "./chars.js";
 import { drawFighter, drawGhost, disc, capsule, poseFor } from "./sprites.js";
 import { buildStage, drawStage, drawStageFront, FLOOR_Y } from "./stage.js";
 
@@ -121,6 +121,9 @@ export class Renderer {
       case "implode": fx.ring(e.x, oy - 30, 40, 2, "#9b8cff", 14, 2); fx.burst(e.x, oy - 30, 20, ["#ffffff", "#9b8cff", "#3a2aff"], 3, 18, 0); break;
       case "stomp": fx.burst(e.x, oy - 1, 18, ["#c8bfa8", "#8a8070", "#5cff7a"], 3, 22, 0.06, 1, "smoke"); fx.ring(e.x, oy - 2, 4, 44, "#5cff7a", 14, 1); break;
       case "taunt": break;
+      case "djump": { const f = P(e.who); fx.ring(f.x, oy + f.y, 3, 16, "#ffffff", 10, 1); fx.burst(f.x, oy + f.y, 6, ["#ffffff", CHARS[f.ch].color], 1.4, 12, 0.02); break; }
+      case "slam": fx.ring(e.x, oy - 2, 6, 64, "#ffe14d", 16, 2); fx.ring(e.x, oy - 2, 4, 40, "#ffffff", 12, 1); fx.sparks(e.x, oy - 4, 1, 8, ["#ffe14d", "#ffffff"]); fx.sparks(e.x, oy - 4, -1, 8, ["#ffe14d", "#ffffff"]); break;
+      case "stance": { const f = P(e.who), st = STANCES[e.pst]; fx.text(f.x, oy + f.y - 96, st.name, st.color, 50, 1, -0.3); fx.ring(f.x, oy + f.y - 40, 6, 30, st.color, 12, 1); break; }
       case "joke": { const f = P(e.who); fx.burst(f.x, oy - 80, 8, ["#ffd24c", "#ffffff"], 1.2, 20, -0.02); break; }
       case "sad": { const f = P(e.who); fx.text(f.x, oy + f.y - 84, "SAD...", "#76a9ff", 60, 1, -0.2); break; }
       case "silence": { const f = P(e.who); fx.text(f.x, oy + f.y - 90, "SILENCED!", "#60d7ff", 70, 1, -0.2); fx.ring(f.x, oy + f.y - 44, 4, 30, "#60d7ff", 14, 1); break; }

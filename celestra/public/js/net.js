@@ -5,10 +5,10 @@ export class NetClient {
   constructor() { this.ws = null; this.handlers = {}; this.open = false; this.rtt = 0; this.peerRtt = 0; this._ping = null; }
   on(t, fn) { (this.handlers[t] ||= []).push(fn); }
   emit(t, m) { for (const fn of this.handlers[t] || []) fn(m); }
-  connect(code, name, pid = "") {
+  connect(code, name, pid = "", extra = "") {
     return new Promise((resolve, reject) => {
       const proto = location.protocol === "https:" ? "wss:" : "ws:";
-      const ws = new WebSocket(`${proto}//${location.host}/api/ws/${encodeURIComponent(code)}?name=${encodeURIComponent(name || "Player")}&pid=${encodeURIComponent(pid)}`);
+      const ws = new WebSocket(`${proto}//${location.host}/api/ws/${encodeURIComponent(code)}?name=${encodeURIComponent(name || "Player")}&pid=${encodeURIComponent(pid)}${extra}`);
       this.ws = ws;
       let settled = false;
       ws.onopen = () => { this.open = true; settled = true; resolve(); this.startPing(); };
@@ -105,6 +105,7 @@ export class RollbackSession {
     this.lastSent = -1; this.lastBits = -1; this.sinceSend = 0;
     this.myHash = new Map(); this.checked = new Set(); this.desync = false;
     this.stalls = 0; this.rollbacks = 0; this.skip = 0; this.ticks = 0;
+    this.record = []; // confirmed [p0, p1] inputs per frame, for replays
     for (let f = 0; f < delay; f++) this.localIn.set(f, 0);
   }
   onInput(m) {
@@ -183,6 +184,11 @@ export class RollbackSession {
     const cf = Math.floor((Math.min(this.lastRemote, this.frame - 1) + 1) / 120) * 120;
     if (cf > 0 && !this.checked.has(cf) && this.snaps.has(cf)) {
       const h = hashState(this.snaps.get(cf)); this.myHash.set(cf, h); this.checked.add(cf); this.net.send({ t: "chk", f: cf, h });
+    }
+    // record confirmed frames (both inputs known) for replays
+    while (this.record.length <= Math.min(this.lastRemote, this.frame - 1)) {
+      const f = this.record.length, l = this.localIn.get(f) ?? 0, r = this.remoteIn.get(f) ?? 0;
+      this.record.push(this.local === 0 ? [l, r] : [r, l]);
     }
     // prune
     const keep = Math.min(this.lastRemote, this.frame - 1) - 2;

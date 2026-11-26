@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Celestra Concerns</title>
+<meta name="robots" content="noindex">
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}
+body{margin:0;background:#0b0820;color:#f4f1ff;font:15px/1.5 system-ui,sans-serif;padding:24px max(16px,4vw)}
+h1{font-size:26px;margin:0 0 4px;color:#ffd23f}p.s{color:#8f88b5;margin:0 0 18px}
+.f{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.f button{background:#15102a;color:#f4f1ff;border:1px solid #3a2d6e;padding:6px 12px;border-radius:6px;cursor:pointer}.f button.on{border-color:#ffd23f;color:#ffd23f}
+.c{background:#15102a;border:1px solid #2a2350;border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.m{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;color:#8f88b5;margin-bottom:6px}.m b{color:#3fe0d0;font-weight:600}
+.t{white-space:pre-wrap;overflow-wrap:anywhere}.cat{padding:1px 8px;border-radius:99px;background:#2a2350;color:#ffd23f}
+</style></head><body>
+<h1>Concerns &amp; ideas</h1><p class="s" id="s">Loading…</p>
+<div class="f" id="f"></div><div id="list"></div>
+<script>
+{
+const key = new URLSearchParams(location.search).get("key") || "";
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+let all = [], cat = "all";
+function draw() {
+  const rows = cat === "all" ? all : all.filter((r) => r.cat === cat);
+  document.getElementById("list").innerHTML = rows.map((r) => `<div class="c"><div class="m"><span class="cat">${esc(r.cat)}</span><b>${esc(r.name || "anon")}</b><span>${esc(r.device)}</span><span>${new Date(r.at).toLocaleString()}</span></div><div class="t">${esc(r.text)}</div></div>`).join("") || "<p class='s'>Nothing here yet.</p>";
+  const cats = ["all", ...new Set(all.map((r) => r.cat))];
+  document.getElementById("f").innerHTML = cats.map((c) => `<button data-c="${esc(c)}" class="${c === cat ? "on" : ""}">${esc(c)} (${c === "all" ? all.length : all.filter((r) => r.cat === c).length})</button>`).join("");
+  document.querySelectorAll("#f button").forEach((b) => b.onclick = () => { cat = b.dataset.c; draw(); });
+}
+fetch("/api/feedback?key=" + encodeURIComponent(key)).then((r) => { if (!r.ok) throw r.status; return r.json(); })
+  .then((d) => { all = d; document.getElementById("s").textContent = `${d.length} notes from players, newest first.`; draw(); })
+  .catch(() => { document.getElementById("s").textContent = "Wrong or missing key."; });
+}
+</script></body></html>

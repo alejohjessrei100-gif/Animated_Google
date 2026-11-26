@@ -29,6 +29,13 @@ export default {
     const url = new URL(req.url);
     const p = url.pathname;
     if (p === "/api/new") return json({ code: newCode() });
+    // hub: profiles, leaderboard, replays, feedback, open rooms
+    if (/^\/api\/(profile|leaderboard|rooms|replay|feedback)(\/|$)/.test(p)) {
+      const hub = env.HUB.get(env.HUB.idFromName("hub"));
+      const u = new URL(req.url); u.pathname = p.replace("/api", "");
+      if (p.startsWith("/api/feedback") && req.method === "GET" && u.searchParams.get("key") !== env.ADMIN_KEY) return json({ error: "forbidden" }, 403);
+      return hub.fetch(new Request(u, req));
+    }
     if (p === "/api/quick") {
       const mm = env.MATCHMAKER.get(env.MATCHMAKER.idFromName("global"));
       return mm.fetch("https://mm/quick", { method: "POST", body: url.searchParams.get("skip") || "" });
@@ -91,6 +98,8 @@ export class Room extends DurableObject {
     const code = url.searchParams.get("code");
     const name = (url.searchParams.get("name") || "Player").replace(/[^\w \-.]/g, "").slice(0, 14) || "Player";
     const pid = (url.searchParams.get("pid") || "").replace(/[^\w-]/g, "").slice(0, 40);
+    const uid = (url.searchParams.get("uid") || "").replace(/[^\w-]/g, "").slice(0, 40);
+    const pub = url.searchParams.get("pub") === "1";
     const [c, s] = Object.values(new WebSocketPair());
     let socks = this.sockets();
     // same player reconnecting (e.g. phone dropped the socket while switching apps):
@@ -110,13 +119,15 @@ export class Room extends DurableObject {
       return new Response(null, { status: 101, webSocket: c });
     }
     this.ctx.acceptWebSocket(s);
-    s.serializeAttachment({ slot, name, pid, char: keepChar, ready: false });
+    s.serializeAttachment({ slot, name, pid, uid, char: keepChar, ready: false });
     const meta = await this.meta();
     meta.code = code;
+    if (slot === 0 && !prev) meta.pub = pub;
     if (meta.phase !== "select") { meta.phase = "select"; meta.rematch = [false, false]; }
     await this.save();
     s.send(JSON.stringify({ t: "welcome", slot, code }));
     this.broadcastRoom();
+    this.ctx.waitUntil(this.listing());
     return new Response(null, { status: 101, webSocket: c });
   }
   roomState(except) {
@@ -169,6 +180,21 @@ export class Room extends DurableObject {
         else this.broadcast({ t: "rematchReq", slot: a.slot });
         break;
       }
+      case "result": {
+        // both players report the outcome; record it once they agree
+        if (meta.phase !== "match") return;
+        meta.results ||= {};
+        if (meta.results.done === meta.round) return;
+        meta.results[a.slot] = { w: m.winner | 0, n: meta.round };
+        const r0 = meta.results[0], r1 = meta.results[1];
+        if (r0 && r1 && r0.n === meta.round && r1.n === meta.round && r0.w === r1.w) {
+          meta.results.done = meta.round;
+          const ps = this.sockets().map((w) => w && w.deserializeAttachment());
+          if (ps[0] && ps[1]) this.ctx.waitUntil(this.env.HUB.get(this.env.HUB.idFromName("hub")).fetch("https://hub/result", { method: "POST", body: JSON.stringify({ uids: [ps[0].uid, ps[1].uid], names: [ps[0].name, ps[1].name], chars: [ps[0].char, ps[1].char], winner: r0.w }) }).catch(() => {}));
+        }
+        await this.save();
+        break;
+      }
       case "select": {
         meta.phase = "select"; meta.rematch = [false, false]; await this.save();
         for (const w of this.sockets()) if (w) { const at = w.deserializeAttachment(); at.ready = false; w.serializeAttachment(at); }
@@ -176,9 +202,18 @@ export class Room extends DurableObject {
       }
     }
   }
+  // tell the hub whether this room should appear in the open-rooms list
+  async listing(except) {
+    try {
+      const meta = await this.meta();
+      const socks = this.sockets(except).filter(Boolean);
+      const host = socks[0] ? socks[0].deserializeAttachment() : null;
+      await this.env.HUB.get(this.env.HUB.idFromName("hub")).fetch("https://hub/rooms", { method: "POST", body: JSON.stringify({ code: meta.code, n: socks.length, pub: !!meta.pub, host: host ? host.name : "", char: host ? host.char : null, phase: meta.phase }) });
+    } catch {}
+  }
   async start(ps) {
     const meta = await this.meta();
-    meta.phase = "match"; meta.rematch = [false, false]; meta.round++;
+    meta.phase = "match"; meta.rematch = [false, false]; meta.round++; meta.results = {};
     const seed = crypto.getRandomValues(new Uint32Array(1))[0] | 0;
     await this.save();
     this.broadcast({ t: "start", seed, stage: meta.stage, chars: [ps[0].char, ps[1].char], names: [ps[0].name, ps[1].name], delay: 2, n: meta.round });
@@ -195,6 +230,91 @@ export class Room extends DurableObject {
     for (const w of socks) if (w) { const at = w.deserializeAttachment(); at.ready = false; w.serializeAttachment(at); }
     this.broadcast({ t: "left", slot: a.slot }, ws);
     this.broadcast(this.roomState(ws), ws);
+    await this.listing(ws);
   }
   async webSocketError(ws) { await this.webSocketClose(ws); }
 }
+
+// Global hub (SQLite): player profiles + leaderboard, match history, replays,
+// player concerns/feedback, and the open-rooms list.
+const clean = (v, n) => String(v ?? "").replace(/[\u0000-\u001f<>]/g, "").slice(0, n);
+export class Hub extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.sql = ctx.storage.sql;
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS players (uid TEXT PRIMARY KEY, name TEXT, wins INTEGER DEFAULT 0, losses INTEGER DEFAULT 0, draws INTEGER DEFAULT 0, chars TEXT DEFAULT '{}', seen INTEGER);
+      CREATE TABLE IF NOT EXISTS matches (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, a TEXT, b TEXT, an TEXT, bn TEXT, ac TEXT, bc TEXT, winner INTEGER);
+      CREATE TABLE IF NOT EXISTS replays (id TEXT PRIMARY KEY, at INTEGER, title TEXT, data TEXT);
+      CREATE TABLE IF NOT EXISTS feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, name TEXT, cat TEXT, text TEXT, device TEXT);
+      CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, host TEXT, char TEXT, n INTEGER, pub INTEGER, phase TEXT, at INTEGER);`);
+  }
+  q(sql, ...b) { return this.sql.exec(sql, ...b).toArray(); }
+  async fetch(req) {
+    const url = new URL(req.url), p = url.pathname, now = Date.now();
+    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+    if (p === "/profile" && req.method === "POST") {
+      const uid = clean(body.uid, 40), name = clean(body.name, 14).toUpperCase();
+      if (!uid || !name) return json({ error: "bad" }, 400);
+      this.q("INSERT INTO players (uid, name, seen) VALUES (?, ?, ?) ON CONFLICT(uid) DO UPDATE SET name = excluded.name, seen = excluded.seen", uid, name, now);
+      return json(this.profile(uid));
+    }
+    if (p === "/profile") return json(this.profile(clean(url.searchParams.get("uid"), 40)));
+    if (p === "/leaderboard") {
+      const rows = this.q("SELECT name, wins, losses, draws, chars FROM players WHERE wins + losses + draws > 0 ORDER BY wins DESC, (wins * 1.0 / (wins + losses + 1)) DESC LIMIT 30");
+      return json(rows.map((r) => ({ name: r.name, wins: r.wins, losses: r.losses, draws: r.draws, main: topChar(r.chars) })));
+    }
+    if (p === "/result" && req.method === "POST") {
+      const [a, b] = body.uids || [], w = body.winner;
+      if (!a || !b) return json({ ok: false });
+      this.q("INSERT INTO matches (at, a, b, an, bn, ac, bc, winner) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", now, a, b, clean(body.names?.[0], 14), clean(body.names?.[1], 14), clean(body.chars?.[0], 12), clean(body.chars?.[1], 12), w);
+      [a, b].forEach((uid, i) => {
+        this.q("INSERT INTO players (uid, name, seen) VALUES (?, ?, ?) ON CONFLICT(uid) DO NOTHING", uid, clean(body.names?.[i], 14), now);
+        const r = this.q("SELECT chars FROM players WHERE uid = ?", uid)[0];
+        const ch = JSON.parse(r?.chars || "{}"); const c = clean(body.chars?.[i], 12); if (c) ch[c] = (ch[c] || 0) + 1;
+        const col = w < 0 ? "draws" : w === i ? "wins" : "losses";
+        this.q(`UPDATE players SET ${col} = ${col} + 1, chars = ? WHERE uid = ?`, JSON.stringify(ch), uid);
+      });
+      return json({ ok: true });
+    }
+    if (p === "/rooms" && req.method === "POST") {
+      const code = clean(body.code, 8);
+      if (!code) return json({ ok: false });
+      if (body.n === 1 && body.pub && body.phase === "select") this.q("INSERT OR REPLACE INTO rooms (code, host, char, n, pub, phase, at) VALUES (?, ?, ?, ?, 1, ?, ?)", code, clean(body.host, 14), clean(body.char, 12), 1, "select", now);
+      else this.q("DELETE FROM rooms WHERE code = ?", code);
+      return json({ ok: true });
+    }
+    if (p === "/rooms") {
+      this.q("DELETE FROM rooms WHERE at < ?", now - 15 * 60 * 1000);
+      return json(this.q("SELECT code, host, char, at FROM rooms ORDER BY at DESC LIMIT 20"));
+    }
+    if (p === "/replay" && req.method === "POST") {
+      const data = JSON.stringify(body.replay || null);
+      if (data.length > 400000 || !body.replay || !Array.isArray(body.replay.inputs)) return json({ error: "bad replay" }, 400);
+      const id = Array.from(crypto.getRandomValues(new Uint8Array(6)), (x) => "abcdefghjkmnpqrstuvwxyz23456789"[x % 31]).join("");
+      this.q("INSERT INTO replays (id, at, title, data) VALUES (?, ?, ?, ?)", id, now, clean(body.title, 80), data);
+      this.q("DELETE FROM replays WHERE id IN (SELECT id FROM replays ORDER BY at DESC LIMIT -1 OFFSET 500)");
+      return json({ id });
+    }
+    const rm = p.match(/^\/replay\/([a-z0-9]{4,12})$/);
+    if (rm) { const r = this.q("SELECT data, title FROM replays WHERE id = ?", rm[1])[0]; return r ? json({ title: r.title, replay: JSON.parse(r.data) }) : json({ error: "not found" }, 404); }
+    if (p === "/feedback" && req.method === "POST") {
+      const text = clean(body.text, 1500).trim();
+      if (text.length < 3) return json({ error: "too short" }, 400);
+      this.q("INSERT INTO feedback (at, name, cat, text, device) VALUES (?, ?, ?, ?, ?)", now, clean(body.name, 14), clean(body.cat, 16), text, clean(body.device, 20));
+      this.q("DELETE FROM feedback WHERE id IN (SELECT id FROM feedback ORDER BY id DESC LIMIT -1 OFFSET 3000)");
+      return json({ ok: true });
+    }
+    if (p === "/feedback") return json(this.q("SELECT id, at, name, cat, text, device FROM feedback ORDER BY id DESC LIMIT 500"));
+    return json({ error: "not found" }, 404);
+  }
+  profile(uid) {
+    const r = uid && this.q("SELECT name, wins, losses, draws, chars FROM players WHERE uid = ?", uid)[0];
+    if (!r) return { name: null, wins: 0, losses: 0, draws: 0, main: null, recent: [] };
+    const recent = this.q("SELECT at, an, bn, ac, bc, winner, a FROM matches WHERE a = ? OR b = ? ORDER BY id DESC LIMIT 6", uid, uid)
+      .map((m) => { const me = m.a === uid ? 0 : 1; return { at: m.at, vs: me ? m.an : m.bn, mine: me ? m.bc : m.ac, theirs: me ? m.ac : m.bc, res: m.winner < 0 ? "D" : m.winner === me ? "W" : "L" }; });
+    let rank = null;
+    if (r.wins + r.losses + r.draws > 0) rank = 1 + this.q("SELECT COUNT(*) AS n FROM players WHERE wins > ?", r.wins)[0].n;
+    return { name: r.name, wins: r.wins, losses: r.losses, draws: r.draws, main: topChar(r.chars), recent, rank };
+  }
+}
+function topChar(j) { try { const o = JSON.parse(j || "{}"); let b = null, n = 0; for (const k in o) if (o[k] > n) { n = o[k]; b = k; } return b; } catch { return null; } }
