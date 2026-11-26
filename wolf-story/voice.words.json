@@ -1,0 +1,612 @@
+[
+{
+"word": "You're",
+"start": 0.0,
+"end": 0.26
+},
+{
+"word": "selling",
+"start": 0.26,
+"end": 0.56
+},
+{
+"word": "insurance",
+"start": 0.56,
+"end": 1.1
+},
+{
+"word": "door",
+"start": 1.1,
+"end": 1.4
+},
+{
+"word": "to",
+"start": 1.4,
+"end": 1.56
+},
+{
+"word": "door,",
+"start": 1.56,
+"end": 1.98
+},
+{
+"word": "but",
+"start": 2.2,
+"end": 2.42
+},
+{
+"word": "nobody",
+"start": 2.42,
+"end": 2.84
+},
+{
+"word": "hears",
+"start": 2.84,
+"end": 3.12
+},
+{
+"word": "you",
+"start": 3.12,
+"end": 3.36
+},
+{
+"word": "knock.",
+"start": 3.36,
+"end": 3.7
+},
+{
+"word": "So",
+"start": 4.28,
+"end": 4.28
+},
+{
+"word": "you",
+"start": 4.28,
+"end": 4.48
+},
+{
+"word": "huff",
+"start": 4.48,
+"end": 4.7
+},
+{
+"word": "and",
+"start": 4.7,
+"end": 5.04
+},
+{
+"word": "puff",
+"start": 5.04,
+"end": 5.32
+},
+{
+"word": "and",
+"start": 5.32,
+"end": 5.84
+},
+{
+"word": "blow",
+"start": 5.84,
+"end": 6.14
+},
+{
+"word": "the",
+"start": 6.14,
+"end": 6.36
+},
+{
+"word": "door",
+"start": 6.36,
+"end": 6.56
+},
+{
+"word": "down.",
+"start": 6.56,
+"end": 6.98
+},
+{
+"word": "Genius!",
+"start": 7.48,
+"end": 7.84
+},
+{
+"word": "Except",
+"start": 8.46,
+"end": 8.9
+},
+{
+"word": "that's",
+"start": 8.9,
+"end": 9.3
+},
+{
+"word": "a",
+"start": 9.3,
+"end": 9.42
+},
+{
+"word": "felony,",
+"start": 9.42,
+"end": 9.8
+},
+{
+"word": "then",
+"start": 10.08,
+"end": 10.26
+},
+{
+"word": "you",
+"start": 10.26,
+"end": 10.4
+},
+{
+"word": "get",
+"start": 10.4,
+"end": 10.56
+},
+{
+"word": "tased.",
+"start": 10.56,
+"end": 11.02
+},
+{
+"word": "So",
+"start": 11.52,
+"end": 11.66
+},
+{
+"word": "you",
+"start": 11.66,
+"end": 11.8
+},
+{
+"word": "hang",
+"start": 11.8,
+"end": 12.02
+},
+{
+"word": "a",
+"start": 12.02,
+"end": 12.2
+},
+{
+"word": "brass",
+"start": 12.2,
+"end": 12.44
+},
+{
+"word": "bell",
+"start": 12.44,
+"end": 12.8
+},
+{
+"word": "by",
+"start": 12.8,
+"end": 13.06
+},
+{
+"word": "the",
+"start": 13.06,
+"end": 13.22
+},
+{
+"word": "door",
+"start": 13.22,
+"end": 13.52
+},
+{
+"word": "with",
+"start": 13.52,
+"end": 13.78
+},
+{
+"word": "a",
+"start": 13.78,
+"end": 13.9
+},
+{
+"word": "rope",
+"start": 13.9,
+"end": 14.08
+},
+{
+"word": "to",
+"start": 14.08,
+"end": 14.3
+},
+{
+"word": "pull.",
+"start": 14.3,
+"end": 14.54
+},
+{
+"word": "Clever!",
+"start": 15.06,
+"end": 15.28
+},
+{
+"word": "But",
+"start": 15.8,
+"end": 15.96
+},
+{
+"word": "the",
+"start": 15.96,
+"end": 16.08
+},
+{
+"word": "rope",
+"start": 16.08,
+"end": 16.3
+},
+{
+"word": "snaps",
+"start": 16.3,
+"end": 16.72
+},
+{
+"word": "and",
+"start": 16.72,
+"end": 17.18
+},
+{
+"word": "the",
+"start": 17.18,
+"end": 17.32
+},
+{
+"word": "bell",
+"start": 17.32,
+"end": 17.58
+},
+{
+"word": "lands",
+"start": 17.58,
+"end": 17.9
+},
+{
+"word": "on",
+"start": 17.9,
+"end": 18.08
+},
+{
+"word": "your",
+"start": 18.08,
+"end": 18.2
+},
+{
+"word": "skull.",
+"start": 18.2,
+"end": 18.64
+},
+{
+"word": "So",
+"start": 19.18,
+"end": 19.32
+},
+{
+"word": "you",
+"start": 19.32,
+"end": 19.5
+},
+{
+"word": "wire",
+"start": 19.5,
+"end": 19.78
+},
+{
+"word": "a",
+"start": 19.78,
+"end": 20.0
+},
+{
+"word": "push",
+"start": 20.0,
+"end": 20.26
+},
+{
+"word": "button",
+"start": 20.26,
+"end": 20.58
+},
+{
+"word": "to",
+"start": 20.58,
+"end": 20.82
+},
+{
+"word": "a",
+"start": 20.82,
+"end": 20.98
+},
+{
+"word": "battery",
+"start": 20.98,
+"end": 21.4
+},
+{
+"word": "and",
+"start": 21.4,
+"end": 21.74
+},
+{
+"word": "wrap",
+"start": 21.74,
+"end": 21.98
+},
+{
+"word": "the",
+"start": 21.98,
+"end": 22.18
+},
+{
+"word": "wire",
+"start": 22.18,
+"end": 22.52
+},
+{
+"word": "around",
+"start": 22.52,
+"end": 22.86
+},
+{
+"word": "an",
+"start": 22.86,
+"end": 23.08
+},
+{
+"word": "iron",
+"start": 23.08,
+"end": 23.36
+},
+{
+"word": "nail.",
+"start": 23.36,
+"end": 23.74
+},
+{
+"word": "That",
+"start": 24.08,
+"end": 24.32
+},
+{
+"word": "makes",
+"start": 24.32,
+"end": 24.54
+},
+{
+"word": "an",
+"start": 24.54,
+"end": 24.72
+},
+{
+"word": "electromagnet,",
+"start": 24.72,
+"end": 25.6
+},
+{
+"word": "which",
+"start": 25.8,
+"end": 25.98
+},
+{
+"word": "yanks",
+"start": 25.98,
+"end": 26.3
+},
+{
+"word": "a",
+"start": 26.3,
+"end": 26.52
+},
+{
+"word": "tiny",
+"start": 26.52,
+"end": 26.84
+},
+{
+"word": "hammer",
+"start": 26.84,
+"end": 27.24
+},
+{
+"word": "into",
+"start": 27.24,
+"end": 27.58
+},
+{
+"word": "the",
+"start": 27.58,
+"end": 27.76
+},
+{
+"word": "bell.",
+"start": 27.76,
+"end": 28.06
+},
+{
+"word": "Genius!",
+"start": 28.6,
+"end": 28.94
+},
+{
+"word": "Except",
+"start": 29.44,
+"end": 29.92
+},
+{
+"word": "it",
+"start": 29.92,
+"end": 30.14
+},
+{
+"word": "only",
+"start": 30.14,
+"end": 30.36
+},
+{
+"word": "dings",
+"start": 30.36,
+"end": 30.7
+},
+{
+"word": "once.",
+"start": 30.7,
+"end": 31.14
+},
+{
+"word": "So",
+"start": 31.74,
+"end": 31.78
+},
+{
+"word": "you",
+"start": 31.78,
+"end": 31.88
+},
+{
+"word": "add",
+"start": 31.88,
+"end": 32.1
+},
+{
+"word": "a",
+"start": 32.1,
+"end": 32.22
+},
+{
+"word": "spring",
+"start": 32.22,
+"end": 32.58
+},
+{
+"word": "contact",
+"start": 32.58,
+"end": 33.12
+},
+{
+"word": "that",
+"start": 33.12,
+"end": 33.4
+},
+{
+"word": "breaks",
+"start": 33.4,
+"end": 33.64
+},
+{
+"word": "the",
+"start": 33.64,
+"end": 33.9
+},
+{
+"word": "circuit",
+"start": 33.9,
+"end": 34.28
+},
+{
+"word": "so",
+"start": 34.28,
+"end": 34.66
+},
+{
+"word": "the",
+"start": 34.66,
+"end": 34.8
+},
+{
+"word": "hammer",
+"start": 34.8,
+"end": 35.12
+},
+{
+"word": "buzzes",
+"start": 35.12,
+"end": 35.7
+},
+{
+"word": "back",
+"start": 35.7,
+"end": 35.88
+},
+{
+"word": "and",
+"start": 35.88,
+"end": 36.06
+},
+{
+"word": "forth.",
+"start": 36.06,
+"end": 36.38
+},
+{
+"word": "Now",
+"start": 36.88,
+"end": 37.08
+},
+{
+"word": "the",
+"start": 37.08,
+"end": 37.24
+},
+{
+"word": "pigs",
+"start": 37.24,
+"end": 37.44
+},
+{
+"word": "can",
+"start": 37.44,
+"end": 37.64
+},
+{
+"word": "hear",
+"start": 37.64,
+"end": 37.8
+},
+{
+"word": "you",
+"start": 37.8,
+"end": 38.0
+},
+{
+"word": "ring",
+"start": 38.0,
+"end": 38.3
+},
+{
+"word": "and",
+"start": 38.3,
+"end": 38.7
+},
+{
+"word": "they",
+"start": 38.7,
+"end": 38.86
+},
+{
+"word": "still",
+"start": 38.86,
+"end": 39.2
+},
+{
+"word": "pretend",
+"start": 39.2,
+"end": 39.58
+},
+{
+"word": "they're",
+"start": 39.58,
+"end": 39.82
+},
+{
+"word": "not",
+"start": 39.82,
+"end": 39.96
+},
+{
+"word": "home.",
+"start": 39.96,
+"end": 40.24
+}
+]

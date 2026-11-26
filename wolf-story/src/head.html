@@ -1,0 +1,70 @@
+<title>Wolf Doorbell Story</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* VOICE occasion: a PS1-era cartridge you render on your own phone
+   IDEA a handheld console: the 9:16 screen is the picture, the render controls sit under it like hardware buttons
+   PICTURE the live 1080x1920 canvas, playing the wolf story
+   COLOUR night plum ground #15121c, warm yellow suit #f2c230 for the primary action, mint #8fe3b0 for "done"
+   TYPE Archivo Black for the title and buttons + Archivo for text
+   LAYOUT phone: title, screen (about 62svh), buttons, progress, result; laptop: screen left, controls right */
+:root{color-scheme:dark;--bg:#15121c;--panel:#221d2c;--ink:#f3eee6;--mute:#b9b0c4;--yel:#f2c230;--yel2:#d8a414;--ok:#8fe3b0;--bad:#ff8a7a;--line:#3a3346}
+*{box-sizing:border-box;min-width:0}
+html,body{background:var(--bg);color:var(--ink)}
+body{font:16px/1.5 Archivo,system-ui,sans-serif;overflow-x:clip}
+.wrap{max-width:1100px;margin:0 auto;padding-block:20px 40px;padding-left:max(4vw,16px,env(safe-area-inset-left,0px));padding-right:max(4vw,16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
+h1{font:400 clamp(26px,5vw,40px)/1.05 "Archivo Black",Archivo,sans-serif;letter-spacing:-.02em;margin:0}
+.sub{color:var(--mute);margin:6px 0 0;font-size:15px}
+.screen{background:#0b0910;border:2px solid var(--line);border-radius:18px;padding:10px;display:grid;place-items:center}
+#c{display:block;height:min(62svh,760px);width:auto;max-width:100%;aspect-ratio:9/16;image-rendering:pixelated;border-radius:8px;background:#000}
+.ctl{display:grid;gap:14px;align-content:start}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+button{font:400 16px/1 "Archivo Black",Archivo,sans-serif;min-height:48px;padding:0 20px;border-radius:12px;border:2px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--mute)}
+button:active{transform:translateY(1px)}
+button:focus-visible{outline:3px solid var(--yel);outline-offset:2px}
+button.go{background:var(--yel);border-color:var(--yel2);color:#231a05}
+button.save{background:var(--ok);border-color:#5fc08a;color:#082414}
+button:disabled{opacity:.45;cursor:default}
+.bar{height:14px;border-radius:8px;background:var(--panel);border:2px solid var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--yel)}
+#msg{margin:0;color:var(--mute);font-size:15px;min-height:1.5em}
+#msg.err{color:var(--bad)}
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:14px 16px}
+.panel p{margin:0;font-size:15px;color:var(--mute)}
+.panel b{color:var(--ink);font-weight:700}
+video{width:100%;max-height:60svh;border-radius:10px;background:#000}
+@media(min-width:820px){.main{display:grid;grid-template-columns:auto minmax(0,1fr);gap:24px;align-items:start}}
+@media(max-width:819px){.main{display:grid;gap:16px}}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;700&family=Archivo+Black&display=swap" rel="stylesheet">
+
+<div class="wrap">
+  <div>
+    <h1>How you invented the doorbell</h1>
+    <p class="sub">PS1-style low poly, 41 seconds, 1080 × 1920 at 30 fps. Renders on this device's graphics chip.</p>
+  </div>
+  <div class="main">
+    <div class="screen"><canvas id="c" width="1080" height="1920"></canvas></div>
+    <div class="ctl">
+      <div class="row">
+        <button id="play" type="button">▶ Play preview</button>
+        <button id="render" class="go" type="button" disabled>Render MP4</button>
+      </div>
+      <div class="bar" aria-hidden="true"><i id="fill"></i></div>
+      <p id="msg" role="status">Loading the scene…</p>
+      <div class="row" id="saveRow" hidden>
+        <button id="save" class="save" type="button">Save MP4</button>
+        <button id="again" type="button">Render again</button>
+      </div>
+      <video id="out" controls playsinline hidden></video>
+      <div class="panel">
+        <p><b>How it works.</b> Every frame is drawn by <code>drawFrame(t)</code> and handed straight to your phone's video encoder (WebCodecs, H.264 + AAC), so nothing is uploaded. Keep this screen open while it renders; it takes about as long as the video on a recent phone.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script>
+<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.js"></script>
+<script>window.AUDIO_B64 = "__AUDIO__"; window.WORDS = /*WORDS*/[]; window.ENV = /*ENV*/[];</script>
