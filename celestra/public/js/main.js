@@ -489,6 +489,7 @@ async function joinRoom(code, quick = false) {
   });
   net.on("in", (m) => app.session && app.session.onInput(m));
   net.on("chk", (m) => app.session && app.session.onCheck(m));
+  net.on("emote", (m) => { if ("away" in m && (app.screen === "fight" || app.screen === "select")) banner(m.away ? "RIVAL TABBED OUT" : "RIVAL IS BACK", m.away ? "THE MATCH KEEPS RUNNING" : "", "", 1800); });
   net.on("rematchReq", (m) => { if (m.slot !== app.slot && app.screen === "results") $(".res-msg").textContent = "OPPONENT WANTS A REMATCH!"; });
   net.on("toSelect", () => { app.session = null; app.locked = [false, false]; openSelect(); });
   net.on("left", () => {
@@ -557,6 +558,8 @@ function tick() {
     app.S = app.session.S;
     if (r === null) app.stall++; else app.stall = 0;
     $("#netwait").classList.toggle("hidden", app.stall < 20);
+    if (app.stall === 20) $("#netwait").textContent = "WAITING FOR RIVAL'S CONNECTION…";
+    if (app.stall === 600) $("#netwait").textContent = "RIVAL NOT RESPONDING — CHECK THEIR CONNECTION";
     handleEvents(ev, app.S);
   } else {
     const inputs = readInputs(app.mode === "local" ? "local" : "solo");
@@ -586,13 +589,26 @@ function menuKeys() {
   }
   if (keyPressed("Escape")) { if (app.screen === "pause") togglePause(); else if (app.screen !== "results") goBack(); }
 }
-function frame(now) {
+// Fixed 60 Hz simulation clock. Driven by a Web Worker timer because browsers
+// pause requestAnimationFrame in background tabs, which would freeze an online
+// match for BOTH players. rAF below is only used for drawing.
+function pump() {
+  const now = performance.now();
   let dt = now - last; last = now;
   if (dt > 250) dt = DT;
   acc += dt;
   let n = 0;
-  while (acc >= DT && n < 5) { tick(); acc -= DT; n++; }
-  if (n === 5) acc = 0;
+  while (acc >= DT && n < 8) { tick(); acc -= DT; n++; }
+  if (n === 8) acc = 0;
+}
+let clockOk = false;
+try {
+  const clock = new Worker(URL.createObjectURL(new Blob(["setInterval(() => postMessage(0), 4);"], { type: "text/javascript" })));
+  clock.onmessage = pump; clockOk = true;
+} catch { clockOk = false; }
+function frame(now) {
+  if (!clockOk) pump();
+  if (document.hidden) { requestAnimationFrame(frame); return; }
   if (app.screen === "title" && app.attract) R.draw(app.attract);
   else if (app.S && (app.screen === "fight" || app.screen === "pause" || app.screen === "results")) { R.draw(app.S); updateHud(); }
   else if (app.screen === "select") { if ((selAnim & 1) === 0 || true) animSelect(); drawIdleBg(); }
@@ -615,6 +631,10 @@ addEventListener("keydown", (e) => {
   if (e.code === "KeyM" && !e.repeat) { initAudio(); store.set("muted", !store.get("muted", false)); applySettings(); }
 });
 addEventListener("pointerdown", () => initAudio(), { once: true });
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && app.mode !== "online" && app.screen === "fight") togglePause();
+  if (app.mode === "online" && app.net) app.net.send({ t: "emote", away: document.hidden });
+});
 
 applySettings();
 startAttract();
