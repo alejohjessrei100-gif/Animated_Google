@@ -48,9 +48,9 @@
     if (busy) return; pause(); busy = true; $('render').disabled = true; $('play').disabled = true;
     const [w, h] = $('res').value.split('x').map(Number);
     try {
-      status('Checking your browser’s GPU video encoder…');
+      status('Checking your browser\u2019s GPU video encoder\u2026');
       const fmtSel = await pickFormat(w, h);
-      if (!fmtSel) { status('This browser can’t encode video here. Open the page in desktop Chrome or Edge and try again.', 'bad'); return; }
+      if (!fmtSel) { status('This browser can\u2019t encode video here. Open the page in desktop Chrome or Edge and try again.', 'bad'); return; }
       setSize(w, h);
       const { box, v, a } = fmtSel;
       const target = box === 'mp4' ? new Mp4Muxer.ArrayBufferTarget() : new WebMMuxer.ArrayBufferTarget();
@@ -63,7 +63,7 @@
       const aenc = new AudioEncoder({ output: (c, m) => muxer.addAudioChunk(c, m), error: (e) => { failed = e; } });
       aenc.configure(a);
       // audio first (decoded at 48 kHz, fed in 1024-sample planar chunks)
-      status('Encoding the soundtrack…');
+      status('Encoding the soundtrack\u2026');
       const buf = await (await fetch($('mix').currentSrc || 'mix.mp3')).arrayBuffer();
       const ab = await new OfflineAudioContext(2, 48000, 48000).decodeAudioData(buf);
       const n = Math.min(ab.length, Math.ceil(S.END * 48000)), L = ab.getChannelData(0), R = ab.numberOfChannels > 1 ? ab.getChannelData(1) : L;
@@ -83,7 +83,7 @@
         if (f % 3 === 0 || f === TOTAL - 1) {
           const el = (performance.now() - t0) / 1000, fps = (f + 1) / el, eta = (TOTAL - f - 1) / fps;
           $('bar').style.width = `${((f + 1) / TOTAL * 100).toFixed(1)}%`; $('time').textContent = `${fmt(f / FPS)} / ${fmt(TOTAL / FPS)}`; $('scrub').value = f; markShot(f / FPS);
-          status(`Rendering frame ${f + 1} of ${TOTAL} · ${fps.toFixed(1)} fps · about ${Math.ceil(eta)} s left · ${v.hw === 'prefer-hardware' ? 'GPU encoder' : 'encoder'}`);
+          status(`Rendering frame ${f + 1} of ${TOTAL} \u00b7 ${fps.toFixed(1)} fps \u00b7 about ${Math.ceil(eta)} s left \u00b7 ${v.hw === 'prefer-hardware' ? 'GPU encoder' : 'encoder'}`);
           await new Promise((r) => setTimeout(r, 0));
         }
       }
@@ -91,10 +91,10 @@
       const blob = new Blob([target.buffer], { type: box === 'mp4' ? 'video/mp4' : 'video/webm' });
       const name = `triple_six_fix_${w}x${h}.${box}`;
       const url = URL.createObjectURL(blob); $('result').hidden = false; $('vid').src = url; $('dl').href = url; $('dl').download = name;
-      $('size').textContent = `${name} · ${(blob.size / 1048576).toFixed(1)} MB · ${((performance.now() - t0) / 1000).toFixed(0)} s render`;
-      status('Done. Saving the file…', 'good');
+      $('size').textContent = `${name} \u00b7 ${(blob.size / 1048576).toFixed(1)} MB \u00b7 ${((performance.now() - t0) / 1000).toFixed(0)} s render`;
+      status('Done. Saving the file\u2026', 'good');
       const dls = await (window.claude?.use ? window.claude.use('downloads') : null);
-      if (dls) { try { await dls.save({ filename: name, data: blob }); status('Saved. Check your Downloads folder.', 'good'); } catch (e) { status(e?.code === 'declined' ? 'Save cancelled. Press “Save again” when you’re ready.' : 'Saving was blocked here. Use “Save again” or right-click the video below.', 'bad'); } }
+      if (dls) { try { await dls.save({ filename: name, data: blob }); status('Saved. Check your Downloads folder.', 'good'); } catch (e) { status(e?.code === 'declined' ? 'Save cancelled. Press \u201cSave again\u201d when you\u2019re ready.' : 'Saving was blocked here. Use \u201cSave again\u201d or right-click the video below.', 'bad'); } }
       else status('Done. Use the Save button below.', 'good');
       $('again').onclick = async () => { const d = await window.claude?.use?.('downloads'); if (d) d.save({ filename: name, data: blob }).then(() => status('Saved. Check your Downloads folder.', 'good')).catch(() => status('Save was not completed.', 'bad')); };
     } catch (e) { console.error(e); status('Render stopped: ' + (e?.message || e), 'bad'); }

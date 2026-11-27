@@ -1,4 +1,4 @@
-// Shot plan for "The Tanks Full of Seawater That Fooled Wall Street" — timed to the 1.25x voice (words.js). 30 fps, 1080x1920.
+// Shot plan for "The Tanks Full of Seawater That Fooled Wall Street" \u2014 timed to the 1.25x voice (words.js). 30 fps, 1080x1920.
 // Every clause gets a story action + a camera move. Set changes and big re-aims are speed whips; inside a set, fast eased moves + drift.
 window.STORY = (() => {
   const FPS = 30, END = 49.38, TOTAL = Math.round(END * FPS);
@@ -113,7 +113,7 @@ window.STORY = (() => {
   const dofAt = (C) => { const d = Math.hypot(C.pos[0] - C.look[0], C.pos[1] - C.look[1], C.pos[2] - C.look[2]); return { focus: d, cinf: d < 1.2 ? 10 : d > 7 ? 4 : 7 }; };
 
   // ---------- world state per set ----------
-  const fall = (bits, t, t0, area, seedOff = 0, speed = 1) => bits.forEach((m, i) => { const r = PAINT.rng(i + seedOff); if (t < t0) { m.position.y = -50; return; } const tt = (t - t0) * (0.5 + r() * 0.4) * speed + r() * 0.8; m.position.set(area[0] + r() * area[1] + Math.sin(tt * 2 + i) * 0.25, area[2] - tt * 1.3, area[3] + r() * area[4]); m.rotation.set(tt * 4 + i, tt * 3, tt * 5); if (m.position.y < 0.02) m.position.y = 0.02 + (i % 7) * 0.004; });
+  const fall = (bits, t, t0, area, seedOff = 0, speed = 1, avoid = null) => bits.forEach((m, i) => { const r = PAINT.rng(i + seedOff); if (t < t0) { m.position.y = -50; return; } const tt = (t - t0) * (0.5 + r() * 0.4) * speed + r() * 0.8; let fx = area[0] + r() * area[1]; if (avoid && Math.abs(fx - avoid[0]) < avoid[1]) fx = avoid[0] + Math.sign(fx - avoid[0] || 1) * (avoid[1] + Math.abs(fx - avoid[0]) * 0.5); m.position.set(fx + Math.sin(tt * 2 + i) * 0.12, area[2] - tt * 1.3, area[3] + r() * area[4]); m.rotation.set(tt * 4 + i, tt * 3, tt * 5); if (m.position.y < 0.02) m.position.y = 0.02 + (i % 7) * 0.004; });
   const farmState = (t) => {
     Wd.waterU.t.value = t; Wd.ship.position.x = 14 - t * 0.12;
     Wd.runSmoke(Wd.shipSmoke, t, Wd.ship.position.x - 4, 6.8, -40, 3, 0.6, 0.25, 3);
@@ -121,13 +121,14 @@ window.STORY = (() => {
       const u = (t * (0.05 + (i % 3) * 0.02) + i * 0.21) % 1; g.g.position.set(-22 + u * 44, (i > 4 ? 6.2 : 8) + Math.sin(t * 0.6 + i) * 0.8 + (i % 5) * 0.4, (i > 4 ? -3 : -10) - (i % 5) * 1.5); g.g.rotation.y = 0; const f = Math.sin(t * 9 + i) * 0.7; g.w1.rotation.x = f; g.w2.rotation.x = -f; });
     const mt = Wd.mainTank;
     mt.lid.rotation.z = t >= 15.1 && t < 31 ? Math.min(1.9, eout(ramp(t, 15.1, 15.5)) * 1.9) : 0;
-    const dp = Wd.dipstick; if (t >= 15.5 && t < 18.9) { const down = eout(ramp(t, 15.9, 16.3)) - eout(ramp(t, 16.6, 17.0)); dp.position.set(mt.x + 0.5 - (t > 16.6 ? 0.25 * eout(ramp(t, 16.6, 17.0)) : 0), mt.h + 1.4 - down * 1.1 + (t > 16.6 ? 0.2 : 0), mt.z + 0.75); dp.rotation.set(0.15, 0, t > 16.6 ? -0.5 : 0.05); } else dp.position.y = -50;
+    const dp = Wd.dipstick; if (t >= 15.85 && t < 16.7) { const down = eout(ramp(t, 15.9, 16.3)) - eout(ramp(t, 16.6, 17.0)); dp.position.set(mt.x + 0.5 - (t > 16.6 ? 0.25 * eout(ramp(t, 16.6, 17.0)) : 0), mt.h + 1.4 - down * 1.1 + (t > 16.6 ? 0.2 : 0), mt.z + 0.75); dp.rotation.set(0.15, 0, t > 16.6 ? -0.5 : 0.05); } else dp.position.y = -50;
     Wd.gallonSign.visible = t >= 12.6 && t < 14.2; if (Wd.gallonSign.visible) Wd.gallonSign.scale.setScalar(eout(ramp(t, 12.6, 12.9)));
     fall(Wd.tankBills, t >= 9.2 && t < 14.2 ? t : -1, 9.2, [-0.8, 3.6, 4.2, -3.2, 2.4], 50);
     // collapse at 38.98: the tank skin crumples and seawater bursts out
     const g = mt.g, c = ramp(t, 38.98, 39.5);
     if (t >= 38.9 && t < 40.5) { g.scale.set(1 + c * 0.12, 1 - eout(c) * 0.55, 1 + c * 0.12); g.rotation.z = Math.sin(c * 9) * 0.04 * c; } else { g.scale.set(1, 1, 1); g.rotation.z = 0; }
     Wd.splash.forEach((s, i) => { const r = PAINT.rng(i + 7); if (t < 38.98 || t > 40.4) { s.position.y = -50; return; } const tt = t - 38.98, a = r() * 6.28, v = 2 + r() * 3.5; s.position.set(mt.x + Math.cos(a) * (1.8 + v * 1.4 * tt), Math.max(0.05, 0.8 + (2.5 + r() * 4) * tt - 4.9 * tt * tt), mt.z + Math.sin(a) * (1.8 + v * 1.4 * tt) * 0.8 + 1.0); const sc = 0.25 + r() * 0.45; s.scale.set(sc, sc * 0.7, sc); });
+    Wd.bridges.forEach((b, i) => { const u = i === 0 ? 0 : eout(ramp(t, 39.05, 39.45)); const bs = b.userData.base; b.position.set(bs.x, bs.y - u * 4.0, bs.z); b.rotation.set(u * 0.3, 0, (i === 1 ? -1 : 1) * u * 0.9); });
     Wd.wave.position.y = t >= 38.98 && t < 40.5 ? 0.02 : -50; const wr = 2 + ramp(t, 38.98, 40.0) * 7; Wd.wave.scale.set(wr, 1, wr * 0.8);
   };
   const cutState = (t) => {
@@ -142,13 +143,13 @@ window.STORY = (() => {
     fall(Wd.bankBills, t < 2.4 ? t : (t >= 25.9 && t < 27.6 ? t : -1), t < 2.4 ? -0.6 : 25.9, [-4, 8, 6.0, -3, 5], 9);
     Wd.bigNum.scale.setScalar(t < 2.4 ? eout(ramp(t, 0.7, 1.0)) || 0.001 : 1);
     Wd.count51.scale.setScalar(t >= 25.9 ? eout(ramp(t, 26.1, 26.4)) || 0.001 : 0.001);
-    Wd.cashStacks.forEach((m, i) => { m.visible = t > 0.2 + i * 0.12; });
+    Wd.cashStacks.forEach((m, i) => { m.userData.y0 = m.userData.y0 ?? m.position.y; const t0 = 0.15 + i * 0.12, u = ramp(t, t0, t0 + 0.25); m.visible = t > t0 || t > 2.5; m.position.y = m.userData.y0 + (t > 2.5 ? 0 : (1 - u * u) * 1.6); });
   };
   const amexState = (t) => {
     const n = Math.floor(clamp((t - 27.5) / 3.2) * Wd.receipts.length) + 4; Wd.receipts.forEach((m, i) => { m.visible = i < n; if (t > 30.2) m.position.x = -0.5 + Math.sin(i * 1.7) * 0.02 + Math.sin(t * 3) * 0.004 * i; });
     const st = Wd.stamp3D; let sy = 0; for (const a of [28.58, 29.22, 29.54]) sy = Math.max(sy, pulse(t, a - 0.12, 0.3)); st.position.y = 0.86 + 0.18 * (1 - sy); st.position.x = 0.3 - 0.8 * Math.min(1, sy * 1.5);
     Wd.certified.visible = t >= 28.6; if (Wd.certified.visible) Wd.certified.scale.setScalar(eout(ramp(t, 28.6, 28.85)));
-    fall(Wd.amexPapers, t >= 27.6 ? t : -1, 27.6, [-1.6, 3.2, 3.0, -3.0, 1.6], 3, 0.6);
+    fall(Wd.amexPapers, t >= 27.6 ? t : -1, 27.6, [-1.6, 3.2, 3.0, -3.0, 1.6], 3, 0.6, [0, 0.7]);
   };
   const kitchenState = (t) => { Wd.runSmoke(Wd.potSteam, t, -2.38, 1.2, -2.35, 0.9, 0.12, 0.6);
     const fr = Wd.frosting; fr.visible = t >= 34.25; fr.position.y = 0.44 + (1 - eout(ramp(t, 34.3, 34.6))) * 1.4; fr.scale.y = 1 - pulse(t, 34.6, 0.2) * 0.3;
@@ -158,13 +159,13 @@ window.STORY = (() => {
   const exchangeState = (t) => {
     const price = 60 - 25 * ease(ramp(t, 40.3, 41.4)); Wd.drawBoard(price, t);
     Wd.arrow.position.y = 3.3 - eout(ramp(t, 40.5, 41.4)) * 1.4 + Math.sin(t * 8) * 0.03; Wd.arrow.visible = t >= 40.4;
-    fall(Wd.slips, t >= 40.6 ? t : -1, 40.6, [-5, 10, 5.0, -3.5, 7], 4, 1.1);
+    fall(Wd.slips, t >= 40.6 ? t : -1, 40.6, [-5, 10, 5.0, -4.0, 2.4], 4, 1.1);
     Wd.flags.forEach((f, i) => { const p = f.geometry.attributes.position, b = f.userData.base; for (let k = 0; k < p.count; k++) { const x = b[k * 3]; p.setZ(k, Math.sin(t * 4 + x * 6 + i) * 0.04 * (x + 0.4)); } p.needsUpdate = true; });
   };
   const omahaState = (t) => {
     Wd.buyStamp.visible = t >= 44.66; if (Wd.buyStamp.visible) Wd.buyStamp.scale.setScalar(1 + 0.6 * (1 - eout(ramp(t, 44.66, 44.9))));
     Wd.cert.visible = t >= 44.9; if (Wd.cert.visible) { Wd.cert.scale.setScalar(eout(ramp(t, 44.9, 45.2))); Wd.cert.rotation.z = Math.sin(t * 2) * 0.05; }
-    fall(Wd.omBills, t >= 44.7 ? t : -1, 44.7, [-2.4, 4.8, 3.0, -2.6, 2.0], 31, 0.9); fall(Wd.omConfetti, t >= 43.6 ? t : -1, 43.6, [-2, 4, 3.2, -2.2, 3.4], 77, 1.0);
+    fall(Wd.omBills, t >= 44.7 ? t : -1, 44.7, [-2.4, 4.8, 3.0, -2.6, 2.0], 31, 0.9, [0, 0.75]); fall(Wd.omConfetti, t >= 43.6 ? t : -1, 43.6, [-2, 4, 3.2, -2.6, 2.0], 77, 1.0, [0, 0.75]);
     const tf = Wd.tinyFish; tf.position.set(Math.sin(t * 1.6) * 0.07, 0.14 + Math.sin(t * 2.3) * 0.03, Math.cos(t * 1.6) * 0.07); tf.rotation.y = -t * 1.6;
   };
   const SETSTATE = { farm: farmState, cut: cutState, banks: banksState, amex: amexState, kitchen: kitchenState, exchange: exchangeState, omaha: omahaState };
@@ -184,14 +185,14 @@ window.STORY = (() => {
     }
     if (set === 'farm') {
       if (t < 5.1) { L.push(A('tino', t, 1.5, 0, -1.6, { expr: 'smirk', R: 'point', L: 'hip', look: 0.6 })); }
-      else if (t < 9.2) { const w = walkTo(t, 7.4, 9.0, [-13.9, 0, 0.2], [-12.3, 0, 0.7]); L.push(A('tino', t, w.p[0], 0, w.p[2], { walk: w.walk, expr: [[7.3, 'smile'], [8.3, 'smugsmile']], R: 'wave', L: 'hip' })); }
+      else if (t < 9.2) { const w = walkTo(t, 7.4, 9.0, [-13.6, 0, 0.95], [-12.6, 0, 1.1]); L.push(A('tino', t, w.p[0], 0, w.p[2], { walk: w.walk, expr: [[7.3, 'smile'], [8.3, 'smugsmile']], R: 'wave', L: 'hip' })); }
       else if (t < 14.0) {
         L.push(A('tino', t, 0.6, 0, -1.2, { expr: [[9.2, 'grin'], [10.64, 'beam'], [12.0, 'smugsmile']], R: [[9.2, 'hip'], [10.4, 'up'], [12.3, 'holdUp']], L: [[9.2, 'hip'], [10.6, 'up'], [12.3, 'hip']], propR: t > 12.3 ? 'cash' : null }));
         if (t >= 11.5) { L.push(A('bank1', t, 2.2, 0, -1.6, { expr: 'smile', R: 'holdUp', propR: 'cash', L: 'hang', flip: true })); L.push(A('bank3', t, 3.3, 0, -2.3, { expr: 'grin', R: 'holdUp', propR: 'moneybag', L: 'hang', flip: true })); }
       } else if (t < 18.9) {
         const lx = t < 15.0 ? 3.2 : 3.3, lz = t < 15.0 ? -3.3 : -5.55; const ly = t < 15.0 ? lerp(0, roofY(3.2, -3.9), ease(ramp(t, 14.1, 14.95))) : roofY(lx, lz);
-        L.push(A('insp1', t, lx, ly, lz, { expr: t < 15 ? 'think' : [[15.0, 'neutral'], [16.0, 'think'], [17.0, 'smirk'], [17.4, 'think']], R: t < 15 ? 'up' : [[15.0, 'point'], [16.0, 'holdUp'], [17.0, 'mouth']], propR: t > 16.0 && t < 17 ? 'dipstick' : null, L: t < 15 ? 'up' : 'hip', walk: t < 15 ? t * 1.4 : null, blob: false }));
-        L.push(A('insp2', t, 2.0, roofY(2.0, -6.8), -6.8, { expr: [[14, 'bored'], [17.2, 'smirk']], R: 'hold', propR: 'clipboard', L: 'hip' }));
+        L.push(A('insp1', t, lx, ly, lz, { expr: t < 15 ? 'think' : [[15.0, 'neutral'], [16.0, 'think'], [17.0, 'smirk'], [17.4, 'think']], R: t < 15 ? 'up' : [[15.0, 'point'], [16.0, 'holdUp'], [17.0, 'mouth']], propR: (t >= 15.4 && t < 15.85) || (t >= 16.7 && t < 18.9) ? 'dipstick' : null, L: t < 15 ? 'up' : 'hip', walk: t < 15 ? t * 1.4 : null, blob: false }));
+        L.push(A('insp2', t, 2.75, roofY(2.75, -7.25), -7.25, { expr: [[14, 'bored'], [17.2, 'smirk']], R: 'hold', propR: 'clipboard', L: 'hip' }));
         if (t >= 16.7) L.push(A('tino', t, 0.4, 0, -1.6, { expr: 'nervous', R: 'mouth', L: 'hang', look: 0.5 }));
       } else if (t < 20.5) {
         L.push(A('tino', t, 1.55, 0, -1.4, { expr: [[18.9, 'nervous'], [19.6, 'shock']], R: 'mouth', L: 'hang', look: 0.3, tilt: -6 }));
@@ -222,7 +223,7 @@ window.STORY = (() => {
     return L;
   };
 
-  // ---------- captions (1–2 words, Lilita One, white with black outline, y≈1300) ----------
+  // ---------- captions (1\u20132 words, Lilita One, white with black outline, y\u22481300) ----------
   const CAPS = (() => { const out = []; const W = window.WORDS; for (let i = 0; i < W.length;) { const a = W[i], b = W[i + 1]; const clean = (s) => s.replace(/,(?!\d)/g, '').replace(/\.$/, ''); const short = (s) => clean(s).length <= 4; if (b && short(a[0]) && clean(a[0] + b[0]).length <= 11 && !/[.?!,]$/.test(a[0]) && b[1] - a[2] < 0.25) { out.push({ t: a[1], txt: clean(a[0]) + ' ' + clean(b[0]) }); i += 2; } else { out.push({ t: a[1], txt: clean(a[0]) }); i += 1; } } out.forEach((c, k) => { c.e = k + 1 < out.length ? out[k + 1].t : END; }); return out; })();
   const drawCaption = (g, t, W, H) => {
     const c = CAPS.find((c) => t >= c.t && t < c.e && t < c.t + 1.2); if (!c) return;

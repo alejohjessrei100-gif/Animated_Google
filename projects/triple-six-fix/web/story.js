@@ -1,4 +1,4 @@
-// Shot plan for "The Lottery That Drew 666" — timed to the 1.25x voice (words.js, seconds). 30 fps, 1080x1920.
+// Shot plan for "The Lottery That Drew 666" \u2014 timed to the 1.25x voice (words.js, seconds). 30 fps, 1080x1920.
 // Every clause gets a story action + a camera move. Transitions between sets are speed whips; inside a set, fast eased moves + drift.
 window.STORY = (() => {
   const FPS = 30, END = 67.35, TOTAL = Math.round(END * FPS);
@@ -344,7 +344,7 @@ window.STORY = (() => {
     g.save(); g.translate(256, 470); g.scale(0.55, 0.55); rick(g, C.nick, { expr: talkAt(t, [[13.2, 15]]) ? 'grin' : 'smile', talk: talkAt(t, [[13.2, 15]]), L: 'hip', R: 'wave', blink: blinkAt(t, 1) }); g.restore();
     g.fillStyle = '#f4d35e'; g.font = '30px "Lilita One", Impact'; g.fillText('LIVE', 452, 360); g.fillStyle = 'rgba(255,255,255,.07)'; for (let y = 0; y < 384; y += 6) g.fillRect(0, y, 512, 2); scrTex.needsUpdate = true; };
 
-  // ---------- captions (1–2 words, Lilita One, white with black outline, y≈1300) ----------
+  // ---------- captions (1\u20132 words, Lilita One, white with black outline, y\u22481300) ----------
   const CAPS = (() => { const out = []; const W = window.WORDS; for (let i = 0; i < W.length;) { const a = W[i], b = W[i + 1]; const clean = (s) => s.replace(/,(?!\d)/g, '').replace(/\.$/, ''); const short = (s) => clean(s).length <= 4; if (b && short(a[0]) && clean(a[0] + b[0]).length <= 11 && !/[.?!,]$/.test(a[0]) && b[1] - a[2] < 0.25) { out.push({ t: a[1], txt: clean(a[0]) + ' ' + clean(b[0]) }); i += 2; } else { out.push({ t: a[1], txt: clean(a[0]) }); i += 1; } } out.forEach((c, k) => { c.e = k + 1 < out.length ? out[k + 1].t : END; }); return out; })();
   const drawCaption = (g, t, W, H) => {
     const c = CAPS.find((c) => t >= c.t && t < c.e && t < c.t + 1.2); if (!c) return;

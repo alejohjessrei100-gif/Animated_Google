@@ -79,9 +79,9 @@ window.WORLD = (() => {
   tank(-7.4, -6.5, 'SALAD OIL'); tank(-2.4, -6.0, 'SALAD OIL'); tank(2.6, -6.0, 'SALAD OIL', true); tank(7.6, -6.5, 'SALAD OIL');
   Wd.mainTank = Wd.tanks[2];
   // pipes, valves, catwalk bridges
-  for (const y of [0.5, 0.9]) add(cyl(0.12, 0.12, 18, 14), '#7f8896', 0, y, -3.6, TF).rotation.z = Math.PI / 2;
-  for (const x of [-7.4, -2.4, 2.6, 7.6]) { add(cyl(0.12, 0.12, 0.8, 12), '#7f8896', x, 0.7, -3.95, TF).rotation.x = Math.PI / 2; const v = add(new THREE.TorusGeometry(0.2, 0.04, 8, 18), '#c62f36', x + 0.5, 1.3, -3.6, TF); add(cyl(0.03, 0.03, 0.4, 6), '#3b3f4a', x + 0.5, 1.1, -3.6, TF); Wd.life.push((t) => { v.rotation.z = t * 0.4 + x; }); }
-  for (const x of [-4.9, 0.1, 5.1]) { add(tbox(1.0, 0.08, 0.7), '#3b3f4a', x, 4.95, -6.2, TF); for (const s of [-1, 1]) add(box(1.0, 0.04, 0.04), '#c62f36', x, 5.45, -6.2 + s * 0.33, TF); }
+  for (const y of [0.5, 0.9]) add(cyl(0.12, 0.12, 18, 14), '#7f8896', 0, y, -9.4, TF).rotation.z = Math.PI / 2;
+  for (const x of [-7.4, -2.4, 2.6, 7.6]) { const zb = x === -7.4 || x === 7.6 ? -8.5 : -8.0; add(cyl(0.12, 0.12, -9.4 - zb + 0.9, 12), '#7f8896', x, 0.7, (zb - 9.4) / 2 + 0.2, TF).rotation.x = Math.PI / 2; const v = add(new THREE.TorusGeometry(0.2, 0.04, 8, 18), '#c62f36', x + 0.5, 1.3, -9.4, TF); add(cyl(0.03, 0.03, 0.4, 6), '#3b3f4a', x + 0.5, 1.1, -9.4, TF); Wd.life.push((t) => { v.rotation.z = t * 0.4 + x; }); }
+  Wd.bridges = []; for (const [x, z] of [[-4.9, -6.25], [0.1, -6.0], [5.1, -6.25]]) { const b = group(x, 4.64, z, TF); add(tbox(2.6, 0.08, 0.7), '#3b3f4a', 0, 0, 0, b); for (const s of [-1, 1]) { add(box(2.6, 0.04, 0.04), '#c62f36', 0, 0.5, s * 0.33, b); for (const px of [-1.2, -0.4, 0.4, 1.2]) add(box(0.04, 0.5, 0.04), '#c62f36', px, 0.25, s * 0.33, b); } b.userData.base = { x, y: 4.64, z }; Wd.bridges.push(b); }
   // office shack + signs
   { const sh = group(-13, 0, -2, TF); add(tbox(4.4, 3.0, 3.2, 2), M.brick, 0, 1.5, 0, sh); add(tbox(4.8, 0.2, 3.6), '#3b3f4a', 0, 3.1, 0, sh); add(box(0.9, 1.8, 0.08), '#5a3a24', -0.9, 0.9, 1.62, sh); windowUnit(sh, 0.9, 1.7, 1.62, 1.1, 0.9, 0, 'city');
     Wd.calendar = sign(sh, [{ t: '1962', c: '#c62f36' }], -0.9, 2.3, 1.64, 0.6, 0.45, { bg: '#fbfaf4' }); }
@@ -115,11 +115,12 @@ window.WORLD = (() => {
     for (const s of [-1, 1]) add(box(0.12, h, 0.12), '#9aa0aa', s * r, h / 2, -2, CA);                     // cut edges
     add(box(r * 2, 0.12, 0.12), '#9aa0aa', 0, h, -2, CA); add(box(r * 2, 0.12, 0.12), '#9aa0aa', 0, 0.06, -2, CA);
     // the skinny chamber of real oil under the hatch
+    add(new THREE.TorusGeometry(0.36, 0.05, 8, 24), '#7f8896', 0, h - 0.06, -2.6, CA).rotation.x = Math.PI / 2; for (const s of [-1, 1]) { const st = add(box(0.06, 0.06, 1.6), '#7f8896', s * 0.5, h - 1.3, -3.4, CA); st.rotation.y = s * 0.5; } add(new THREE.TorusGeometry(0.34, 0.035, 8, 24), '#7f8896', 0, h - 1.5, -2.6, CA).rotation.x = Math.PI / 2;
     Wd.oilChamber = add(cyl(0.32, 0.32, 1.5, 24), toon({ color: '#f4c430', roughness: 0.2, emissive: '#c89010', emissiveIntensity: 0.25 }), 0, h - 0.75, -2.6, CA);
     add(cyl(0.34, 0.34, 1.52, 24, true), M.glass, 0, h - 0.75, -2.6, CA, { noink: true });
     add(cyl(0.32, 0.32, 0.16, 20), '#7f8896', 0, h + 0.08, -2.6, CA);
-    Wd.cutLabelOil = sign(CA, [{ t: 'REAL OIL', c: '#2b1f1c' }], 1.25, h - 0.6, -1.78, 1.1, 0.4, { bg: '#f4d35e', d: 0.02 }); Wd.cutLabelOil.userData.mesh.renderOrder = 8;
-    Wd.cutLabelSea = sign(CA, [{ t: 'SEAWATER', c: '#ffffff' }], -1.3, 2.0, -1.78, 1.4, 0.45, { bg: '#2a5fae', d: 0.02 }); Wd.cutLabelSea.userData.mesh.renderOrder = 8;
+    Wd.cutLabelOil = sign(CA, [{ t: 'REAL OIL', c: '#2b1f1c' }], 0.62, h - 0.5, -1.78, 0.58, 0.22, { bg: '#f4d35e', d: 0.02 }); Wd.cutLabelOil.userData.mesh.renderOrder = 8;
+    Wd.cutLabelSea = sign(CA, [{ t: 'SEAWATER', c: '#ffffff' }], -0.85, 2.0, -1.78, 1.4, 0.45, { bg: '#2a5fae', d: 0.02 }); Wd.cutLabelSea.userData.mesh.renderOrder = 8;
     Wd.fish = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => fish(CA, ['#f28c28', '#f4d35e', '#e07a5f', '#3fa39a'][i % 4]));
     Wd.bubbles = []; for (let i = 0; i < 70; i++) Wd.bubbles.push(add(sph(0.05, 8, 6), toon({ color: '#e6f6ff', roughness: 0.1 }), 0, -50, 0, CA, { cast: false }));
     { const crab = group(1.4, 0.15, -2.3, CA); add(sph(0.18, 12, 8), '#c62f36', 0, 0.1, 0, crab).scale.set(1.4, 0.6, 1); for (const s of [-1, 1]) { add(sph(0.07, 8, 6), '#c62f36', s * 0.28, 0.16, 0.12, crab); add(cyl(0.015, 0.015, 0.14, 6), '#c62f36', s * 0.08, 0.26, 0.05, crab); add(sph(0.025, 6, 4), '#2b1f1c', s * 0.08, 0.34, 0.05, crab); } Wd.crab = crab; }
@@ -136,9 +137,9 @@ window.WORLD = (() => {
     for (let k = 0; k < 4; k++) { add(cyl(0.16, 0.18, h - 1.2, 14), '#f4f1e8', -1.5 + k * 1.0, (h - 1.2) / 2 + 0.3, 1.35, g); }
     for (let k = 0; k < 3; k++) add(tbox(4.6 - k * 0.2, 0.15, 0.4), '#e8e2d4', 0, 0.08 + k * 0.15, 1.6 + 0.4 * (2 - k), g);
     add(box(1.1, 1.9, 0.06), '#5a3a24', 0, 0.95 + 0.3, 1.22, g); sign(g, [{ t: NAMES[i], c: '#2b1f1c' }], 0, h - 0.5, 1.45, 3.4, 0.5, { bg: '#f4d35e', border: '#2b1f1c', d: 0.04 }); }
-  Wd.count51 = sign(BK, [{ t: '51 BANKS', c: '#ffffff' }], 0, 4.6, -2.8, 2.6, 0.9, { bg: '#c62f36', border: '#f4d35e', glow: 0.35 }); for (const x of [-1.2, 1.2]) add(cyl(0.05, 0.05, 4.2, 8), '#2b2f38', x, 2.1, -2.85, BK);
+  Wd.count51 = sign(BK, [{ t: '51 BANKS', c: '#ffffff' }], 0, 4.6, -2.8, 2.6, 0.9, { bg: '#c62f36', border: '#f4d35e', glow: 0.35 }); for (const x of [-1.2, 1.2]) { add(cyl(0.05, 0.05, 4.2, 8), '#2b2f38', x, 2.1, -2.85, BK); add(cyl(0.18, 0.2, 0.06, 14), '#2b2f38', x, 0.19, -2.85, BK); }
   Wd.bankBills = Wd.bits(BK, 90, ['#8fbf6a', '#a8d08a', '#7fb05a'], [0.2, 0.09]);
-  Wd.bigNum = sign(BK, [{ t: '$175,000,000', c: '#2f6b4f' }], 0, 2.6, -1.2, 3.0, 0.8, { bg: '#fbfaf4', border: '#2f6b4f' }); for (const x of [-1.4, 1.4]) add(cyl(0.05, 0.05, 2.2, 8), '#2b2f38', x, 1.1, -1.25, BK);
+  Wd.bigNum = sign(BK, [{ t: '$175,000,000', c: '#2f6b4f' }], 0, 2.45, -1.2, 2.2, 0.6, { bg: '#fbfaf4', border: '#2f6b4f' }); for (const x of [-1.0, 1.0]) { add(cyl(0.05, 0.05, 2.45, 8), '#2b2f38', x, 1.22, -1.25, BK); add(cyl(0.18, 0.2, 0.06, 14), '#2b2f38', x, 0.03, -1.25, BK); }
   { const wb = group(1.2, 0, 1.4, BK); wb.rotation.y = -0.4; add(tbox(1.0, 0.4, 0.6), '#c62f36', 0, 0.55, 0, wb); add(cyl(0.22, 0.22, 0.1, 16), '#2b2f38', 0.6, 0.22, 0, wb).rotation.x = Math.PI / 2; for (const s of [-1, 1]) add(cyl(0.025, 0.025, 1.2, 6), '#8a5734', -0.6, 0.6, s * 0.25, wb).rotation.z = 1.3; Wd.cashStacks = []; for (let k = 0; k < 12; k++) Wd.cashStacks.push(add(box(0.22, 0.08, 0.12), k % 2 ? '#8fbf6a' : '#7fb05a', -0.3 + (k % 3) * 0.26, 0.8 + Math.floor(k / 6) * 0.08, -0.15 + (Math.floor(k / 3) % 2) * 0.3, wb)); }
   for (const x of [-9, 9]) { add(cyl(0.06, 0.08, 3.6, 10), '#2b2f38', x, 1.8, -2.6, BK); lamp(BK, x + 0.3, 3.5, -2.6, '#2b2f38'); }
   { const car = group(-5, 0, 2.6, BK); add(tbox(3.2, 0.7, 1.5), '#2b2f38', 0, 0.6, 0, car); add(tbox(1.8, 0.55, 1.4), '#2b2f38', -0.2, 1.2, 0, car); add(box(1.7, 0.45, 1.42), '#bfe0f6', -0.2, 1.2, 0, car); for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(cyl(0.3, 0.3, 0.2, 18), '#1a1a20', sx * 1.0, 0.3, sz * 0.75, car).rotation.x = Math.PI / 2; add(box(0.1, 0.2, 1.2), '#e5c158', 1.62, 0.65, 0, car); }
@@ -150,7 +151,7 @@ window.WORLD = (() => {
   { const d = group(0, 0, -1.2, AX); add(tbox(2.4, 0.08, 1.1), '#6a4a32', 0, 0.82, 0, d); add(tbox(2.3, 0.78, 1.0), '#5a3a24', 0, 0.39, 0, d);
     Wd.stamp3D = group(0.3, 0.86, 0.1, d); add(cyl(0.08, 0.1, 0.06, 14), '#c62f36', 0, 0.03, 0, Wd.stamp3D); add(cyl(0.025, 0.025, 0.18, 8), '#8a5734', 0, 0.15, 0, Wd.stamp3D); add(sph(0.06), '#8a5734', 0, 0.26, 0, Wd.stamp3D);
     Wd.receipts = []; for (let i = 0; i < 40; i++) { const m = add(box(0.3, 0.006, 0.38), i % 5 ? '#fbfaf4' : '#f6e27a', -0.5 + Math.sin(i * 1.7) * 0.02, 0.86 + i * 0.012, 0.05 + Math.cos(i * 2.1) * 0.02, d, { cast: false }); Wd.receipts.push(m); }
-    Wd.certified = sign(d, [{ t: 'CERTIFIED', c: '#c62f36' }], -0.5, 1.45, 0.2, 0.9, 0.3, { bg: '#fbfaf4', border: '#c62f36', d: 0.01 }); Wd.certified.visible = false;
+    Wd.certified = sign(d, [{ t: 'CERTIFIED', c: '#c62f36' }], -0.5, 1.12, 0.3, 0.7, 0.24, { bg: '#fbfaf4', border: '#c62f36', d: 0.01 }); Wd.certified.visible = false; add(box(0.04, 0.26, 0.04), '#2b2f38', -0.5, 0.92, 0.29, d); add(box(0.3, 0.02, 0.16), '#2b2f38', -0.5, 0.87, 0.29, d);
     add(cyl(0.06, 0.08, 0.04, 12), '#2b2f38', 0.9, 0.86, -0.3, d); add(tbox(0.22, 0.08, 0.16), '#2b2f38', 0.9, 0.9, -0.3, d); }
   chair(AX, 0, -2.1, 0, '#3a2414');
   shelf(AX, -3.2, 0, -3.1, 1.2, 4, 0, '#6a4a32'); shelf(AX, 3.2, 0, -3.1, 1.2, 4, 0, '#6a4a32');
@@ -174,7 +175,7 @@ window.WORLD = (() => {
   { const ov = group(-2.6, 0, -2.5, KT); add(tbox(1.0, 0.95, 0.75), '#fbfaf4', 0, 0.475, 0, ov); add(box(0.7, 0.4, 0.02), '#2b2f38', 0, 0.45, 0.38, ov); for (let k = 0; k < 4; k++) add(cyl(0.12, 0.12, 0.02, 16), '#2b2f38', -0.22 + (k % 2) * 0.44, 0.96, -0.15 + ((k / 2) | 0) * 0.3, ov); add(cyl(0.16, 0.14, 0.2, 16), '#c62f36', 0.22, 1.06, 0.15, ov); }
   windowUnit(KT, 0, 2.1, -2.88, 1.4, 1.0, 0, 'city'); clock(KT, 1.8, 2.5, -2.88); fan(KT, 0, 3.2, -0.5); Wd.potSteam = smoke(KT, 10, '#f4f4f8'); plant(KT, -3.0, 1.8, 1.0);
   for (let k = 0; k < 5; k++) { const h_ = add(cyl(0.01, 0.01, 0.12, 4), '#9aa0aa', -1.6 + k * 0.4, 1.9, -2.86, KT); add(cyl(0.08, 0.06, 0.1, 12), pick(['#c62f36', '#2a5fae', '#f4d35e']), -1.6 + k * 0.4, 1.78, -2.82, KT); }
-  for (const x of [-0.7, 0.7]) { const s = group(x, 0, -0.5, KT); add(cyl(0.2, 0.2, 0.05, 16), '#c62f36', 0, 0.62, 0, s); add(cyl(0.03, 0.03, 0.62, 6), '#d8dde6', 0, 0.31, 0, s); }
+  for (const x of [-1.5, 1.5]) { const s = group(x, 0, -0.5, KT); add(cyl(0.2, 0.2, 0.05, 16), '#c62f36', 0, 0.62, 0, s); add(cyl(0.03, 0.03, 0.62, 6), '#d8dde6', 0, 0.31, 0, s); }
 
   // ================= STOCK EXCHANGE (x = 100) =================
   const EX = group(100, 0, 0); Wd.exchange = EX;
@@ -182,10 +183,10 @@ window.WORLD = (() => {
   { const [c, g] = cv(1024, 512); Wd.boardCanvas = c; Wd.boardCtx = g; const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; Wd.boardTex = t;
     const bm = new THREE.MeshBasicMaterial({ map: t }); bm.userData.bloomK = 0.4; add(tbox(6.2, 3.1, 0.2), '#2b2f38', 0, 3.3, -4.35, EX); add(new THREE.PlaneGeometry(6, 3), bm, 0, 3.3, -4.24, EX, { cast: false }); }
   Wd.drawBoard = (price, t) => { const g = Wd.boardCtx; g.fillStyle = '#10161f'; g.fillRect(0, 0, 1024, 512); g.font = '64px "Lilita One", Impact'; g.textAlign = 'left'; g.fillStyle = '#f4d35e'; g.fillText('AMERICAN EXPRESS', 40, 90);
-    g.font = '170px "Lilita One", Impact'; g.fillStyle = price < 58 ? '#ff4a4a' : '#7fe08a'; g.fillText('$' + price.toFixed(0), 40, 290); g.font = '60px "Lilita One", Impact'; g.fillText(price < 58 ? '▼ ' + (60 - price).toFixed(0) + ' PTS' : '▲ STEADY', 520, 270);
+    g.font = '170px "Lilita One", Impact'; g.fillStyle = price < 58 ? '#ff4a4a' : '#7fe08a'; g.fillText('$' + price.toFixed(0), 40, 290); g.font = '60px "Lilita One", Impact'; g.fillText(price < 58 ? '\u25bc ' + (60 - price).toFixed(0) + ' PTS' : '\u25b2 STEADY', 520, 270);
     g.strokeStyle = price < 58 ? '#ff4a4a' : '#7fe08a'; g.lineWidth = 8; g.beginPath(); for (let i = 0; i <= 40; i++) { const x = 40 + i * 23.5, k = i / 40, p = 60 - (60 - price) * Math.pow(k, 1.5) + Math.sin(i * 1.7) * 1.2; const y = 330 + (60 - p) * 5.5; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
-    g.fillStyle = '#1d2a3a'; g.fillRect(0, 470, 1024, 42); g.font = '30px "Lilita One", Impact'; g.fillStyle = '#ffd860'; const tape = 'AXP ▼  SALAD OIL SCANDAL  ▼  BANKS CALL LOANS  ▼  ALLIED CRUDE BANKRUPT  ▼  '; g.fillText(tape + tape, -((t * 140) % 1400), 500); Wd.boardTex.needsUpdate = true; };
-  Wd.arrow = group(2.4, 3.3, -3.9, EX); { const a = Wd.arrow; add(box(0.3, 1.2, 0.2), '#ff4a4a', 0, 0.3, 0, a); add(new THREE.ConeGeometry(0.4, 0.6, 4), '#ff4a4a', 0, -0.6, 0, a).rotation.y = Math.PI / 4; }
+    g.fillStyle = '#1d2a3a'; g.fillRect(0, 470, 1024, 42); g.font = '30px "Lilita One", Impact'; g.fillStyle = '#ffd860'; const tape = 'AXP \u25bc  SALAD OIL SCANDAL  \u25bc  BANKS CALL LOANS  \u25bc  ALLIED CRUDE BANKRUPT  \u25bc  '; g.fillText(tape + tape, -((t * 140) % 1400), 500); Wd.boardTex.needsUpdate = true; };
+  Wd.arrow = group(2.15, 3.55, -4.18, EX); Wd.arrow.scale.setScalar(0.7); { const a = Wd.arrow; add(box(0.3, 1.2, 0.2), '#ff4a4a', 0, 0.3, 0, a); add(new THREE.ConeGeometry(0.4, 0.6, 4), '#ff4a4a', 0, -0.6, 0, a).rotation.y = Math.PI / 4; }
   for (let i = 0; i < 4; i++) { const p = group(-4.5 + i * 3, 0, 1.0 + (i % 2) * 0.8, EX); add(cyl(0.5, 0.55, 1.0, 16), '#5a3a24', 0, 0.5, 0, p); add(cyl(0.58, 0.58, 0.06, 16), '#8a5734', 0, 1.03, 0, p); for (let k = 0; k < 3; k++) { const a = k * 2.1; add(box(0.3, 0.22, 0.04), '#2b2f38', Math.cos(a) * 0.4, 1.4, Math.sin(a) * 0.4, p).rotation.y = -a; } add(cyl(0.04, 0.04, 0.4, 8), '#9aa0aa', 0, 1.25, 0, p); }
   Wd.slips = Wd.bits(EX, 120, ['#fbfaf4', '#f6e27a', '#f6c4d6'], [0.14, 0.09]);
   clock(EX, -4.6, 4.2, -4.3); clock(EX, 4.6, 4.2, -4.3);
@@ -199,7 +200,7 @@ window.WORLD = (() => {
     add(cyl(0.05, 0.07, 0.03, 12), '#2b2f38', 0.7, 0.85, -0.3, d); add(cyl(0.012, 0.012, 0.4, 6), '#2b2f38', 0.7, 1.05, -0.3, d); add(cyl(0.05, 0.14, 0.14, 14, true), '#2f6b4f', 0.7, 1.25, -0.25, d); add(sph(0.04), toon({ color: '#fff6c8', emissive: '#ffe9a0', emissiveIntensity: 1.1 }), 0.7, 1.2, -0.25, d);
     // the little tank of seawater on the desk (the ending callback)
     const jt = group(-0.75, 0.84, 0.2, d); Wd.deskTank = jt; add(cyl(0.16, 0.16, 0.3, 24), M.glass, 0, 0.17, 0, jt, { noink: true }); add(cyl(0.15, 0.15, 0.24, 24), toon({ color: '#4a9fd8', roughness: 0.15, transparent: true, opacity: 0.8 }), 0, 0.14, 0, jt); add(cyl(0.17, 0.17, 0.03, 24), '#9aa0aa', 0, 0.33, 0, jt); add(cyl(0.17, 0.17, 0.02, 24), '#9aa0aa', 0, 0.01, 0, jt);
-    sign(jt, [{ t: 'SALAD OIL', c: '#c62f36' }], 0, 0.17, 0.17, 0.26, 0.08, { bg: '#fbfaf4', d: 0.004 }); Wd.tinyFish = fish(jt, '#f28c28'); Wd.tinyFish.scale.setScalar(0.25);
+    { const lt = label([{ t: 'SALAD OIL', c: '#c62f36' }], { w: 512, h: 128, bg: '#fbfaf4', border: '#c62f36', pad: 14 }); lt.wrapS = THREE.RepeatWrapping; lt.repeat.set(1, 1); lt.offset.x = 0; const band = add(cyl(0.163, 0.163, 0.09, 32, true, -Math.PI * 0.45, Math.PI * 0.9), toon({ map: lt, side: THREE.DoubleSide, roughness: 0.7 }), 0, 0.17, 0, jt, { cast: false }); } Wd.tinyFish = fish(jt, '#f28c28'); Wd.tinyFish.scale.setScalar(0.25);
     Wd.buyStamp = sign(d, [{ t: 'BUY', c: '#ffffff' }], -0.25, 0.86, 0.25, 0.5, 0.3, { bg: '#2f6b4f', d: 0.01, rx: -Math.PI / 2 }); Wd.buyStamp.visible = false;
     Wd.cert = sign(d, [{ t: 'AMERICAN EXPRESS', c: '#2b1f1c' }, { t: '5% STAKE', c: '#2f6b4f' }], 0.75, 1.35, 0.3, 0.9, 0.55, { bg: '#f4ead0', border: '#2f6b4f', d: 0.01 }); Wd.cert.visible = false; }
   chair(OM, 0, -2.1, 0, '#5a3a24'); fan(OM, 0, 3.2, 0.2); shelf(OM, -2.6, 0, -2.75, 1.3, 4, 0, '#8a5734'); plant(OM, 2.9, -2.4, 1.2);

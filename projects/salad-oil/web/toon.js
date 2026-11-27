@@ -1,6 +1,6 @@
 // Characters: kit characters/rick.js (LOCKED style) + rick_ext.js + this video's cast additions.
 window.TOON = (() => {
-// ---------------- Ricks Clips style character renderer — LOCKED STYLE (matched to Ricks Clips frames) ----------------
+// ---------------- Ricks Clips style character renderer \u2014 LOCKED STYLE (matched to Ricks Clips frames) ----------------
 // White round head (slightly wider than tall), THICK near-black brown brush outline heavier at the bottom (~6% of head width),
 // pear-shaped pill body with clothes painted on, chunky brown limbs with small dark hands, small dark shoe ovals,
 // big expressive face: dark oval / dash / ring / half-lid / >< eyes, thick arched brows high on the forehead,
@@ -273,7 +273,7 @@ PROPS.envelope = (g, x, y) => { P(g, [[x - 34, y - 22], [x + 34, y - 22], [x + 3
 PROPS.bill = (g, x, y) => { P(g, [[x - 26, y - 30], [x + 26, y - 30], [x + 30, y + 190], [x - 22, y + 196]]); fillLine(g, "#fbf6e8", 4, FC); for (let i = 0; i < 12; i++) line(g, [[x - 16, y - 14 + i * 16], [x + 16 + (i % 3) * 3, y - 14 + i * 16]], 3, "#8a8a9a"); g.fillStyle = "#c0392b"; g.font = "bold 30px sans-serif"; g.fillText("$$$", x - 22, y + 184); ell(g, x, y - 32, 30, 8, "#e8dfc8", 3.5); };
 PROPS.cash = (g, x, y) => { for (let i = 0; i < 3; i++) { P(g, [[x - 34, y - 14 + i * 7], [x + 34, y - 18 + i * 7], [x + 36, y + 10 + i * 7], [x - 32, y + 14 + i * 7]]); fillLine(g, "#8fbf6a", 3.5, FC); } ell(g, x, y + 4, 9, 9, "#5f8a3c", 2.5); };
 PROPS.cigar = (g, x, y) => { line(g, [[x, y], [x + 34, y + 6]], 11, FC); line(g, [[x, y], [x + 34, y + 6]], 6.5, "#7a4a2a"); ell(g, x + 36, y + 6, 5, 5, "#ff8a3d", 0); };
-// Cast for "The Lottery That Drew 666" — new characters, locked Ricks style (rick.js + rick_ext.js).
+// Cast for "The Lottery That Drew 666" \u2014 new characters, locked Ricks style (rick.js + rick_ext.js).
 // Extra pieces for this video:
 HATS.slick = (g, cx, cy, o) => { const c = o.hair ?? "#2a1d17"; const pts = [...qc([cx - 100, cy - 14], [cx - 112, cy - 118], [cx - 4, cy - 122]), ...qc([cx - 4, cy - 122], [cx + 110, cy - 124], [cx + 100, cy - 24]), ...qc([cx + 100, cy - 24], [cx + 84, cy - 74], [cx + 30, cy - 80]), ...qc([cx + 30, cy - 80], [cx - 40, cy - 70], [cx - 100, cy - 14])]; softShade(g, pts, cx, cy - 80, 100, c, mulc(c, 0.7)); P(g, pts); fillLine(g, null); for (const k of [0, 1, 2]) line(g, qc([cx - 70 + k * 30, cy - 92 + k * 4], [cx + k * 24, cy - 116], [cx + 70 + k * 6, cy - 98]), 3.5, mulc(c, 1.7)); };
 HATS.visor = (g, cx, cy, o) => { HATS.hair(g, cx, cy, o); const c = "#2f9a6a"; P(g, [...qc([cx - 96, cy - 60], [cx, cy - 92], [cx + 96, cy - 60]), ...qc([cx + 96, cy - 60], [cx + 40, cy - 20], [cx - 96, cy - 60])]); fillLine(g, "rgba(64,190,130,0.85)", 6, FC); line(g, qc([cx - 98, cy - 62], [cx, cy - 96], [cx + 98, cy - 62]), 10, c); };
