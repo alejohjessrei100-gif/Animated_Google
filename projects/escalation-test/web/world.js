@@ -87,15 +87,11 @@ window.WORLD = (() => {
   Wd.gold = group(-1.75, Wd.V.y0 + 0.06, -0.55);
   add(new THREE.ConeGeometry(0.62, 0.42, 22), toon({ color: '#f4c430', metalness: 0.35, roughness: 0.45, emissive: '#a07010', emissiveIntensity: 0.25 }), 0, 0.21, 0, Wd.gold);
   for (let k = 0; k < 16; k++) { const a = R() * 6.28, r = 0.25 + R() * 0.45; add(cyl(0.07, 0.07, 0.02, 12), toon({ color: '#f4d35e', metalness: 0.8, roughness: 0.2, emissive: '#c89010', emissiveIntensity: 0.5 }), Math.cos(a) * r, 0.03 + (0.62 - r) * 0.4, Math.sin(a) * r * 0.6, Wd.gold).rotation.set(R() * 0.6, 0, R() * 0.6); }
-  Wd.vaultSign = sign(scene, [{ t: 'YOUR VAULT', c: '#2b1f1c' }], -1.7, Wd.V.y1 + 0.28, ZF + 0.05, 1.3, 0.38, { bg: '#f4d35e', d: 0.04, glow: 0.3 });
-  Wd.stamp = sign(scene, [{ t: "KING'S GOLD", c: '#ffffff' }], -1.75, Wd.V.y0 + 0.3, 0.32, 0.95, 0.28, { bg: '#c62f36', fg: '#ffffff', border: '#ffffff', d: 0.03, glow: 0.4 }); Wd.stamp.rotation.z = 0.18;
   // ---------- the decoy shaft (dry, no water) ----------
   Wd.dkLine = shaft(Wd.Dk.x, Wd.Dk.top, 0, 0.6); Wd.dkLine.visible = false;
   Wd.dkBotLine = add(cyl(0.6, 0.6, 1, 28, true, Math.PI / 2, Math.PI), darkSoilM, Wd.Dk.x, 0, ZB + 0.6, scene, { cast: false }); Wd.dkBotLine.material = darkSoilM; darkSoilM.side = THREE.DoubleSide;
-  Wd.depth = [20, 40].map((n, i) => sign(scene, [{ t: n + ' FT', c: '#ffffff' }], Wd.Dk.x - 1.25, -1.9 - i * 1.5, ZF + 0.05, 0.9, 0.34, { bg: '#2b1f1c', fg: '#ffffff', border: '#f4d35e', d: 0.03, glow: 0.3 }));
   // the tunnel water (the moat)
   Wd.moat = add(box(1, 0.55, ZF - ZB - 0.02), toon({ color: '#3f93d6', roughness: 0.08, emissive: '#1d5a9a', emissiveIntensity: 0.35, transparent: true, opacity: 0.92 }), 0, Wd.T.y0 + 0.27, (ZF + ZB) / 2, scene, { cast: false });
-  Wd.moatSign = sign(scene, [{ t: 'MOAT', c: '#ffffff' }], (Wd.T.x0 + Wd.T.x1) / 2, Wd.T.y1 + 0.32, ZF + 0.05, 0.9, 0.36, { bg: '#2a5fae', fg: '#ffffff', border: '#ffffff', d: 0.04, glow: 0.3 });
   Wd.lily = group(-3.6, Wd.T.y0 + 0.56, -0.35); add(cyl(0.26, 0.26, 0.02, 18, false, 0.3, 5.8), '#5aa83a', 0, 0, 0, Wd.lily);
 
   // ---------- well heads ----------
@@ -111,11 +107,6 @@ window.WORLD = (() => {
   Wd.bucket = group(0, 1.5, -0.45); add(cyl(0.2, 0.15, 0.3, 16), '#8a5734', 0, 0, 0, Wd.bucket); for (const y of [-0.08, 0.09]) add(new THREE.TorusGeometry(0.18, 0.014, 6, 16), '#3b3f4a', 0, y, 0, Wd.bucket).rotation.x = Math.PI / 2; add(new THREE.TorusGeometry(0.2, 0.012, 6, 16, Math.PI), '#3b3f4a', 0, 0.15, 0, Wd.bucket);
   Wd.lid = group(0, 0.8, -0.45); add(cyl(0.86, 0.86, 0.08, 30), '#9a6a3e', 0, 0, 0, Wd.lid); for (const z of [-0.4, 0, 0.4]) add(box(1.6, 0.05, 0.12), '#7a5232', 0, 0.06, z, Wd.lid);
   Wd.lock = group(0.3, 0.98, 0.35); add(box(0.3, 0.26, 0.1), toon({ color: '#c9a03a', metalness: 0.7, roughness: 0.3 }), 0, 0, 0, Wd.lock); add(new THREE.TorusGeometry(0.1, 0.03, 8, 16, Math.PI), '#9aa3ad', 0, 0.13, 0, Wd.lock); add(cyl(0.03, 0.03, 0.02, 8), '#2b1f1c', 0, -0.02, 0.06, Wd.lock).rotation.x = Math.PI / 2;
-  Wd.safeSign = sign(scene, [{ t: 'SAFE', c: '#ffffff' }], 1.25, 2.35, 0.2, 0.9, 0.38, { bg: '#2f6b4f', fg: '#ffffff', border: '#ffffff', d: 0.04, glow: 0.3 });
-  Wd.decoySign = sign(scene, [{ t: 'DECOY', c: '#2b1f1c' }], Wd.Dk.x - 1.25, 2.3, 0.2, 1.0, 0.38, { bg: '#f3e6c4', d: 0.04, glow: 0.25 });
-  Wd.fakeSign = sign(scene, [{ t: 'FAKE WELL', c: '#ffffff' }], Wd.Dk.x, 3.55, -0.3, 1.4, 0.4, { bg: '#c62f36', fg: '#ffffff', border: '#ffffff', d: 0.04, glow: 0.35 });
-  Wd.probSign = sign(scene, [{ t: 'REAL PROBLEM', c: '#ffffff' }], -2.8, 3.0, 0.0, 1.8, 0.42, { bg: '#2b1f1c', fg: '#ffffff', border: '#c62f36', d: 0.04, glow: 0.35 });
-  Wd.crowdSign = sign(scene, [{ t: '300', c: '#2b1f1c' }], -10.2, 3.05, 0.0, 1.1, 0.5, { bg: '#f4d35e', d: 0.04, glow: 0.35 });
   Wd.dryPuff = []; for (let i = 0; i < 14; i++) Wd.dryPuff.push(add(sph(0.08, 8, 6), '#d8c4a4', 0, -50, 0, scene, { cast: false }));
 
   // ---------- village (left) ----------
@@ -130,7 +121,6 @@ window.WORLD = (() => {
   // the diary (the analogy), on a little plinth in the square
   Wd.diary = group(-10.2, 0, -0.9); add(box(0.6, 0.8, 0.6), texM(PAINT.stone(5, 40, 8, 80), 1, 1), 0, 0.4, 0, Wd.diary);
   { const bk = group(0, 0.95, 0, Wd.diary); add(box(0.62, 0.1, 0.46), '#c0306a', 0, 0, 0, bk); add(box(0.58, 0.08, 0.42), '#f6f1e6', 0.02, 0.01, 0, bk); add(box(0.08, 0.16, 0.08), '#e5c158', 0.3, 0.02, 0, bk); bk.rotation.x = 0.5; Wd.diaryBook = bk; }
-  Wd.diarySign = sign(Wd.diary, [{ t: 'MY DIARY', c: '#ffffff' }], 0, 1.55, 0.05, 1.1, 0.34, { bg: '#c0306a', fg: '#ffffff', border: '#ffffff', d: 0.03, glow: 0.3 });
   Wd.spot = new THREE.SpotLight('#fff4d0', 0, 9, 0.5, 0.5, 1.5); Wd.spot.position.set(-10.2, 6, 1.5); Wd.spot.target.position.set(-10.2, 0.9, -0.9); scene.add(Wd.spot); scene.add(Wd.spot.target);
   Wd.tumble = group(0, -50, 0); { const m = toon({ color: '#b08a50' }); for (let k = 0; k < 7; k++) { const t = add(new THREE.TorusGeometry(0.22, 0.02, 4, 12), m, 0, 0, 0, Wd.tumble, { cast: false }); t.rotation.set(R() * 3, R() * 3, R() * 3); } }
 
@@ -142,9 +132,6 @@ window.WORLD = (() => {
     add(box(0.75, 0.42, 0.36), wm, 0, 0.62, 0, gt); for (const [x, z] of [[-0.28, -0.12], [-0.28, 0.12], [0.28, -0.12], [0.28, 0.12]]) add(box(0.08, 0.42, 0.08), wm, x, 0.21, z, gt);
     const hd = group(0.42, 0.88, 0, gt); add(box(0.32, 0.26, 0.24), wm, 0.08, 0, 0, hd); add(box(0.1, 0.12, 0.2), '#e8b8a8', 0.27, -0.06, 0, hd); for (const s of [-1, 1]) { add(new THREE.ConeGeometry(0.035, 0.22, 6), dk, -0.02, 0.2, s * 0.07, hd).rotation.z = 0.5; add(sph(0.028, 8, 6), '#1e1714', 0.14, 0.05, s * 0.125, hd); add(box(0.14, 0.04, 0.08), wm, -0.04, 0.06, s * 0.15, hd).rotation.x = s * 0.4; }
     add(new THREE.ConeGeometry(0.04, 0.14, 6), wm, 0.22, -0.17, 0, hd).rotation.z = Math.PI; Wd.goatHead = hd; add(new THREE.ConeGeometry(0.05, 0.16, 6), wm, -0.42, 0.78, 0, gt).rotation.z = 0.9; }
-  Wd.croak = sign(scene, [{ t: 'CROAK!', c: '#2b1f1c' }], -3.55, -3.22, ZF + 0.08, 0.8, 0.3, { bg: '#c8f08a', d: 0.03, glow: 0.3 });
-  Wd.bubble = sign(scene, [{ t: 'GOLD IN THE WELL!', c: '#2b1f1c' }], -9.0, 2.8, 0.1, 2.0, 0.5, { bg: '#ffffff', d: 0.04, glow: 0.3 });
-  Wd.qmark = sign(scene, [{ t: '?', c: '#ffffff' }], -1.15, Wd.V.y1 - 0.35, ZF + 0.05, 0.36, 0.42, { bg: '#2a5fae', fg: '#ffffff', border: '#ffffff', d: 0.04, glow: 0.4 });
   Wd.warn = group(1.6, 2.7, -0.2); { const m = toon({ color: '#ff3b3b', emissive: '#ff2020', emissiveIntensity: 1.4 }); add(box(0.15, 0.5, 0.1), m, 0, 0.14, 0, Wd.warn); add(sph(0.09, 10, 8), m, 0, -0.27, 0, Wd.warn); }
   Wd.warnLight = new THREE.PointLight('#ff3030', 0, 6, 2); Wd.warnLight.position.set(1.4, 1.8, 0.4); scene.add(Wd.warnLight);
   // the note from the king (a scroll that pops out of the floating bucket)

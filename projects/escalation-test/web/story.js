@@ -79,10 +79,10 @@ window.STORY = (() => {
     { t: B.f40 - 0.05, pos: [-4.5, -3.4, 3.7], look: [-5.3, -4.0, -0.5], fov: 50, drift: [0.15, -0.05, -0.3], roll: -2 },              // 40 ft
     { t: B.straight - 0.06, pos: [-4.3, -3.5, 3.6], look: [-4.2, -4.0, -0.5], fov: 50, drift: [1.3, 0.05, -0.2], dlook: [1.6, 0, 0] }, // straight into your vault
     { t: 19.12, pos: [-2.5, -3.35, 4.6], look: [-2.7, -3.85, -0.5], fov: 50, drift: [-0.5, 0.05, -0.4] },                                // flood the tunnel
-    { t: 20.46, pos: [-3.7, -3.55, 3.3], look: [-3.85, -3.95, -0.4], fov: 46, drift: [0.2, 0.05, -0.3], roll: 1.5 },                   // MOAT
+    { t: 20.46, pos: [-3.7, -3.85, 3.3], look: [-3.85, -4.2, -0.4], fov: 46, drift: [0.2, 0.05, -0.3], roll: 1.5 },                   // MOAT
     { t: B.hire - 0.1, pos: [-3.45, -3.75, 1.75], look: [-3.6, -4.0, -0.35], fov: 44, drift: [-0.05, 0.02, -0.2] },                    // a frog
     { t: B.goat - 0.1, pos: [2.2, 1.15, 3.9], look: [2.15, 0.8, -0.8], fov: 46, drift: [0.3, 0.05, 0.1], dlook: [0.3, 0, 0] },                               // a goat, and Steve
-    { t: 25.6, pos: [-3.35, -3.65, 2.6], look: [-3.5, -3.8, -0.35], fov: 44, drift: [0.05, 0.02, -0.3], roll: -2 },                     // croaks
+    { t: 25.6, pos: [-3.35, -3.85, 2.4], look: [-3.5, -4.0, -0.35], fov: 44, drift: [0.05, 0.02, -0.3], roll: -2 },                     // croaks
     { t: 27.32, pos: [1.6, 1.3, 3.0], look: [1.4, 1.05, -0.7], fov: 46, drift: [-0.2, 0.05, -0.3] },                                   // eats the rope
     { t: 28.3, pos: [-9.7, 1.55, 6.4], look: [-9.95, 1.2, -0.9], fov: 50, drift: [-0.25, 0.05, -0.6] },                                  // Steve tells 300 villagers
     { t: 30.66, pos: [-10.15, 1.75, 3.4], look: [-10.2, 1.15, -0.9], fov: 46, drift: [0.1, -0.05, -0.5], roll: 1.5 },                  // the diary
@@ -133,12 +133,12 @@ window.STORY = (() => {
     // gold pile: swells on "gold", stamped on "coin", drained up the shaft on "never yours"
     const gp = pop(t, B.gold, 0.3), drain = ease(ramp(t, 44.9, 46.2)); Wd.gold.scale.set((0.85 + 0.2 * gp) * (1 - drain * 0.75), (0.8 + 0.25 * gp) * (1 - drain * 0.8), (0.85 + 0.2 * gp) * (1 - drain * 0.75));
     Wd.vaultLight.intensity = 2.0 + 1.6 * (t >= B.gold ? Math.exp(-(t - B.gold) * 4) : 0) + 0.25 * Math.sin(t * 7) + (t >= B.coin ? 2 * Math.exp(-(t - B.coin) * 4) : 0);
-    popS(Wd.vaultSign, t, B.vault); Wd.vaultSign.rotation.z = 0.04 * Math.sin(t * 2.4);
-    popS(Wd.stamp, t, B.coin); if (Wd.stamp.visible) Wd.stamp.position.y = Wd.V.y0 + 0.3 + 0.6 * (1 - eout(ramp(t, B.coin, B.coin + 0.12)));
+    
+    
     // sparks: gold, vault sign, safe, king, congratulations
     const SP = Wd.sparks;
     burst(SP.slice(0, 10), t, B.gold, [VX, PILE, -0.3], 3); burst(SP.slice(10, 18), t, B.vault, [-1.7, Wd.V.y1 + 0.3, 0.4], 40, { spread: 1.1 });
-    if (t > 6 && t < 7) burst(SP.slice(10, 18), t, B.safe, [1.2, 2.3, 0.4], 50); if (t > 38 && t < 39.5) burst(SP.slice(10, 18), t, B.king, [1.4, 2.1, -0.3], 60, { spread: 1.3 });
+    if (t > 6 && t < 7) burst(SP.slice(10, 18), t, B.safe, [0.3, 1.0, 0.45], 50); if (t > 38 && t < 39.5) burst(SP.slice(10, 18), t, B.king, [1.4, 2.1, -0.3], 60, { spread: 1.3 });
     burst(SP.slice(18, 30), t, B.coin, [VX, PILE + 0.2, -0.2], 70, { spread: 1.2 });
     // the bucket: hangs, dropped on "drop", splashes on "bucket", floats at the bottom from then on (the note rises out of it later)
     const fallU = ramp(t, B.drop + 0.06, B.bucket), by0 = 1.5, by1 = WATER + 0.05;
@@ -155,16 +155,16 @@ window.STORY = (() => {
     { const u = (t - B.bucket) % 1.6; Wd.ripple.visible = t >= B.bucket; Wd.ripple.scale.setScalar(1 + u * 4); Wd.ripple.material.opacity = 0.7 * (1 - u / 1.6); }
     // lid slams on "lid", padlock + SAFE on "safe"
     Wd.lid.visible = t >= B.lid - 0.25; Wd.lid.position.y = 0.8 + 1.6 * (1 - eout(ramp(t, B.lid - 0.25, B.lid))) + (t >= B.lid && t < B.lid + 0.4 ? Math.abs(Math.sin((t - B.lid) * 16)) * 0.06 * Math.exp(-(t - B.lid) * 8) : 0);
-    popS(Wd.lock, t, B.safe - 0.06); popS(Wd.safeSign, t, B.safe);
+    popS(Wd.lock, t, B.safe - 0.06);
     // villagers' 300 sign, the decoy well, DECOY / FAKE WELL / REAL PROBLEM
-    popS(Wd.crowdSign, t, B.v300, 9.0); if (t >= 28) popS(Wd.crowdSign, t, B.v300b, 30.66);
+    
     Wd.wDk.g.visible = t >= B.second; if (Wd.wDk.g.visible) Wd.wDk.g.scale.setScalar(Math.max(0.01, pop(t, B.second, 0.3)));
     Wd.setFill(Wd.fillDkTop, t < B.second ? 1 : 0); Wd.dkLine.visible = t >= B.second;
     const dig = DIG(t); Wd.setFill(Wd.fillDkBot, (dig - Wd.Dk.bot) / (Wd.Dk.top - Wd.Dk.bot));
     Wd.dkBotLine.visible = dig < Wd.Dk.top - 0.02; if (Wd.dkBotLine.visible) { Wd.dkBotLine.scale.y = Wd.Dk.top - dig; Wd.dkBotLine.position.y = (Wd.Dk.top + dig) / 2; }
     const tf = TUN(t); Wd.setFill(Wd.fillT, (Wd.T.x1 - tf) / (Wd.T.x1 - Wd.T.x0), 'x');
-    popS(Wd.decoySign, t, B.decoy); popS(Wd.fakeSign, t, B.fake, 13.72); popS(Wd.probSign, t, B.real, 13.72); Wd.probSign.rotation.z = 0.08 * Math.sin(t * 9);
-    Wd.depth.forEach((s, i) => popS(s, t, [B.f20, B.f40][i], 19.1));
+    
+    
     // dust: digging the decoy, the dry pail, the dig deeper, the break-in
     burst(Wd.dust, t, B.second, [Wd.Dk.x, 0.3, -0.2], 11, { spread: 1.2, life: 0.8 });
     if (t > 13 && t < 15) burst(Wd.dust, t, 14.3, [Wd.Dk.x, Wd.Dk.top + 0.1, -0.2], 20, { spread: 0.7, life: 0.7 });
@@ -172,16 +172,16 @@ window.STORY = (() => {
     if (t > 17.7 && t < 19.4) burst(Wd.dust, t, B.vault2, [Wd.T.x1, Wd.T.y0 + 0.6, -0.2], 44, { spread: 1.4, life: 0.8 });
     // the flood: water rushes in from the vault side and fills the tunnel
     const fl = ease(ramp(t, B.flood, B.flood + 0.5)); Wd.moat.visible = fl > 0.01; if (Wd.moat.visible) { const w = (Wd.T.x1 - Wd.T.x0 + 0.6) * fl; Wd.moat.scale.set(w, 1, 1); Wd.moat.position.x = Wd.T.x1 - w / 2; Wd.moat.position.y = Wd.T.y0 + 0.27 + 0.04 * Math.sin(t * 3); }
-    popS(Wd.moatSign, t, B.moat); Wd.lily.visible = t >= B.moat; Wd.lily.position.y = Wd.T.y0 + 0.56 + 0.02 * Math.sin(t * 2.4);
+     Wd.lily.visible = t >= B.moat; Wd.lily.position.y = Wd.T.y0 + 0.56 + 0.02 * Math.sin(t * 2.4);
     // trio: frog, goat
     Wd.frog.visible = t >= B.frog; if (Wd.frog.visible) { Wd.frog.scale.setScalar(Math.max(0.01, pop(t, B.frog, 0.3))); Wd.frog.position.y = Wd.T.y0 + 0.58 + 0.02 * Math.sin(t * 2.4) + (win(t, B.frog, B.frog + 0.3) ? Math.sin((t - B.frog) / 0.3 * Math.PI) * 0.2 : 0); Wd.frog.rotation.y = -0.4 + 0.15 * Math.sin(t * 1.3); }
-    const croak = win(t, B.croaks - 0.1, 27.2) ? Math.max(0, Math.sin((t - B.croaks + 0.1) * 9)) : 0; Wd.throat.scale.setScalar(1 + croak * 1.4); popS(Wd.croak, t, B.croaks, 27.3); Wd.croak.rotation.z = 0.1 * Math.sin(t * 11);
+    const croak = win(t, B.croaks - 0.1, 27.2) ? Math.max(0, Math.sin((t - B.croaks + 0.1) * 9)) : 0; Wd.throat.scale.setScalar(1 + croak * 1.4);
     Wd.goat.visible = t >= B.goat; if (Wd.goat.visible) { Wd.goat.scale.setScalar(Math.max(0.01, pop(t, B.goat, 0.3))); Wd.goatHead.rotation.z = t >= B.eats - 0.3 && t < 28.9 ? -0.25 + 0.12 * Math.sin(t * 22) : 0.1 * Math.sin(t * 1.6); Wd.goatHead.position.y = 0.88 + (t >= B.eats - 0.3 && t < 28.9 ? -0.06 : 0); }
     // Steve's speech bubble, the diary, the tumbleweed, the ?
-    popS(Wd.bubble, t, B.tells, 30.66); Wd.bubble.rotation.z = 0.05 * Math.sin(t * 7);
+    
     Wd.diary.visible = t >= 30.9 && t < 32.56; if (Wd.diary.visible) Wd.diary.scale.setScalar(Math.max(0.01, pop(t, 30.9, 0.3))); Wd.spot.intensity = Wd.diary.visible ? 40 * eout(ramp(t, 31.2, 31.5)) : 0; if (Wd.diary.visible) Wd.diaryBook.rotation.y = 0.2 * Math.sin(t * 2);
     { const u = ramp(t, 32.6, 34.2); Wd.tumble.visible = win(t, 32.6, 34.2); Wd.tumble.position.set(lerp(-6.5, 2.5, u), 0.24 + Math.abs(Math.sin(u * 14)) * 0.25, -0.7); Wd.tumble.rotation.z = -u * 26; }
-    popS(Wd.qmark, t, B.why, 35.0); Wd.qmark.position.y = Wd.V.y1 - 0.35 + 0.04 * Math.sin(t * 6);
+    
     // the red "!" over the guard
     popS(Wd.warn, t, B.but, 4.36); Wd.warn.position.y = 2.75 + 0.05 * Math.sin(t * 9); Wd.warn.rotation.z = 0.12 * Math.sin(t * 13); Wd.warnLight.intensity = win(t, B.but, 4.36) ? 6 * (0.6 + 0.4 * Math.sin(t * 16)) : 0;
     // the note: rises out of the floating bucket and unrolls
@@ -190,6 +190,7 @@ window.STORY = (() => {
     Wd.coins.forEach((m, i) => { const r = PAINT.rng(i + 11);
       if (t < 2.0) { const born = -1.0 + i * 0.09, tt = t - born; if (tt < 0 || i > 18) { m.position.y = -50; return; } const x = VX + (r() - 0.5) * 0.9, z = -0.3 + (r() - 0.5) * 0.3; let y = Wd.V.y1 + 0.1 - 3.8 * tt * tt; const rest = PILE - 0.08 + (i % 4) * 0.025 - Math.abs(x - VX) * 0.35; if (y < rest) { y = rest; m.rotation.set(1.3, 0, i); } else m.rotation.set(tt * 9 + i, tt * 4, 0); m.position.set(x, y, z); return; }
       if (t >= 44.9) { const tt = t - 44.9 - i * 0.04; if (tt < 0) { m.position.y = -50; return; } const u = clamp(tt / 0.35); const x = lerp(VX + (r() - 0.5) * 0.6, 0, eout(u)), y = u < 1 ? lerp(PILE, PILE + 0.3, u) : PILE + 0.3 + (tt - 0.35) * 6; m.position.set(x, y, -0.4 + (r() - 0.5) * 0.3); m.rotation.set(tt * 12, i, tt * 7); if (y > 0.5) m.position.y = -50; return; }
+      if (t >= B.coin && t < B.coin + 0.9) { const u = t - B.coin, a = r() * 6.28, sp = 0.6 + r() * 0.9; m.position.set(VX + Math.cos(a) * sp * u, PILE + 0.1 + (1.6 + r()) * u - 4.5 * u * u, -0.2 + (r() - 0.5) * 0.4); m.rotation.set(u * 12 + i, u * 6, 0); if (m.position.y < PILE - 0.1) m.position.y = -50; return; }
       m.position.y = -50; });
     // confetti on "Congratulations"
     Wd.confetti.forEach((m, i) => { const r = PAINT.rng(i + 300), u = t - B.congrats; if (u < 0 || u > 3.2) { m.position.y = -50; return; } m.position.set(-11 + r() * 12 + u * 2.2 + Math.sin(u * 3 + i) * 0.3, 4.5 + r() * 2 - u * 2.4, -0.6 + r() * 1.4); m.rotation.set(u * 7 + i, u * 5, u * 3); m.scale.setScalar(2.2); });
