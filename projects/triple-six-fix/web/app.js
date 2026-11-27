@@ -59,7 +59,7 @@
         : new WebMMuxer.Muxer({ target, video: { codec: 'V_VP9', width: w, height: h, frameRate: FPS }, audio: { codec: 'A_OPUS', sampleRate: 48000, numberOfChannels: 2 }, firstTimestampBehavior: 'offset' });
       let failed = null;
       const venc = new VideoEncoder({ output: (c, m) => muxer.addVideoChunk(c, m), error: (e) => { failed = e; } });
-      venc.configure(v);
+      venc.configure({ ...v, latencyMode: 'quality', bitrateMode: 'variable' });
       const aenc = new AudioEncoder({ output: (c, m) => muxer.addAudioChunk(c, m), error: (e) => { failed = e; } });
       aenc.configure(a);
       // audio first (decoded at 48 kHz, fed in 1024-sample planar chunks)
@@ -71,6 +71,8 @@
         const ad = new AudioData({ format: 'f32-planar', sampleRate: 48000, numberOfFrames: m, numberOfChannels: 2, timestamp: Math.round(i / 48000 * 1e6), data: d }); aenc.encode(ad); ad.close(); }
       await aenc.flush();
       // video
+      // warm-up: compile every shader and upload every texture before frame 0 is captured (no first-frame pop-in)
+      for (const f of [0, 0, 1]) draw(f); ENGINE.renderer.compile(ENGINE.scene, ENGINE.camera);
       const t0 = performance.now(); $('bar').style.width = '0%';
       for (let f = 0; f < TOTAL; f++) {
         if (failed) throw failed;

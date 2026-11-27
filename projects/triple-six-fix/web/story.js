@@ -129,7 +129,7 @@ window.STORY = (() => {
     // 13 April 24th, friends buy every combo, 14,000 tickets
     { t: 38.95, set: 'street', pos: [25.85, 1.95, -2.75], look: [25.4, 1.9, -3.72], fov: 38, drift: [0.4, 0.1, 0.7] },
     { t: 40.2, set: 'street', pos: [29.6, 1.85, 2.6], look: [26.8, 1.4, -2.6], fov: 44, drift: [-0.6, 0, -0.3], roll: 1.5 },
-    { t: 41.7, set: 'street', pos: [28.6, 1.8, 1.0], look: [27.2, 1.4, -2.6], fov: 42, drift: [-0.15, 0.02, -0.12], roll: -1.5 },
+    { t: 41.7, set: 'street', pos: [28.7, 1.95, 1.1], look: [27.2, 1.6, -2.6], fov: 44, drift: [-0.15, 0.02, -0.12], roll: -1.5 },
     { t: 43.4, set: 'street', pos: [32.6, 1.1, 1.4], look: [30.8, 1.1, -1.6], fov: 46, drift: [0.2, 0.2, 0.3], dlook: [0, 1.4, 0] },
     // 14 the air kicks on: six, six, six
     { t: 45.1, set: 'studio', pos: [3.45, 1.85, -2.05], look: [3.0, 1.6, -2.75], fov: 40, drift: [0.08, 0.05, 0.05] },
@@ -143,7 +143,7 @@ window.STORY = (() => {
     // 16 like a kid who scores 100 without opening the book
     { t: 51.2, set: 'classroom', pos: [-42.4, 2.3, 3.8], look: [-45, 1.0, 0.0], fov: 46, drift: [-0.5, -0.1, -0.5] },
     { t: 52.35, set: 'classroom', pos: [-44.6, 1.95, 2.3], look: [-45.1, 0.95, 0.2], fov: 42, drift: [0.12, -0.1, -0.1], roll: 2 },
-    { t: 54.2, set: 'classroom', pos: [-44.25, 1.25, 1.05], look: [-44.72, 0.8, 0.32], fov: 38, drift: [-0.1, 0.03, -0.15], roll: -2 },
+    { t: 54.2, set: 'classroom', pos: [-44.15, 1.45, 1.25], look: [-44.72, 0.93, 0.32], fov: 40, drift: [-0.1, 0.03, -0.15], roll: -2 },
     // 17 winning isn't suspicious; winning perfectly is
     { t: 55.7, set: 'classroom', pos: [-43.7, 1.6, 2.9], look: [-44.6, 1.15, 0.3], fov: 44, drift: [-0.2, 0, -0.3] },
     { t: 57.05, set: 'classroom', pos: [-43.3, 1.75, 2.95], look: [-44.25, 1.45, 0.6], fov: 42, drift: [-0.1, 0.02, -0.25], roll: 2 },
@@ -152,7 +152,7 @@ window.STORY = (() => {
     { t: 59.95, set: 'bookie', pos: [79.7, 1.6, -1.45], look: [79.4, 1.5, -2.88], fov: 40, drift: [0.4, -0.05, 0.05], roll: 1.5 },
     { t: 61.35, set: 'bookie', pos: [81.6, 1.8, 2.7], look: [81.4, 1.35, -1.5], fov: 46, drift: [-0.3, 0.05, -0.3], roll: -2 },
     // 19 the judge hands Nick seven years
-    { t: 62.6, set: 'court', pos: [107.8, 2.4, 3.9], look: [105.6, 1.7, -2.0], fov: 46, drift: [-0.6, -0.1, -0.5] },
+    { t: 62.6, set: 'court', pos: [108.2, 2.3, 3.9], look: [105.9, 1.45, -1.2], fov: 48, drift: [-0.6, -0.1, -0.5] },
     { t: 63.7, set: 'court', pos: [105.45, 1.95, -0.75], look: [105.0, 1.85, -3.0], fov: 42, drift: [0.05, 0.1, 0.2], roll: 1.5 },
     // 20 ending: the 7 ball lands on Nick, tickets rain
     { t: 65.3, set: 'court', pos: [107.9, 2.0, 2.4], look: [106.5, 1.7, -0.6], fov: 44, drift: [-0.2, 0.0, -0.3], roll: -2 },
@@ -163,12 +163,17 @@ window.STORY = (() => {
   const compAt = (t) => { let i = 0; for (let k = 0; k < K.length; k++) if (t >= K[k].t) i = k; return i; };
   const compState = (k, t) => { const u = ease(clamp((t - k.t) / Math.max(0.6, k.t1 - k.t))) * 0.85 + clamp((t - k.t) / (k.t1 - k.t)) * 0.15; const d = k.drift || [0, 0, 0], dl = k.dlook || [0, 0, 0];
     return { pos: [k.pos[0] + d[0] * u, k.pos[1] + d[1] * u, k.pos[2] + d[2] * u], look: [k.look[0] + dl[0] * u, k.look[1] + dl[1] * u, k.look[2] + dl[2] * u], fov: k.fov, roll: k.roll || 0 }; };
+  // a cut-like whip (not a slow pan) whenever the next composition looks somewhere very different: the camera never sweeps across empty walls
+  const WHIP = new Map(); const isWhip = (a, b) => { if (!a || !b) return false; const key = a.t + ':' + b.t; if (WHIP.has(key)) return WHIP.get(key); let w = a.set !== b.set; if (!w) { const pa = compState(a, b.t), pb = compState(b, b.t); const da = [pa.look[0] - pa.pos[0], pa.look[1] - pa.pos[1], pa.look[2] - pa.pos[2]], db = [pb.look[0] - pb.pos[0], pb.look[1] - pb.pos[1], pb.look[2] - pb.pos[2]]; const cs = (da[0] * db[0] + da[1] * db[1] + da[2] * db[2]) / (Math.hypot(...da) * Math.hypot(...db)); w = cs < 0.72 || Math.hypot(pa.pos[0] - pb.pos[0], pa.pos[1] - pb.pos[1], pa.pos[2] - pb.pos[2]) > 2.6; } WHIP.set(key, w); return w; };
   const camAt = (t) => {
     const i = compAt(t), k = K[i]; let s = compState(k, t), whip = [0, 0];
     const prev = K[i - 1];
-    const ein = k.ein || 0.45; if (prev && prev.set === k.set && t - k.t < ein) { const p = compState(prev, k.t), u = ease((t - k.t) / ein); s = { pos: L3(p.pos, s.pos, u), look: L3(p.look, s.look, u), fov: lerp(p.fov, s.fov, u), roll: lerp(p.roll, s.roll, u) }; const sp = Math.sin(u * Math.PI); whip = [0.012 * sp * Math.sign(s.pos[0] - p.pos[0] || 1), 0]; }
-    if (prev && prev.set !== k.set && t - k.t < 0.16) { const u = 1 - (t - k.t) / 0.16; s.look = L3(s.look, [s.look[0] + 1.6 * u, s.look[1], s.look[2]], 1); whip = [0.09 * u, 0]; }
-    const next = K[i + 1]; if (next && next.set !== k.set && next.t - t < 0.16) { const u = 1 - (next.t - t) / 0.16; s.look = [s.look[0] - 1.6 * u * u, s.look[1], s.look[2]]; whip = [0.09 * u, 0]; }
+    const ein = k.ein || 0.45;
+    const yawLook = (st, ang) => { const dx = st.look[0] - st.pos[0], dz = st.look[2] - st.pos[2], c = Math.cos(ang), s_ = Math.sin(ang); return [st.pos[0] + dx * c - dz * s_, st.look[1], st.pos[2] + dx * s_ + dz * c]; };
+    const WH = 0.14;
+    if (prev && !isWhip(prev, k) && t - k.t < ein) { const p = compState(prev, k.t), u = ease((t - k.t) / ein); s = { pos: L3(p.pos, s.pos, u), look: L3(p.look, s.look, u), fov: lerp(p.fov, s.fov, u), roll: lerp(p.roll, s.roll, u) }; const sp = Math.sin(u * Math.PI); whip = [0.012 * sp * Math.sign(s.pos[0] - p.pos[0] || 1), 0]; }
+    if (prev && isWhip(prev, k) && t - k.t < WH) { const u = 1 - (t - k.t) / WH; s.look = yawLook(s, 0.45 * u * u); whip = [0.09 * u, 0]; }
+    const next = K[i + 1]; if (next && isWhip(k, next) && next.t - t < WH) { const u = 1 - (next.t - t) / WH; s.look = yawLook(s, -0.45 * u * u); whip = [0.09 * u, 0]; }
     // handheld + roll drift + impact shakes
     const hn = [Math.sin(t * 1.7) * 0.006 + Math.sin(t * 3.9) * 0.003, Math.sin(t * 2.3 + 1) * 0.005, Math.sin(t * 1.3 + 2) * 0.004];
     let sh = 0; for (const [a, amp] of SHAKES) if (t >= a && t < a + 0.5) sh += amp * Math.exp(-(t - a) * 9);
@@ -211,7 +216,7 @@ window.STORY = (() => {
     // lamp moth, clock, steam
     Wd.moth.position.set(-21.0 + Math.sin(t * 3.1) * 0.35, 2.05 + Math.sin(t * 4.7) * 0.15, -2.2 + Math.cos(t * 2.7) * 0.3);
     Wd.clockW.mm.rotation.z = -t * 0.8; Wd.clockW.hm.rotation.z = -t * 0.07;
-    Wd.runSmoke(Wd.steam, t, -18.4, 1.14, -2.7, 0.5, 0.05, 0.5);
+    Wd.runSmoke(Wd.steam, t, -18.4, 1.14, -2.7, 0.28, 0.03, 0.5); Wd.steam.forEach((p) => p.scale.multiplyScalar(0.45));
     Wd.bulbW.rotation.z = Math.sin(t * 1.4) * 0.12;
     Wd.fanBlades.rotation.y = t * 30;
     // syringe path
@@ -256,8 +261,8 @@ window.STORY = (() => {
   const classState = (t) => { Wd.fanC.rotation.y = t * 7; Wd.clockC.mm.rotation.z = -t * 0.8; Wd.globeBall.rotation.y = t * 0.6;
     const pu = ((t - 51.2) / 2.6) % 1; Wd.plane.position.set(-47 + pu * 4.5, 2.6 - pu * 0.6 + Math.sin(pu * 7) * 0.1, -1 + pu * 2); Wd.plane.rotation.set(0, -1.2, Math.sin(pu * 7) * 0.3);
     Wd.tests.forEach((m, i) => { const ti = [52.6, 52.9, 53.18, 53.52][i % 4] + Math.floor(i / 4) * 0.08; if (t < ti) { m.position.y = -50; return; } const u = eout((t - ti) / 0.2); m.position.set(-0.22 + Math.sin(i * 1.9) * 0.03, 0.755 + i * 0.006 + (1 - u) * 0.3, 0.42 + Math.cos(i * 2.3) * 0.03); m.rotation.set(0, Math.sin(i * 2.7) * 0.25 + (1 - u) * 2, 0); }); };
-  const bookieState = (t) => { Wd.fanB.rotation.y = t * 6; Wd.runSmoke(Wd.cigar, t, 81.35, 1.25, -1.95, 1.0, 0.15, 0.45); Wd.lampB.rotation.z = Math.sin(t * 1.1) * 0.03;
-    Wd.cashLid.rotation.x = t >= 61.82 ? 0 : -1.2; Wd.payoutSign.userData.face.map = t >= 61.82 ? Wd.payoutClosed : Wd.payoutSign.userData.face.map0 || (Wd.payoutSign.userData.face.map0 = Wd.payoutSign.userData.face.map);
+  const bookieState = (t) => { Wd.fanB.rotation.y = t * 6; Wd.runSmoke(Wd.cigar, t, 81.35, 1.25, -1.95, 0.55, 0.1, 0.45); Wd.cigar.forEach((p) => p.scale.multiplyScalar(0.6)); Wd.lampB.rotation.z = Math.sin(t * 1.1) * 0.03;
+    Wd.cashLid.rotation.x = t >= 61.82 ? 0 : -1.2; { const f = Wd.payoutSign.userData.face; f.map0 = f.map0 || f.map; const tx = t >= 61.82 ? Wd.payoutClosed : f.map0; if (f.map !== tx) { f.map = tx; f.emissiveMap = tx; f.needsUpdate = true; } }
     if (t >= 61.82) Wd.payoutSign.rotation.z = Math.sin((t - 61.82) * 14) * 0.15 * Math.exp(-(t - 61.82) * 3);
     Wd.phone.rotation.z = t > 59 ? Math.sin(t * 40) * 0.04 : 0; };
   const courtState = (t) => { Wd.flags.forEach((f, i) => Wd.wave(f, t + i, 0.04)); Wd.fanCt.rotation.y = t * 6; Wd.clockCt.mm.rotation.z = -t * 0.8;
@@ -267,7 +272,7 @@ window.STORY = (() => {
     const s = Wd.seven; if (t >= 65.55 && t < 66.36) { const u = (t - 65.55) / 0.81; s.position.set(lerp(104.32, 106.8, u), 2.3 + Math.sin(u * Math.PI) * 1.4 - u * 0.4, lerp(-2.6, 0.0, u)); s.rotation.set(t * 9, t * 7, 0); }
     else if (t >= 66.36) { const u = (t - 66.36); s.position.set(106.8 + u * 0.7, 2.0 + Math.max(0, 0.6 * u - 2.5 * u * u) * 2, 0.05 + u * 0.3); s.rotation.set(t * 5, t * 4, 0); if (s.position.y < 0.14) s.position.y = 0.14; }
     else s.position.set(0, -50, 0);
-    Wd.rain.forEach((m, i) => { const r = PAINT.rng(i + 400); if (t < 65.4) { m.position.y = -50; return; } const tt = t - 65.4 + r() * 0.8; m.position.set(104.6 + r() * 4.0 + Math.sin(tt * 2 + i) * 0.2, 3.3 - tt * (0.9 + r() * 0.7), -1.6 + r() * 3.6); m.rotation.set(tt * 4 + i, tt * 3, tt * 5); if (m.position.y < 0.03) m.position.y = 0.03; }); };
+    Wd.rain.forEach((m, i) => { const r = PAINT.rng(i + 400); if (t < 65.4) { m.position.y = -50; return; } const tt = (t - 65.3) * (0.6 + r() * 0.5) + r() * 0.6; m.position.set(105.6 + r() * 2.6 + Math.sin(tt * 2 + i) * 0.2, 2.9 - tt * 1.2, -0.9 + r() * 2.4); m.rotation.set(tt * 4 + i, tt * 3, tt * 5); if (m.position.y < 0.03) m.position.y = 0.03; }); };
 
   // ---------- actors per set ----------
   const actors = (t, set) => {
@@ -315,7 +320,7 @@ window.STORY = (() => {
       const kids = [['kid1', 0, 0], ['kid2', 2, 0], ['kid3', 0, 1], ['kid4', 2, 1], ['kid1', 0, 2], ['kid3', 2, 2]];
       kids.forEach(([id, c, r_], i) => { const p = deskPos(c, r_); L.push(A(id, t + i, p[0], p[1], p[2], { pose: 'sit', expr: t < 55.7 ? (i % 2 ? 'bored' : 'think') : [[55.7, 'shock'], [56.6 + i * 0.1, 'sly']], R: t > 55.7 && i % 2 ? 'mouth' : 'hang', L: 'hang', look: -0.6 })); });
       const hp = deskPos(1, 1); L.push(A('hero', t, hp[0], hp[1], hp[2], { pose: 'sit', expr: t < 55.7 ? [[51.2, 'smugsmile'], [52.6, 'beam'], [54.3, 'smirk']] : [[55.7, 'nervous'], [57.2, 'shock']], R: t < 55.7 ? [[51.2, 'hold'], [52.6, 'up'], [53.6, 'thumb']] : 'mouth', propR: t < 55.7 ? 'test' : null, L: 'hang', hop: t >= 52.6 && t < 54 ? Math.abs(Math.sin(t * 6)) * 0.04 : 0 }));
-      const w = walkTo(t, 55.6, 56.4, [-42.6, 0, -0.6], [-44.25, 0, 0.75]); const tw = t < 55.6 ? [-45.6, 0, -3.3] : w.p;
+      const w = walkTo(t, 55.6, 56.4, [-42.6, 0, -0.6], [-44.25, 0, 0.75]); const tw = t < 55.6 ? [-46.5, 0, -3.3] : w.p;
       L.push(A('teach', t, tw[0], 0, tw[2], { walk: w.walk, expr: t < 55.7 ? [[51.2, 'smile'], [53.5, 'neutral']] : [[55.7, 'stern'], [56.6, 'smirk'], [57.14, 'angry']], R: t < 55.7 ? 'point' : 'holdUp', propR: t >= 55.7 ? 'magnifier' : null, L: 'hip', tilt: t > 56.5 ? 10 : undefined, flip: t >= 55.7 }));
     }
     if (set === 'bookie') {
@@ -331,9 +336,9 @@ window.STORY = (() => {
   };
 
   // TV screen texture in the living room: the live draw
-  const scr = (() => { const c = document.createElement('canvas'); c.width = 512; c.height = 384; return c; })();
+  const scr = (() => { const c = document.createElement('canvas'); c.width = 1024; c.height = 768; return c; })();
   const scrTex = new THREE.CanvasTexture(scr); scrTex.colorSpace = THREE.SRGBColorSpace; WORLD.screenTex = scrTex;
-  const drawScreen = (t) => { const g = scr.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#2a3a8a'; g.fillRect(0, 0, 512, 384); g.fillStyle = '#c62f36'; g.fillRect(24, 20, 464, 70); g.fillStyle = '#fff'; g.font = '54px "Lilita One", Impact'; g.textAlign = 'center'; g.fillText('DAILY NUMBER', 256, 74);
+  const drawScreen = (t) => { const g = scr.getContext('2d'); g.setTransform(2, 0, 0, 2, 0, 0); g.fillStyle = '#2a3a8a'; g.fillRect(0, 0, 512, 384); g.fillStyle = '#c62f36'; g.fillRect(24, 20, 464, 70); g.fillStyle = '#fff'; g.font = '54px "Lilita One", Impact'; g.textAlign = 'center'; g.fillText('DAILY NUMBER', 256, 74);
     g.save(); g.translate(256, 470); g.scale(0.55, 0.55); rick(g, C.nick, { expr: talkAt(t, [[13.2, 15]]) ? 'grin' : 'smile', talk: talkAt(t, [[13.2, 15]]), L: 'hip', R: 'wave', blink: blinkAt(t, 1) }); g.restore();
     g.fillStyle = '#f4d35e'; g.font = '30px "Lilita One", Impact'; g.fillText('LIVE', 452, 360); g.fillStyle = 'rgba(255,255,255,.07)'; for (let y = 0; y < 384; y += 6) g.fillRect(0, y, 512, 2); scrTex.needsUpdate = true; };
 
@@ -353,7 +358,7 @@ window.STORY = (() => {
     SETSTATE[C.set](t); Wd.tick(t);
     if (C.set === 'living') drawScreen(t);
     const L = { ...LIGHT[C.set] };
-    let flash = 0; if (t >= 47.98 + 0.32 - 0.3 && t < 48.25) flash = 0.35 * (1 - ramp(t, 47.98, 48.25));
+    let flash = 0;
     return { t, cam: C, light: L, dof: dofAt(C), actors: actors(t, C.set), whip: C.whip, flash };
   };
   const SHOTS = []; K.forEach((k, i) => { if (!i || K[i - 1].set !== k.set) SHOTS.push({ t: k.t, set: k.set }); });

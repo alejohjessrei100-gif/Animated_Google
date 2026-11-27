@@ -5,6 +5,7 @@ window.WORLD = (() => {
   const R = PAINT.rng(2026);
   const eout = (u) => 1 - Math.pow(1 - Math.max(0, Math.min(1, u)), 3);
   const Wd = {};
+  Wd.faceRot = -Math.PI / 2;
   const cyl = (rt, rb, h, n = 20) => new THREE.CylinderGeometry(rt, rb, h, n);
   const sph = (r, a = 20, b = 14) => new THREE.SphereGeometry(r, a, b);
   const cv = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return [c, c.getContext('2d')]; };
@@ -32,7 +33,7 @@ window.WORLD = (() => {
 
   // ---------- reusable props ----------
   const ballTex = {};
-  const ballTexFor = (d) => ballTex[d] || (ballTex[d] = (() => { const [c, g] = cv(256, 128); g.fillStyle = '#fbfaf4'; g.fillRect(0, 0, 256, 128); g.fillStyle = '#c62f36'; g.fillRect(0, 54, 256, 20); for (const x of [64, 192]) { g.fillStyle = '#fbfaf4'; g.beginPath(); g.arc(x, 64, 34, 0, 7); g.fill(); g.strokeStyle = '#2b1f1c'; g.lineWidth = 5; g.stroke(); g.fillStyle = '#2b1f1c'; g.font = 'bold 50px "Lilita One", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(d), x, 67); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })());
+  const ballTexFor = (d) => ballTex[d] || (ballTex[d] = (() => { const [c, g] = cv(256, 128); g.fillStyle = '#fbfaf4'; g.fillRect(0, 0, 256, 128); g.fillStyle = '#c62f36'; g.fillRect(0, 54, 256, 20); for (const x of [32, 96, 160, 224]) { g.fillStyle = '#fbfaf4'; g.beginPath(); g.arc(x, 64, 26, 0, 7); g.fill(); g.strokeStyle = '#2b1f1c'; g.lineWidth = 5; g.stroke(); g.fillStyle = '#2b1f1c'; g.font = '40px "Lilita One", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(d), x, 66); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })());
   const ballMat = (d) => toon({ map: ballTexFor(d) });
   Wd.ball = (d, r = 0.08, parent = scene) => { const m = add(sph(r, 22, 16), ballMat(d), 0, 0, 0, parent); m.rotation.y = -Math.PI / 2; m.userData.digit = d; return m; };
   // glass ball machine: frame + glass + tube + cup + 10 balls
@@ -63,7 +64,7 @@ window.WORLD = (() => {
       if (pk) { const u = Math.min(1, (t - pk.t) / 0.32), e = 1 - Math.pow(1 - u, 3); const tx = mc.tubeX, ty = mc.cupY; x = x + (tx - x) * e; z = z * (1 - e); y = y + (ty - y) * e; if (u >= 1) y = ty + Math.sin((t - pk.t - 0.32) * 18) * 0.012 * Math.exp(-(t - pk.t - 0.32) * 4); }
       b.position.set(x, y, z); b.rotation.set(t * (1 + i * 0.3) * a * 4, -Math.PI / 2 + t * a * 3, 0);
       b.scale.setScalar(1);
-      if (pk && t - pk.t > 0.32) { const g = eout((t - pk.t - 0.32) / 0.15); b.rotation.set(0, -Math.PI / 2 + 0.25, 0); b.scale.setScalar(1 + g * 0.9); b.position.y += g * 0.07; }
+      if (pk && t - pk.t > 0.32) { const g = eout((t - pk.t - 0.32) / 0.15); b.rotation.set(0, Wd.faceRot, 0); b.scale.setScalar(1 + g * 0.6); b.position.y = mc.h + 1.16 + 0.075 * (1 + g * 0.6); }
     });
     mc.puffs.forEach((p, k) => { const u = ((t * 1.6 + k / mc.puffs.length) % 1); p.visible = air > 0.05; p.position.set(Math.sin(k * 2.3) * 0.25 * u, mc.base + u * 0.9 * air, Math.cos(k * 1.7) * 0.2 * u); p.scale.setScalar((0.4 + u * 1.4) * (1 - u) * 1.6); });
   };
@@ -102,7 +103,7 @@ window.WORLD = (() => {
   sign(ST, [{ t: 'PENNSYLVANIA LOTTERY', c: '#2b1f1c' }], 0, 3.65, -5.38, 4.2, 0.45, { bg: '#f4d35e', border: null, d: 0.06 });
   const digitTex = {}; const digitFor = (d, red) => { const k = d + (red ? 'r' : ''); return digitTex[k] || (digitTex[k] = label([{ t: d === '' ? '' : String(d), c: red ? '#ffefe0' : '#2b1f1c' }], { w: 256, h: 320, bg: red ? '#d42a32' : '#f7f2e4', border: '#2b1f1c', pad: 18 })); };
   Wd.board = [-1.15, 0, 1.15].map((x) => { const s = sign(ST, [''], x, 2.55, -5.35, 0.95, 1.15, { bg: '#f7f2e4', d: 0.12, frame: '#3b3f4a' }); return s; });
-  Wd.setBoard = (vals, red) => Wd.board.forEach((s, i) => { s.userData.face.map = digitFor(vals[i] ?? '', red); });
+  Wd.setBoard = (vals, red) => Wd.board.forEach((s, i) => { const t = digitFor(vals[i] ?? '', red), f = s.userData.face; if (f.map !== t) { f.map = t; if ('emissiveMap' in f) f.emissiveMap = t; f.needsUpdate = true; } });
   // bulbs strip around the board (3D, chase-animated)
   Wd.bulbs = []; for (let i = 0; i < 28; i++) { const a = i / 28 * Math.PI * 2; const m = add(sph(0.06, 10, 8), toon({ color: '#ffe9a0', emissive: '#ffcf4a', emissiveIntensity: 0.2 }), Math.cos(a) * 2.2, 2.55 + Math.sin(a) * 0.95, -5.25, ST, { cast: false }); Wd.bulbs.push(m); }
   // counter + machines
@@ -130,7 +131,7 @@ window.WORLD = (() => {
   // confetti (3D paper bits)
   Wd.confetti = Wd.paperBits(ST, 90, ['#f4d35e', '#d42a32', '#2a5fae', '#3fa39a', '#ffffff'], [0.07, 0.05]);
   // 3D question mark
-  { const q = group(4.6, 2.1, -1.4, ST); const arc = add(new THREE.TorusGeometry(0.28, 0.08, 10, 24, Math.PI * 1.4), '#f4d35e', 0, 0.3, 0, q); arc.rotation.z = -Math.PI * 0.45; add(cyl(0.08, 0.08, 0.3, 12), '#f4d35e', 0, -0.05, 0, q); add(sph(0.09), '#f4d35e', 0, -0.4, 0, q); Wd.qmark = q; q.visible = false; }
+  { const q = group(4.25, 2.15, -2.0, ST); const arc = add(new THREE.TorusGeometry(0.28, 0.08, 10, 24, Math.PI * 1.4), '#f4d35e', 0, 0.3, 0, q); arc.rotation.z = -Math.PI * 0.45; add(cyl(0.08, 0.08, 0.3, 12), '#f4d35e', 0, -0.05, 0, q); add(sph(0.09), '#f4d35e', 0, -0.4, 0, q); Wd.qmark = q; q.visible = false; }
   // audience bleachers silhouettes (3D blocks) at the back-right
   for (let i = 0; i < 6; i++) add(tbox(0.6, 0.45 + (i % 3) * 0.1, 0.6), ['#e07a5f', '#3d5a80', '#81b29a', '#f2cc8f'][i % 4], -6.2 + (i % 2) * 0.7, 0.25, 3.5 - i * 0.8, ST);
 
@@ -228,7 +229,7 @@ window.WORLD = (() => {
   add(tbox(7, 3.4, 0.2, 2), M.panel, 0, 1.7, -3.0, BK); add(tbox(0.2, 3.4, 6, 2), M.panel, -3.5, 1.7, 0, BK); add(tbox(0.2, 3.4, 6, 2), M.panel, 3.5, 1.7, 0, BK);
   Wd.chalk = sign(BK, [{ t: '4-4-6  6-4-4', c: '#ffffff' }, { t: '6-6-4  4-6-6', c: '#ffffff' }, { t: '6-6-6  4-4-4', c: '#ffffff' }, { t: '4 & 6 ONLY?!', c: '#f4d35e' }], -0.6, 1.95, -2.88, 2.6, 1.6, { bg: '#2f3f3a', border: '#8a5734', d: 0.06 });
   { const d = group(0.6, 0, -0.6, BK); add(tbox(2.0, 0.08, 0.9), '#6a4a32', 0, 0.8, 0, d); add(tbox(1.9, 0.75, 0.8), '#5a3a24', 0, 0.38, 0, d); Wd.cashBox = group(0.5, 0.84, 0, d); add(tbox(0.4, 0.16, 0.28), '#2f6b4f', 0, 0.08, 0, Wd.cashBox); Wd.cashLid = group(0, 0.16, -0.14, Wd.cashBox); add(tbox(0.4, 0.03, 0.28), '#2f6b4f', 0, 0.015, 0.14, Wd.cashLid); Wd.cash = []; for (let i = 0; i < 6; i++) Wd.cash.push(add(box(0.16, 0.01, 0.08), '#8fbf6a', 0.4 + (i % 3) * 0.05, 0.14 + i * 0.012, (i % 2) * 0.05 - 0.02, Wd.cashBox)); for (let k = 0; k < 2; k++) { const ph = group(-0.6 + k * 0.4, 0.84, 0.1, d); add(tbox(0.22, 0.08, 0.16), k ? '#d42a32' : '#2b2f38', 0, 0.04, 0, ph); add(cyl(0.025, 0.025, 0.24, 8), k ? '#d42a32' : '#2b2f38', 0, 0.12, 0, ph).rotation.z = Math.PI / 2; if (!k) Wd.phone = ph; } }
-  Wd.payoutSign = sign(BK, [{ t: 'PAYOUTS', c: '#2b1f1c' }, { t: 'OPEN', c: '#2f6b4f' }], 2.1, 2.1, -2.88, 1.1, 0.7, { bg: '#fbfaf4' });
+  Wd.payoutSign = sign(BK, [{ t: 'PAYOUTS', c: '#2b1f1c' }, { t: 'OPEN', c: '#2f6b4f' }], 1.55, 2.45, -2.88, 1.1, 0.7, { bg: '#fbfaf4' });
   Wd.payoutClosed = label([{ t: 'PAYOUTS', c: '#2b1f1c' }, { t: 'CLOSED', c: '#c62f36' }], { w: 1024, h: 652, bg: '#fbfaf4' });
   Wd.fanB = fan(BK, 0, 3.4, 0); Wd.cigar = smoke(scene, 10, '#c9c4d4'); Wd.lampB = lamp(scene, 80.6, 2.4, -0.6, '#2f6b4f');
   for (let i = 0; i < 3; i++) add(box(0.9, 0.06, 0.05), '#d8c08a', 2.6, 1.5 + i * 0.25, -2.88, BK);
@@ -246,7 +247,7 @@ window.WORLD = (() => {
   add(tbox(1.6, 0.06, 0.8), '#8a5734', 1.8, 0.8, 0.4, CT); for (const sx of [-1, 1]) add(box(0.06, 0.8, 0.7), '#6a4a32', 1.8 + sx * 0.7, 0.4, 0.4, CT);
   Wd.exhibit = Wd.machine(CT, -0.9, 1.38, -2.6); Wd.exhibit.g.scale.setScalar(0.6);
   sign(CT, [{ t: 'EXHIBIT A', c: '#c62f36' }], -0.9, 1.05, -2.08, 0.7, 0.2, { bg: '#fbfaf4', d: 0.01 });
-  Wd.sevenSign = sign(CT, [{ t: '7 YEARS', c: '#ffffff' }], 0, 4.6, -2.4, 1.6, 0.6, { bg: '#c62f36', border: '#f4d35e' });
+  Wd.sevenSign = sign(CT, [{ t: '7 YEARS', c: '#ffffff' }], 0.55, 4.6, -2.4, 1.5, 0.55, { bg: '#c62f36', border: '#f4d35e' });
   Wd.seven = Wd.ball(7, 0.14, scene); Wd.seven.position.set(0, -50, 0);
   Wd.rain = Wd.paperBits(CT, 120, ['#f6e27a', '#f6c4d6', '#a8dcf0', '#ffffff'], [0.16, 0.09]);
   Wd.fanCt = fan(CT, 1.5, 4.1, 1); Wd.dust = []; for (let i = 0; i < 30; i++) Wd.dust.push(add(sph(0.012, 6, 4), '#fff3c4', 0, -50, 0, scene, { cast: false }));
