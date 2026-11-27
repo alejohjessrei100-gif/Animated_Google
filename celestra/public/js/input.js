@@ -5,10 +5,10 @@ const down = new Set();
 const latched = new Set(); // taps shorter than one tick still count for one tick
 const pressedOnce = new Set();
 export const DEFAULT_BINDS = {
-  p1: { L: ["KeyA"], R: ["KeyD"], U: ["KeyW"], D: ["KeyS"], A: ["KeyF"], P: ["KeyG"], S1: ["KeyR"], S2: ["KeyT"], S3: ["KeyY"], DASH: ["KeyH"], ST: ["KeyV"] },
+  p1: { L: ["KeyA"], R: ["KeyD"], U: ["KeyW"], D: ["KeyS"], A: ["KeyF"], P: ["KeyG"], S1: ["KeyR"], S2: ["KeyT"], S3: ["KeyY"], DASH: ["KeyH"], ST: ["KeyV"], EX: ["KeyE"], TAUNT: ["KeyB"] },
   // extra keys for P1 when playing solo/online (right-hand layout)
-  p1alt: { L: ["ArrowLeft"], R: ["ArrowRight"], U: ["ArrowUp", "Space"], D: ["ArrowDown"], A: ["KeyJ"], P: ["KeyK"], S1: ["KeyU"], S2: ["KeyI"], S3: ["KeyO"], DASH: ["KeyL"], ST: ["KeyP"] },
-  p2: { L: ["ArrowLeft"], R: ["ArrowRight"], U: ["ArrowUp"], D: ["ArrowDown"], A: ["Numpad1", "KeyK"], P: ["Numpad2", "KeyL"], S1: ["Numpad4", "KeyI"], S2: ["Numpad5", "KeyO"], S3: ["Numpad6", "KeyP"], DASH: ["Numpad3", "Semicolon"], ST: ["Numpad0", "Quote"] },
+  p1alt: { L: ["ArrowLeft"], R: ["ArrowRight"], U: ["ArrowUp", "Space"], D: ["ArrowDown"], A: ["KeyJ"], P: ["KeyK"], S1: ["KeyU"], S2: ["KeyI"], S3: ["KeyO"], DASH: ["KeyL"], ST: ["KeyP"], EX: ["Semicolon"], TAUNT: ["Quote"] },
+  p2: { L: ["ArrowLeft"], R: ["ArrowRight"], U: ["ArrowUp"], D: ["ArrowDown"], A: ["Numpad1", "KeyK"], P: ["Numpad2", "KeyL"], S1: ["Numpad4", "KeyI"], S2: ["Numpad5", "KeyO"], S3: ["Numpad6", "KeyP"], DASH: ["Numpad3", "Semicolon"], ST: ["Numpad0", "Quote"], EX: ["Numpad7", "BracketLeft"], TAUNT: ["Numpad8", "BracketRight"] },
 };
 // customizable controls (saved per browser)
 function loadBinds() {
@@ -76,9 +76,11 @@ function pad(i) {
   if (b(1)) v |= B.P;       // B / Circle
   if (b(0)) v |= B.S1;      // A / Cross
   if (b(3)) v |= B.S2;      // Y / Triangle
-  if (b(5) || b(7)) v |= B.S3; // RB / RT
-  if (b(4) || b(6)) v |= B.DASH; // LB / LT
-  if (b(8) || b(10) || b(11)) v |= B.ST; // Back/Select or stick click = stance
+  if (b(5)) v |= B.S3;   // RB
+  if (b(7)) v |= B.EX;   // RT = EX / combo breaker
+  if (b(4)) v |= B.DASH; // LB
+  if (b(6)) v |= B.TAUNT; // LT
+  if (b(8) || b(10) || b(11)) v |= B.ST; // Back/Select or stick click = stance / tag
   return v;
 }
 

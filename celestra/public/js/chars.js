@@ -346,8 +346,17 @@ export const ROSTER = ["jiross", "lian", "dumdum", "gayle", "dapsay", "william",
 export const COMMON = {
   slam: D({ name: "Air Slam", startup: 6, active: 70, recovery: 16, dmg: 52, hs: 26, kb: [3, -3], kd: true, box: [-8, -34, 32, 34], stop: 9, hook: "slam", anim: "slamair", sfx: "slam", heavy: true }),
   slamWave: D({ name: "Shockwave", dmg: 34, hs: 24, kb: [4, -3], kd: true, lvl: "L", stop: 6, sfx: "slam" }),
+  throw: D({ name: "Throw", kind: "throw", startup: 4, active: 3, recovery: 26, hook: "throw", anim: "push", sfx: "slam" }),
+  throwHit: D({ name: "Throw", dmg: 82, hs: 30, kb: [6, -4.5], kd: true, unblock: true, stop: 12, sfx: "slam", heavy: true }),
+  breaker: D({ name: "Combo Breaker", dmg: 0, hs: 30, kb: [7, -2], stop: 10, unblock: true, sfx: "parry" }),
 };
-
+// each fighter's themed throw name and taunt line
+export const THROWS = { jiross: "Coffee Toss", lian: "Disc Flip", dumdum: "Gash & Drop", gayle: "Batter Toss", dapsay: "DAPSAY Suplex", william: "Gravity Fling",
+  tanoy: "Ashtray Slam", acar: "Sole Stomp", apsay: "Blink Throw", dap: "Belly Suplex", jog: "Detention Drop", jaguilar: "Ctrl+Alt+Throw",
+  paulite: "Belly Flop", johan: "Roll Over", arbe: "Rifle Sweep", ged: "Hall Pass Toss" };
+export const TAUNTS = { jiross: "Too easy!", lian: "Catch!", dumdum: "Bleed for me.", gayle: "Batter up!", dapsay: "Pick a stance!", william: "Wait class.",
+  tanoy: "Cough cough.", acar: "Smell my feet!", apsay: "Too slow.", dap: "Come here!", jog: "Silence!", jaguilar: "404: skill not found",
+  paulite: "Wanna hear a joke?", johan: "Hi there!", arbe: "One bullet.", ged: "Where's your pass?" };
 // posture stances (every fighter): balanced / aggressive / defensive
 export const STANCES = [
   { id: "bal", name: "BALANCED", dmg: 1, taken: 1, walk: 1, parry: 0, color: "#cfd3ff" },

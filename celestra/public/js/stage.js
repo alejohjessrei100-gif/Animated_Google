@@ -69,6 +69,23 @@ export function buildStage(id) {
     layers.push({ c: fore, f: 1, y: FLOOR_Y - 38, behind: true });
     layers.push({ c: fl, f: 1, y: FLOOR_Y, floor: true });
     anim.push({ type: "beacon", x: 120 }, { type: "beacon", x: 560 });
+  } else if (id === "street") {
+    // where you land after being smashed off the rooftop
+    const [sky, sx] = mk(VIEW_W, VIEW_H);
+    ditherGradFast(sx, 0, 0, VIEW_W, 210, ["#07060f", "#120c26", "#2a1440", "#5a1f4a"]);
+    layers.push({ c: sky, f: 0, y: 0 });
+    const [far, fx] = mk(STAGE_W + 200, 230);
+    skyline(fx, STAGE_W + 200, 230, rnd, "#1a1230", "#ffcf6b", 120, 200, 30, 60, 0.3);
+    layers.push({ c: far, f: 0.35, y: 0 });
+    const [mid, mx] = mk(STAGE_W + 100, 120);
+    for (let x = 0; x < STAGE_W + 100; x += 140) { mx.fillStyle = "#2b2338"; mx.fillRect(x + 20, 30, 6, 90); mx.fillStyle = "#ffe8a0"; mx.fillRect(x + 12, 26, 22, 5); }
+    layers.push({ c: mid, f: 0.8, y: FLOOR_Y - 120 });
+    const [fl, flx] = mk(STAGE_W, 70);
+    flx.fillStyle = "#1c1a22"; flx.fillRect(0, 0, STAGE_W, 70);
+    flx.fillStyle = "#3a3640"; flx.fillRect(0, 0, STAGE_W, 3);
+    flx.fillStyle = "#e8d26a"; for (let x = 0; x < STAGE_W; x += 48) flx.fillRect(x, 22, 24, 3);
+    layers.push({ c: fl, f: 1, y: FLOOR_Y, floor: true });
+    anim.push({ type: "rubble" });
   } else if (id === "arcade") {
     const [sky, sx] = mk(VIEW_W, VIEW_H);
     ditherGradFast(sx, 0, 0, VIEW_W, 220, ["#05030c", "#120626", "#2a0b3d", "#43104c"]);
@@ -155,6 +172,8 @@ function drawAnimBack(ctx, st, camX, time, font) {
         ctx.fillStyle = "#12061c"; ctx.fillRect(sx - 3, y - 3, txt.length * 6 + 4, 12);
         font(ctx, txt, sx, y, on ? c : "#3a2450", 1);
       }
+    } else if (a.type === "rubble") {
+      ctx.fillStyle = "#4e4268"; for (let i = 0; i < 6; i++) ctx.fillRect(Math.round(60 + i * 70 - camX * 0.9) % 480, 228 - (i % 3) * 2, 8 + (i % 2) * 6, 4);
     } else if (a.type === "beacon") {
       if (Math.floor(time / 40) % 2) { ctx.fillStyle = "#ff3355"; ctx.fillRect(Math.round(a.x - camX * 0.45), 100, 2, 2); }
     }

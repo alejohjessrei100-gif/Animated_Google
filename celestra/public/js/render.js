@@ -65,10 +65,11 @@ export class Renderer {
     this.ctx.imageSmoothingEnabled = false;
     this.fx = new FX(); this.cam = STAGE_W / 2 - VIEW_W / 2; this.time = 0;
     this.stage = null; this.stageId = null; this.flash = 0; this.shakeX = 0; this.shakeY = 0;
-    this.banner = null; this.combo = [null, null];
+    this.banner = null; this.combo = [null, null]; this.bubbles = [null, null]; this.street = null;
   }
   setStage(id) { if (this.stageId !== id) { this.stage = buildStage(id); this.stageId = id; } }
-  resetFx() { this.fx = new FX(); this.combo = [null, null]; }
+  resetFx() { this.fx = new FX(); this.combo = [null, null]; this.bubbles = [null, null]; }
+  say(side, text, frames = 150) { this.bubbles[side] = { text, t: frames }; }
 
   // translate sim events into visuals
   onEvent(e, S) {
@@ -121,6 +122,21 @@ export class Renderer {
       case "implode": fx.ring(e.x, oy - 30, 40, 2, "#9b8cff", 14, 2); fx.burst(e.x, oy - 30, 20, ["#ffffff", "#9b8cff", "#3a2aff"], 3, 18, 0); break;
       case "stomp": fx.burst(e.x, oy - 1, 18, ["#c8bfa8", "#8a8070", "#5cff7a"], 3, 22, 0.06, 1, "smoke"); fx.ring(e.x, oy - 2, 4, 44, "#5cff7a", 14, 1); break;
       case "taunt": break;
+      case "ex": { const f = P(e.who); fx.text(f.x, oy - 112, "EX " + e.name, "#ffffff", 60, 1, -0.3); fx.ring(f.x, oy - 40, 4, 44, "#ffffff", 14, 2); this.flash = Math.max(this.flash, 2); break; }
+      case "exArm": { const f = P(e.who); fx.ring(f.x, oy - 40, 30, 4, "#ffffff", 10, 1); break; }
+      case "breaker": fx.ring(e.x, oy + e.y, 4, 90, "#7fd3ff", 22, 3); fx.ring(e.x, oy + e.y, 2, 60, "#ffffff", 16, 2); fx.text(e.x, oy + e.y - 50, "COMBO BREAKER!", "#7fd3ff", 70, 2, -0.3); this.flash = Math.max(this.flash, 6); break;
+      case "throw": { const f = P(e.who); fx.text(f.x, oy - 104, e.name.toUpperCase() + "!", CHARS[f.ch].color, 60, 1, -0.3); break; }
+      case "tech": fx.sparks(e.x, oy + e.y, 1, 10, ["#ffffff", "#cfe8ff"]); fx.sparks(e.x, oy + e.y, -1, 10, ["#ffffff", "#cfe8ff"]); fx.text(e.x, oy + e.y - 30, "THROW TECH!", "#cfe8ff", 50, 1, -0.3); break;
+      case "rage": { const f = P(e.who); fx.text(f.x, oy - 100, "RAGE!", "#ff2a3c", 70, 2, -0.3); fx.ring(f.x, oy - 40, 6, 50, "#ff2a3c", 18, 2); break; }
+      case "first": fx.text(e.x, oy + e.y - 30, "FIRST ATTACK!", "#ffe14d", 60, 1, -0.4); break;
+      case "guardbreak": fx.sparks(e.x, oy + e.y, 1, 14, ["#7fd3ff", "#ffffff"], 10); fx.sparks(e.x, oy + e.y, -1, 14, ["#7fd3ff", "#ffffff"], 10); fx.text(e.x, oy + e.y - 30, "GUARD BREAK!", "#ff5a3c", 70, 2, -0.3); this.flash = Math.max(this.flash, 4); break;
+      case "techroll": { const f = P(e.who); fx.burst(f.x, oy - 2, 8, ["#c8bfa8", "#8a8070"], 1.6, 14, -0.02, 1, "smoke"); fx.text(f.x, oy - 80, "TECH ROLL", "#ffffff", 40, 1, -0.4); break; }
+      case "tauntDone": { const f = P(e.who); fx.text(f.x, oy - 90, "+METER", "#ffd23f", 40, 1, -0.5); break; }
+      case "desk": fx.burst(e.x, oy - 10, 22, ["#8a6a48", "#5e4228", "#c8bfa8"], 3.5, 30, 0.18, 2); fx.text(e.x, oy - 70, "DESK CRASH!", "#ffd27a", 60, 1, -0.3); break;
+      case "smashthrough": this.flash = 14; fx.text(240 + this.cam, oy - 140, "SMASHED THROUGH!", "#ffffff", 90, 2, -0.2); for (let i = 0; i < 40; i++) fx.add({ x: this.cam + Math.random() * 480, y: oy - 200 - Math.random() * 40, vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2, g: 0.15, col: i % 2 ? "#4e4268" : "#c8bfa8", life: 70, size: 2 }); break;
+      case "jackpot": fx.text(e.x, oy - 150, "JACKPOT!", "#ffe14d", 70, 2, -0.2); break;
+      case "pickup": { const f = P(e.who); fx.text(f.x, oy - 96, e.kind === "heal" ? "+HEALTH" : e.kind === "meter" ? "+SUPER" : "POWER UP!", "#5cff7a", 60, 1, -0.4); fx.burst(e.x, oy - 20, 16, ["#ffe14d", "#5cff7a", "#ffffff"], 2.5, 24, 0.05); break; }
+      case "tag": case "tagko": { const f = P(e.who); fx.text(f.x, oy - 110, e.type === "tagko" ? CHARS[e.out].name + " DOWN!" : "TAG!", e.type === "tagko" ? "#ff3355" : "#3fe0d0", 70, 2, -0.3); fx.ring(f.x, oy - 40, 4, 40, "#3fe0d0", 14, 2); break; }
       case "aim": { const f = P(e.who); fx.text(f.x, oy - 104, "LAST BULLET", "#c8283c", 50, 1, -0.2); this.aimT = [e.who, 30]; break; }
       case "gunshot": this.flash = Math.max(this.flash, 4); fx.burst(e.x, oy + e.y, 14, ["#fff3a0", "#ffb03a", "#ffffff"], 3, 10, 0, 2); fx.ring(e.x, oy + e.y, 2, 22, "#ffe14d", 8, 2); this.aimT = null; break;
       case "shirt": { const f = P(e.who); fx.text(f.x, oy - 104, "SHIRT OFF!", "#ffffff", 50, 1, -0.2); break; }
@@ -145,7 +161,7 @@ export class Renderer {
         if (e.kind === "poison") fx.add({ x: f.x + (Math.random() - 0.5) * 14, y: oy + f.y - 30 - Math.random() * 30, vy: -0.5, col: Math.random() < 0.5 ? "#65ff6e" : "#2f9b3a", life: 20, size: 2 });
         if (e.kind === "paper") fx.burst(f.x, oy + f.y - 40, 8, ["#ffffff", "#d8e4ff"], 1.6, 18, 0.05, 2);
         if (e.kind === "bleed") fx.add({ x: f.x + (Math.random() - 0.5) * 12, y: oy + f.y - 40, vy: 0.5, g: 0.12, col: "#c8102e", life: 22, size: 1 });
-        if (Math.random() < 0.6) fx.text(f.x + (Math.random() - 0.5) * 20, oy + f.y - 72, e.amount, e.kind === "burn" ? "#ff7a29" : e.kind === "bleed" ? "#ff3355" : e.kind === "poison" ? "#65ff6e" : e.kind === "paper" ? "#ffffff" : "#9b8cff", 26, 1, -0.5);
+        if (Math.random() < 0.6) fx.text(f.x + (Math.random() - 0.5) * 20, oy + f.y - 72, e.amount, e.kind === "burn" ? "#ff7a29" : e.kind === "bleed" ? "#ff3355" : e.kind === "poison" ? "#65ff6e" : e.kind === "paper" ? "#ffffff" : e.kind === "desk" || e.kind === "smash" ? "#ffd27a" : "#9b8cff", 26, 1, -0.5);
         break;
       }
     }
@@ -163,7 +179,10 @@ export class Renderer {
     const cam = Math.round(this.cam);
     ctx.save();
     ctx.translate(sx, sy);
-    drawStage(ctx, this.stage, cam, this.time, pixText);
+    const area1 = S.hz && S.hz.area === 1;
+    if (area1 && !this.street) this.street = buildStage("street");
+    drawStage(ctx, area1 ? this.street : this.stage, cam, this.time, pixText);
+    this.drawHazards(ctx, S, -cam, FLOOR_Y, false);
     const ox = -cam, oy = FLOOR_Y;
 
     // zones behind
@@ -195,7 +214,9 @@ export class Renderer {
       const hidden = f.sx.smoke > 0 && (this.time >> 2) & 1;
       if (hidden) { ctx.globalAlpha = 0.45; }
       const tele = f.act && m && m.hook === "teleport" && f.act.t > m.tpAt - 5 && f.act.t < m.tpAt + 2;
-      if (!tele) anchors[f.side] = drawFighter(ctx, f, ox, oy, { flash: f.flash > 2 || (S.hitstop > 0 && f.flash > 0), S });
+      const alt = (S.p[0].ch === S.p[1].ch && f.side === 1) || !!(S.alt && S.alt[f.side]);
+      if (f.rage || f.sx.power > 0 || f.exArm > 0) this.aura(ctx, f, ox, oy, f.exArm > 0 ? "#ffffff" : f.sx.power > 0 ? "#ffd23f" : "#ff2a3c");
+      if (!tele) anchors[f.side] = drawFighter(ctx, f, ox, oy, { flash: f.flash > 2 || (S.hitstop > 0 && f.flash > 0), S, alt });
       else anchors[f.side] = { hand: [ox + f.x, oy - 50], foot: [ox + f.x, oy], head: [ox + f.x, oy - 70], chest: [ox + f.x, oy - 40] };
       ctx.globalAlpha = 1;
       this.trail(ctx, f, anchors[f.side], m);
@@ -250,7 +271,8 @@ export class Renderer {
       const x = i === 0 ? 8 : VIEW_W - 8 - textW(txt, 2);
       pixText(ctx, txt, x, 74, c.t > 80 ? "#ffffff" : "#ffe14d", 2);
     }
-    drawStageFront(ctx, this.stage, cam, this.time);
+    this.drawHazards(ctx, S, -cam, FLOOR_Y, true);
+    drawStageFront(ctx, area1 ? this.street : this.stage, cam, this.time);
     ctx.restore();
 
     // KO slow-mo vignette / flash
@@ -263,6 +285,45 @@ export class Renderer {
       ctx.fillRect(0, 0, VIEW_W, VIEW_H); this.flash--;
     }
     return { cam };
+  }
+
+  drawHazards(ctx, S, ox, oy, front) {
+    const hz = S.hz; if (!hz || hz.id !== this.stageId) return; // props only on their own stage
+    const t = this.time;
+    if (hz.id === "classroom" && front) {
+      [210, 558].forEach((x, i) => {
+        const sx = Math.round(ox + x);
+        if (hz.desks[i]) {
+          ctx.fillStyle = "#120e18"; ctx.fillRect(sx - 19, oy - 21, 38, 6); ctx.fillRect(sx - 17, oy - 16, 4, 16); ctx.fillRect(sx + 13, oy - 16, 4, 16);
+          ctx.fillStyle = "#8a6a48"; ctx.fillRect(sx - 18, oy - 20, 36, 4); ctx.fillStyle = "#5e4228"; ctx.fillRect(sx - 16, oy - 16, 2, 15); ctx.fillRect(sx + 14, oy - 16, 2, 15);
+        } else { ctx.fillStyle = "#5e4228"; ctx.fillRect(sx - 16, oy - 4, 10, 3); ctx.fillRect(sx + 4, oy - 6, 12, 3); ctx.fillRect(sx - 3, oy - 3, 6, 2); }
+      });
+    }
+    if (hz.id === "arcade" && !front) {
+      const sx = Math.round(ox + 384);
+      ctx.fillStyle = "#120e18"; ctx.fillRect(sx - 15, oy - 62, 30, 62);
+      ctx.fillStyle = "#2b1442"; ctx.fillRect(sx - 14, oy - 61, 28, 60);
+      ctx.fillStyle = (t >> 4) & 1 ? "#ff3fa4" : "#ffe14d"; ctx.fillRect(sx - 10, oy - 56, 20, 3);
+      ctx.fillStyle = "#3cf2ff"; ctx.fillRect(sx - 10, oy - 48, 20, 14);
+      ctx.fillStyle = "#120e18"; for (let i = 0; i < 3; i++) ctx.fillRect(sx - 8 + i * 6, oy - 45, 4, 8);
+      ctx.fillStyle = "#ffe14d"; ctx.fillRect(sx - 6, oy - 26, 12, 3);
+      if (hz.itemT < 120 && !hz.item && (t >> 2) & 1) { ctx.fillStyle = "#ffffff"; ctx.fillRect(sx - 10, oy - 56, 20, 3); }
+    }
+    if (hz.item && front) {
+      const it = hz.item, x = Math.round(ox + it.x), y = Math.round(oy + it.y - 6);
+      const col = it.kind === "heal" ? "#5cff7a" : it.kind === "meter" ? "#ffd23f" : "#ff3355";
+      disc(ctx, x, y + ((t >> 3) & 1), 7, "#120e18"); disc(ctx, x, y + ((t >> 3) & 1), 6, col);
+      pixText(ctx, it.kind === "heal" ? "+" : it.kind === "meter" ? "S" : "P", x - 1, y - 2 + ((t >> 3) & 1), "#120e18", 1, null);
+    }
+  }
+
+  aura(ctx, f, ox, oy, col) {
+    const t = this.time;
+    ctx.fillStyle = col;
+    for (let i = 0; i < 10; i++) {
+      const an = i / 10 * Math.PI * 2 + t * 0.08, rr = 18 + ((t + i * 7) % 12);
+      if ((t + i) % 3) ctx.fillRect(Math.round(ox + f.x + Math.cos(an) * rr * 0.8), Math.round(oy + f.y - 38 + Math.sin(an) * rr * 1.4), 1, 2);
+    }
   }
 
   trail(ctx, f, anc, m) {
@@ -400,9 +461,18 @@ export class Renderer {
     if (f.sx.counter > 0 && t % 4 < 2) { ctx.fillStyle = "#7fd3ff"; ctx.fillRect(hx - 10, hy + 70 - 76, 1, 1); }
     if (f.ch === "jiross" && f.sx.momentum > 0 && t % 8 === 0) this.fx.add({ x: f.x + (Math.random() - 0.5) * 12, y: FLOOR_Y + f.y - 50, vy: -0.8, col: "#ffcf5a", life: 18 });
     if (f.ch === "tanoy" && t % 12 === 0 && f.st !== "down") this.fx.add({ x: (anc.head[0] - ox) + f.face * 9, y: FLOOR_Y + f.y + (anc.head[1] - oy) + 3, vx: 0.1, vy: -0.4, col: "#9a9aa6", life: 30, type: "smoke", size: 0.6 });
-    // speech bubble
-    if (f.talk && f.talkT > 0) {
-      const txt = f.talk.toUpperCase(), w = textW(txt, 1) + 8;
+    // guard gauge (fills when blocking a lot; breaks at full)
+    if (f.guardG > 25 && f.st !== "down") {
+      const w = 24, gx = Math.round(ox + f.x - w / 2), gy = Math.round(oy + f.y - 84);
+      ctx.fillStyle = "#120e18"; ctx.fillRect(gx - 1, gy - 1, w + 2, 4);
+      ctx.fillStyle = f.guardG > 75 ? "#ff3355" : "#7fd3ff"; ctx.fillRect(gx, gy, Math.round(w * f.guardG / 100), 2);
+    }
+    // speech bubble (sim taunts/jokes, or render-only rival intro lines)
+    const bub = this.bubbles[f.side];
+    if (bub && bub.t > 0) { bub.t--; }
+    const talk = f.talk && f.talkT > 0 ? f.talk : bub && bub.t > 0 ? bub.text : null;
+    if (talk) {
+      const txt = talk.toUpperCase(), w = textW(txt, 1) + 8;
       let bx = Math.round(hx - w / 2), by = hy - 34;
       bx = Math.max(2, Math.min(VIEW_W - w - 2, bx));
       ctx.fillStyle = "#120e18"; ctx.fillRect(bx - 1, by - 1, w + 2, 11);

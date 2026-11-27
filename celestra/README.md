@@ -16,6 +16,10 @@
 - **Concerns & ideas** form; read them at `/admin.html?key=ADMIN_KEY` (Worker secret).
 - Every fighter: double jump, air slam (Down+Attack in the air), 3 stances (Balanced / Aggressive / Defensive), intro and victory animations.
 
+- **Combat systems**: super meter (EX skills, combo breaker), throws + throw techs, comeback RAGE, first-attack bonus, tech rolls, guard break, taunts.
+- **Stage hazards** (toggleable): rooftop smash-through to the street, arcade jackpot power-ups, breakable classroom desks.
+- **Tag Team** 2v2 (vs CPU or local), **rival intros**, **daily challenges** with evolution rewards, **titles**, unlockable **alt colors** (mirror matches auto-swap), and **weekly tournament brackets** that run on the server and advance automatically.
+
 ## Controls
 | Action | P1 / solo | Solo alt | P2 (local) | Gamepad |
 |---|---|---|---|---|

@@ -6,25 +6,31 @@ import assert from "node:assert/strict";
 
 let seedI = 12345;
 const r = () => (seedI = (seedI * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
-const BITS = [B.L, B.R, B.U, B.D, B.A, B.P, B.S1, B.S2, B.S3, B.DASH, B.ST];
-const W = [0.35, 0.35, 0.08, 0.1, 0.3, 0.08, 0.06, 0.06, 0.05, 0.05, 0.03];
+const BITS = [B.L, B.R, B.U, B.D, B.A, B.P, B.S1, B.S2, B.S3, B.DASH, B.ST, B.EX, B.TAUNT];
+const W = [0.35, 0.35, 0.08, 0.1, 0.3, 0.1, 0.06, 0.06, 0.05, 0.05, 0.03, 0.05, 0.01];
 const randIn = (prev) => { if (r() < 0.85) return prev; let v = 0; BITS.forEach((b, i) => { if (r() < W[i]) v |= b; }); return v; };
 
 // 1) every matchup is deterministic and clone/resume-equivalent
-let kos = 0;
+let kos = 0; const seen = {};
 for (const a of ROSTER) for (const b of ROSTER) {
   const ins = []; let i0 = 0, i1 = 0;
   for (let f = 0; f < 5000; f++) { i0 = randIn(i0); i1 = randIn(i1); ins.push([i0, i1]); }
-  const run = () => { const S = newMatch({ chars: [a, b], seed: 99 }); const ev = []; for (const x of ins) { step(S, x, ev); if (S.phase === "end") break; } return [S, ev]; };
+  const opts = { chars: [a, b], seed: 99, stage: (ROSTER.indexOf(a) + ROSTER.indexOf(b)) % 3, tag: ROSTER.indexOf(a) % 4 === 0 ? [[a, b], [b, a]] : null, evo: [ROSTER.indexOf(b) % 2 === 0, false] };
+  const run = () => { const S = newMatch(opts); const ev = []; for (const x of ins) { step(S, x, ev); if (S.phase === "end") break; } return [S, ev]; };
   const [S1, ev1] = run(), [S2] = run();
   assert.equal(hashState(S1), hashState(S2), `nondeterministic ${a} v ${b}`);
   for (const f of S1.p) assert.ok(Number.isFinite(f.x) && Number.isFinite(f.y), "NaN position");
-  const S3 = newMatch({ chars: [a, b], seed: 99 }); let snap = null;
+  const S3 = newMatch(opts); let snap = null;
   for (let k = 0; k < ins.length; k++) { if (k === 1200) snap = clone(S3); step(S3, ins[k], null); if (S3.phase === "end") break; }
   for (let k = 1200; k < ins.length; k++) { step(snap, ins[k], null); if (snap.phase === "end") break; }
   assert.equal(hashState(S3), hashState(snap), `clone mismatch ${a} v ${b}`);
   kos += ev1.filter((e) => e.type === "ko").length;
+  for (const e of ev1) seen[e.type] = (seen[e.type] || 0) + 1;
 }
+const must = ["ex", "breaker", "throw", "tech", "rage", "first", "guardbreak", "techroll", "tauntAct", "desk", "smashthrough", "jackpot", "tag", "tagko"];
+const missing = must.filter((k) => !seen[k]);
+console.log("events seen:", must.map((k) => `${k}=${seen[k] || 0}`).join(" "));
+if (missing.length) console.log("WARN never triggered:", missing.join(", "));
 console.log(`ok determinism: ${ROSTER.length ** 2} matchups, ${kos} KOs`);
 
 // 2) two rollback sessions over a laggy, jittery (out-of-order) fake network must match

@@ -1,6 +1,6 @@
 // Celestra Chronicles — app shell: screens, select, HUD, game loop, online flow.
-import { newMatch, step, B, VIEW_W, currentSkillRef } from "./sim.js";
-import { CHARS, ROSTER, STAGES, getMove, PARRY, STANCES } from "./chars.js";
+import { newMatch, step, B, VIEW_W, currentSkillRef, METER_MAX, EX_COST } from "./sim.js";
+import { CHARS, ROSTER, STAGES, getMove, PARRY, STANCES, THROWS } from "./chars.js";
 import { Renderer } from "./render.js";
 import { drawPortrait, drawFull } from "./sprites.js";
 import { readInputs, keyPressed, clearPressed, setupTouch, touch, BINDS, setBind, resetBinds, keyLabel, captureKey } from "./input.js";
@@ -9,6 +9,7 @@ import { NetClient, RollbackSession } from "./net.js";
 import { initAudio, sfx, voice, music, setVolume, setMuted, audioSettings, preloadVoices } from "./audio.js";
 
 const $ = (s, r = document) => r.querySelector(s);
+function twoP() { return app.mode === "local" || (app.mode === "tag" && app.tagRival === "local"); }
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const store = {
   get(k, d) { try { const v = localStorage.getItem("celestra:" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
@@ -39,6 +40,8 @@ function show(id) {
   if (id === "ranks") loadRanks();
   if (id === "online") pollRooms();
   if (id === "controls") buildBinds();
+  if (id === "challenges") renderChallenges();
+  if (id === "tourney") loadTourneys();
   if (id === "menu") greet();
   if (id === "title" || id === "menu" || id === "online" || id === "howto" || id === "settings") music("title");
 }
@@ -64,10 +67,11 @@ function anyStart() {
 }
 function afterName() {
   const qs = new URLSearchParams(location.search);
-  const q = qs.get("room"), rp = qs.get("replay");
+  const q = qs.get("room"), rp = qs.get("replay"), tq = qs.get("tourney");
   show("menu");
   if (q) { show("online"); joinRoom(q.toUpperCase()); history.replaceState(null, "", location.pathname); }
   else if (rp) { history.replaceState(null, "", location.pathname); playReplayId(rp); }
+  else if (tq) { history.replaceState(null, "", location.pathname); app.tView = tq; show("tourney"); }
 }
 $("#title").addEventListener("click", anyStart);
 
@@ -78,7 +82,7 @@ function menuPick(m) {
   sfx("confirm");
   if (m === "howto") { buildMovelist(); show("howto"); return; }
   if (m === "settings") { show("settings"); return; }
-  if (m === "ranks" || m === "feedback" || m === "controls") { show(m); return; }
+  if (m === "ranks" || m === "feedback" || m === "controls" || m === "challenges" || m === "tourney") { show(m); return; }
   if (m === "online") { show("online"); $("#pname").value = store.get("name", "PLAYER" + Math.floor(Math.random() * 90 + 10)); return; }
   app.mode = m; openSelect();
 }
@@ -88,8 +92,8 @@ function goBack() {
   sfx("select");
   if (app.screen === "select") {
     if (app.mode === "online") { if (app.locked[app.slot]) { app.locked[app.slot] = false; app.net.send({ t: "ready", v: false }); renderSelect(); return; } leaveRoom(); show("online"); return; }
-    if (app.locked[1] && app.mode !== "local") { app.locked[1] = false; renderSelect(); return; }
-    if (app.locked[0] && app.mode !== "local") { app.locked[0] = false; renderSelect(); return; }
+    if (app.locked[1] && !twoP()) { app.locked[1] = false; renderSelect(); return; }
+    if (app.locked[0] && !twoP()) { app.locked[0] = false; renderSelect(); return; }
     show("menu"); return;
   }
   if (app.screen === "online") { leaveRoom(); show("menu"); return; }
@@ -121,18 +125,24 @@ const NCELL = ROSTER.length + 1, RANDOM = ROSTER.length, COLS = 6;
 const cellId = (i) => (i < ROSTER.length ? ROSTER[i] : null);
 function activePicker() {
   if (app.mode === "online") return app.locked[app.slot] ? -1 : app.slot;
-  if (app.mode === "local") return !app.locked[0] ? 0 : !app.locked[1] ? 1 : -1;
+  if (twoP()) return !app.locked[0] ? 0 : !app.locked[1] ? 1 : -1;
   return !app.locked[0] ? 0 : !app.locked[1] ? 1 : -1;
 }
 function openSelect() {
-  app.locked = [false, false];
+  app.locked = [false, false]; app.team = [[], []];
   if (app.mode !== "online") { app.picks = [null, null]; }
+  if (app.mode === "tag" && !app.tagRival) app.tagRival = "cpu";
+  $("#tagRival").classList.toggle("hidden", app.mode !== "tag");
+  $("#tagRival").textContent = "RIVAL: " + (app.tagRival === "local" ? "PLAYER 2" : "CPU");
+  $("#hzBtn").classList.toggle("hidden", app.mode === "online");
+  $("#hzBtn").textContent = "HAZARDS: " + (store.get("hazards", true) ? "ON" : "OFF");
   app.cursor = [app.cursor[0] || 0, app.cursor[1] ?? 4];
   $("#select .s1 .who").textContent = app.mode === "online" ? (app.slot === 0 ? "YOU" : "RIVAL") : "P1";
-  $("#select .s2 .who").textContent = app.mode === "online" ? (app.slot === 1 ? "YOU" : "RIVAL") : app.mode === "local" ? "P2" : app.mode === "training" ? "DUMMY" : "CPU";
+  $("#select .s2 .who").textContent = app.mode === "online" ? (app.slot === 1 ? "YOU" : "RIVAL") : twoP() ? "P2" : app.mode === "training" ? "DUMMY" : "CPU";
   const hints = {
     cpu: "P1: A/D W/S move, F pick (then pick CPU) &bull; G / ESC back", training: "Pick your fighter, then the dummy", tutorial: "Pick the fighter you want to learn, then a dummy", local: "P1: WASD + F &bull; P2: ARROWS + NUM1 / K",
     online: "Pick your fighter &bull; F / ENTER to lock in &bull; host picks the stage",
+    tag: "Pick TWO fighters for each team &bull; in battle, STANCE (V) tags your partner in",
   };
   $(".sel-hint").innerHTML = hints[app.mode];
   $("#btnReady").textContent = app.mode === "online" ? "READY" : "FIGHT!";
@@ -171,6 +181,7 @@ function renderSelect() {
     side.querySelector(".cname").style.color = c.color;
     side.querySelector(".ctitle").textContent = c.title + (app.mode === "online" && app.room?.players?.[p] ? " — " + app.room.players[p].name : "");
     renderEvo(side, p, id);
+    if (app.mode === "tag" && app.team && app.team[p].length) side.querySelector(".ctitle").textContent = "TEAM: " + app.team[p].map((c) => CHARS[c].name).join(" + ") + (app.team[p].length < 2 ? " + ?" : "");
     side.querySelector(".kitlist").innerHTML = kitHTML(id);
     side.dataset.ch = id;
     side.querySelector(".rdy").classList.toggle("hidden", !app.locked[p]);
@@ -188,20 +199,26 @@ function animSelect() {
     const id = side.dataset.ch; if (!id) continue;
     if (app.mode === "online" && p !== app.slot && !app.room?.players?.[p]) continue;
     const evoOn = app.mode === "online" && p !== app.slot ? !!app.room?.players?.[p]?.evo : app.evo[p] && canEvolve(id);
-    drawFull(side.querySelector(".big-spr"), id, selAnim, p === 1, evoOn);
+    const altOn = app.mode === "online" && p !== app.slot ? !!app.room?.players?.[p]?.alt : app.alt[p] && hasAlt(id);
+    drawFull(side.querySelector(".big-spr"), id, selAnim, p === 1, evoOn, altOn);
   }
 }
 function confirmPick(p) {
   if (app.cursor[p] === RANDOM) app.cursor[p] = Math.floor(Math.random() * ROSTER.length);
   const id = ROSTER[app.cursor[p]];
-  app.picks[p] = id; sfx("confirm");
-  if (app.voiceOn) voice("n_" + id);
+  if (app.mode === "tag") { // pick two fighters per side
+    app.team[p].push(id); sfx("confirm"); if (app.voiceOn) voice("n_" + id);
+    app.picks[p] = app.team[p][0];
+    if (app.team[p].length < 2) { renderSelect(); return; }
+  }
+  app.picks[p] = app.mode === "tag" ? app.team[p][0] : id; sfx("confirm");
+  if (app.voiceOn && app.mode !== "tag") voice("n_" + id);
   if (app.mode === "online") {
     app.locked[p] = true;
-    app.net.send({ t: "pick", char: id, evo: canEvolve(id) && app.evo[p] }); app.net.send({ t: "ready", v: true });
+    app.net.send({ t: "pick", char: id, evo: canEvolve(id) && app.evo[p], alt: hasAlt(id) && app.alt[p] }); app.net.send({ t: "ready", v: true });
   } else {
     app.locked[p] = true;
-    if (app.mode !== "local" && p === 0) app.cursor[1] = app.cursor[1] ?? 4;
+    if (!twoP() && p === 0) app.cursor[1] = app.cursor[1] ?? 4;
     if (app.locked[0] && app.locked[1]) setTimeout(() => { if (app.screen === "select" && app.locked[0] && app.locked[1]) beginOffline(); }, 650);
   }
   renderSelect();
@@ -222,10 +239,10 @@ function changeStage(d) {
 }
 function selectInput() {
   const pk = (codes) => codes.some((c) => keyPressed(c));
-  const players = app.mode === "local" ? [0, 1] : [activePicker()];
+  const players = twoP() ? [0, 1] : [activePicker()];
   for (const p of players) {
     if (p < 0 || app.locked[p]) continue;
-    const local = app.mode === "local";
+    const local = twoP();
     const K = p === 0 || !local
       ? { l: local ? ["KeyA"] : ["KeyA", "ArrowLeft"], r: local ? ["KeyD"] : ["KeyD", "ArrowRight"], u: local ? ["KeyW"] : ["KeyW", "ArrowUp"], d: local ? ["KeyS"] : ["KeyS", "ArrowDown"], ok: local ? ["KeyF"] : ["KeyF", "KeyJ", "Enter", "Space"] }
       : { l: ["ArrowLeft"], r: ["ArrowRight"], u: ["ArrowUp"], d: ["ArrowDown"], ok: ["Numpad1", "KeyK", "Enter"] };
@@ -245,18 +262,20 @@ function selectInput() {
 // ================= match =================
 function beginOffline() {
   const seed = (Math.random() * 2 ** 31) | 0;
-  app.names = app.mode === "local" ? ["P1", "P2"] : app.mode === "training" || app.mode === "tutorial" ? [myName(), "DUMMY"] : [myName(), "CPU"];
-  const evo = [canEvolve(app.picks[0]) && app.evo[0], app.mode === "local" && canEvolve(app.picks[1]) && app.evo[1]];
-  startMatch(app.picks, app.stage, seed, evo);
-  app.ai = app.mode === "cpu" ? new AI(app.diff, 1) : null;
+  app.names = twoP() ? ["P1", "P2"] : app.mode === "training" || app.mode === "tutorial" ? [myName(), "DUMMY"] : [myName(), "CPU"];
+  const evo = app.mode === "tag" ? [false, false] : [canEvolve(app.picks[0]) && app.evo[0], twoP() && canEvolve(app.picks[1]) && app.evo[1]];
+  const alt = [hasAlt(app.picks[0]) && app.alt[0], twoP() && hasAlt(app.picks[1]) && app.alt[1]];
+  startMatch(app.picks, app.stage, seed, evo, { hazards: store.get("hazards", true), tag: app.mode === "tag" ? app.team.map((t) => t.slice()) : null, alt });
+  app.ai = app.mode === "cpu" || (app.mode === "tag" && app.tagRival === "cpu") ? new AI(app.diff, 1) : null;
   app.dummy = app.mode === "training" ? new AI("normal", 1, app.dummyMode || "stand") : app.mode === "tutorial" ? new AI("normal", 1, "stand") : null;
   $("#btnTrainDummy").classList.toggle("hidden", app.mode !== "training");
   if (app.mode === "tutorial") startTutorial();
 }
-function startMatch(chars, stage, seed, evo = [false, false]) {
+function startMatch(chars, stage, seed, evo = [false, false], extra = {}) {
   const simMode = app.mode === "replay" ? app.replay.mode : app.mode === "training" || app.mode === "tutorial" ? "training" : "vs";
-  app.S = newMatch({ chars, seed, mode: simMode, stage, evo });
-  app.rec = []; app.recMeta = { v: 1, chars: chars.slice(), seed, stage, mode: simMode, names: (app.names || []).slice(), at: Date.now(), evo: evo.slice() };
+  const hazards = extra.hazards ?? true, tag = extra.tag || null, alt = extra.alt || null;
+  app.S = newMatch({ chars, seed, mode: simMode, stage, evo, hazards, tag, alt });
+  app.rec = []; app.recMeta = { v: 1, chars: chars.slice(), seed, stage, mode: simMode, names: (app.names || []).slice(), at: Date.now(), evo: evo.slice(), hazards, tag, alt };
   app.replaySaved = null;
   $("#tut").classList.toggle("hidden", app.mode !== "tutorial");
   $("#replayBar").classList.toggle("hidden", app.mode !== "replay");
@@ -276,14 +295,16 @@ const KEYS = {
   none: ["", "", "", "", ""],
 };
 function buildHud() {
+  if (app.hudCache) app.hudCache.built = true;
   const S = app.S;
   for (const i of [0, 1]) {
     const f = S.p[i], c = CHARS[f.ch], side = i === 0 ? ".p1" : ".p2";
     $(`.pl${side} .nm`).classList.toggle("evo", !!f.evo);
-    $(`.pl${side} .nm`).textContent = c.name + (app.names[i] && app.mode === "online" ? " · " + app.names[i] : "");
+    const ttl = app.mode === "online" && app.titles && app.titles[i] ? ` «${app.titles[i]}»` : "";
+    $(`.pl${side} .nm`).textContent = c.name + (app.names[i] && app.mode === "online" ? " · " + app.names[i] + ttl : "");
     $(`.pl${side} .nm`).style.color = c.color;
     drawPortrait($(`.pl${side} .por`), f.ch, i === 1);
-    const keys = app.mode === "local" ? (i === 0 ? KEYS.solo : KEYS.p2) : (i === (app.mode === "online" ? app.slot : 0) ? KEYS.solo : KEYS.none);
+    const keys = twoP() ? (i === 0 ? KEYS.solo : KEYS.p2) : (i === (app.mode === "online" ? app.slot : 0) ? KEYS.solo : KEYS.none);
     const mv = c.moves;
     $(`.kit${side}`).innerHTML = [
       `<div class="slot atk" title="Basic attack"><div class="dots"><i></i><i></i><i></i></div><div class="ic">ATK</div><span class="key">${keys[0]}</span></div>`,
@@ -326,6 +347,25 @@ function updateHud() {
     if (s.silence) st.push(["SILENCED " + Math.ceil(s.silence / 60), "#60d7ff"]);
     if (s.sad) st.push(["SAD", "#76a9ff"]);
     if (s.poison) st.push(["POISON", "#65ff6e"]);
+    if (f.rage) st.push(["RAGE", "#ff2a3c"]);
+    if (s.power) st.push(["POWER UP", "#ffd23f"]);
+    if (s.dark) st.push(["DARK -" + (s.dark / 10).toFixed(1) + "%", "#c8283c"]);
+    if (f.exArm) st.push(["EX READY", "#ffffff"]);
+    // super meter (2 segments of 500)
+    const mEls = $$(`.pl${side} .meter i`);
+    const m0 = Math.min(100, (f.meter / EX_COST) * 100), m1 = Math.max(0, Math.min(100, ((f.meter - EX_COST) / EX_COST) * 100));
+    if (app.hudCache["m" + i] !== (f.meter | 0)) { app.hudCache["m" + i] = f.meter | 0; mEls[0].style.setProperty("--f", m0 + "%"); mEls[1].style.setProperty("--f", m1 + "%"); $(`.pl${side} .meter`).classList.toggle("full", f.meter >= METER_MAX); }
+    if (app.touchOn && i === mySide()) { const eb = $("#touch .exb"); eb.style.setProperty("--m", (f.meter / METER_MAX) * 100 + "%"); eb.classList.toggle("full", f.meter >= EX_COST); }
+    // tag partner
+    const pEl = $(`.pl${side} .partner`);
+    if (S.tag && S.bench) {
+      const bn = S.bench[i];
+      pEl.classList.remove("hidden");
+      if (app.hudCache["pch" + i] !== bn.ch) { app.hudCache["pch" + i] = bn.ch; drawPortrait($("canvas", pEl), bn.ch, i === 1); }
+      $(".pbar i", pEl).style.width = Math.max(0, (bn.hp / bn.maxHp) * 100) + "%";
+      setText($(".ptag", pEl), "pt" + i, bn.hp <= 0 ? "K.O." : S.tagCd[i] > 0 ? "TAG " + Math.ceil(S.tagCd[i] / 60) : "TAG READY");
+      if (app.hudCache["act" + i] !== f.ch) { app.hudCache["act" + i] = f.ch; if (app.hudCache["built"]) buildHud(); }
+    } else pEl.classList.add("hidden");
     if (f.pst) st.push([STANCES[f.pst].name, STANCES[f.pst].color]);
     if (f.ch === "dapsay") st.push([f.stance === "dap" ? "DAP STANCE" : "APSAY STANCE", f.stance === "dap" ? "#ff5a6a" : "#b56bff"]);
     const html = st.map(([t, c]) => `<span class="st" style="color:${c}">${t}</span>`).join("");
@@ -382,13 +422,30 @@ function say(key, gap = 0) {
 function handleEvents(evs, S) {
   for (const e of evs) {
     R.onEvent(e, S);
+    trackChallenge(e, S);
     switch (e.type) {
       case "vs": {
         const n0 = CHARS[S.p[0].ch].name, n1 = CHARS[S.p[1].ch].name;
+        rivalIntro(S);
         banner(`${n0}  VS  ${n1}`, app.mode === "online" ? `${app.names[0] || ""}  ·  ${app.names[1] || ""}` : "", "vs", 1500);
         say("n_" + S.p[0].ch); setTimeout(() => say("n_" + S.p[1].ch), 800);
         break;
       }
+      case "ex": sfx("ult"); buzz(e.who === mySide() ? 20 : 0); break;
+      case "exArm": sfx("cast"); break;
+      case "breaker": sfx("parry"); sfx("heavy"); buzz(e.who === mySide() ? 50 : 0); say("counter", 1200); break;
+      case "throw": sfx("swingHeavy"); break;
+      case "tech": sfx("block"); sfx("parry"); break;
+      case "rage": sfx("stun"); break;
+      case "first": sfx("counter"); break;
+      case "guardbreak": sfx("wall"); buzz(e.who === mySide() ? 40 : 0); break;
+      case "techroll": sfx("dash"); break;
+      case "tauntAct": sfx("cast"); { const ch = S.p[e.who].ch; if (ch === "jiross") say("jiross_t0", 1500); else say(ch + "_win", 3000); } break;
+      case "desk": sfx("wall"); break;
+      case "smashthrough": sfx("ko"); sfx("wall"); buzz(80); break;
+      case "jackpot": sfx("ult"); break;
+      case "pickup": sfx("catch"); sfx("confirm"); break;
+      case "tag": case "tagko": sfx("teleport"); say("n_" + e.ch, 500); break;
       case "djump": sfx("jump"); tutDone("djump", e.who); break;
       case "slam": sfx("slam"); tutDone("slam", e.who); buzz(e.who === mySide() ? 30 : 0); break;
       case "stance": sfx("select"); tutDone("stance", e.who); break;
@@ -446,7 +503,7 @@ function handleEvents(evs, S) {
         const w = e.winner;
         setTimeout(() => {
           if (w < 0) say("draw");
-          else if (app.mode === "local") say(w === 0 ? "p1wins" : "p2wins");
+          else if (twoP()) say(w === 0 ? "p1wins" : "p2wins");
           else { const me = app.mode === "online" ? app.slot : 0; say(w === me ? "youwin" : "youlose"); }
           setTimeout(() => w >= 0 && say(S.p[w].ch + "_win"), 1300);
         }, 600);
@@ -459,7 +516,7 @@ function showResults(w) {
   const S = app.S;
   const me = app.mode === "online" ? app.slot : 0;
   let title = "DRAW GAME";
-  if (w >= 0) title = app.mode === "local" ? `P${w + 1} WINS!` : w === me ? "YOU WIN!" : "YOU LOSE";
+  if (w >= 0) title = twoP() ? `P${w + 1} WINS!` : w === me ? "YOU WIN!" : "YOU LOSE";
   $(".res-win").textContent = title;
   $(".res-sub").textContent = w >= 0 ? `${CHARS[S.p[w].ch].name} — ${S.wins[0]} : ${S.wins[1]}` : `${S.wins[0]} : ${S.wins[1]}`;
   if (w >= 0) drawFull($(".res-spr"), S.p[w].ch, 0, false); else $(".res-spr").getContext("2d").clearRect(0, 0, 160, 192);
@@ -515,7 +572,7 @@ async function quickMatch(skip = "") {
   try { const r = await (await fetch("/api/quick" + (skip ? "?skip=" + skip : ""))).json(); app.quick = true; joinRoom(r.code, true); }
   catch { lobbyMsg("COULD NOT REACH SERVER", true); }
 }
-function leaveRoom() { app.reconnectCode = null; clearTimeout(app.reconnT); if (app.net) { const n = app.net; app.net = null; n.close(); } app.session = null; app.room = null; app.code = null; $("#roomInfo").classList.add("hidden"); }
+function leaveRoom() { app.noList = false; app.reconnectCode = null; clearTimeout(app.reconnT); if (app.net) { const n = app.net; app.net = null; n.close(); } app.session = null; app.room = null; app.code = null; $("#roomInfo").classList.add("hidden"); }
 function playerId() {
   let id = store.get("pid", "");
   if (!id) { id = Array.from(crypto.getRandomValues(new Uint8Array(9)), (b) => b.toString(16).padStart(2, "0")).join(""); store.set("pid", id); }
@@ -575,7 +632,8 @@ async function joinRoom(code, quick = false, reconnect = false) {
   net.on("start", (m) => {
     app.names = m.names;
     app.picks = m.chars.slice();
-    startMatch(m.chars, m.stage, m.seed, m.evo || [false, false]);
+    app.titles = m.titles || ["", ""];
+    startMatch(m.chars, m.stage, m.seed, m.evo || [false, false], { alt: m.alt, hazards: true });
     // adaptive input delay: hide part of the one-way latency, roll back the rest (max 12f)
     const oneWay = (net.peerRtt || 60) / 2 / 16.67;
     const delay = Math.max(m.delay || 2, Math.min(5, Math.ceil(oneWay) - 7));
@@ -610,7 +668,7 @@ async function joinRoom(code, quick = false, reconnect = false) {
     else if (app.screen !== "menu" && app.screen !== "title") { show("online"); lobbyMsg("DISCONNECTED FROM ROOM", true); }
   });
   try {
-    await net.connect(code, name, playerId(), `&uid=${encodeURIComponent(uidOf())}&pub=${!quick && $("#optPub").checked ? 1 : 0}`);
+    await net.connect(code, name, playerId(), `&uid=${encodeURIComponent(uidOf())}&pub=${!quick && !app.noList && $("#optPub").checked ? 1 : 0}&title=${encodeURIComponent(store.get("title", ""))}`);
     if (!reconnect) lobbyMsg(quick ? "CONNECTED — WAITING FOR A CHALLENGER…" : "ROOM " + code + " — SHARE THE CODE OR LINK");
   } catch {
     if (app.net === net) app.net = null;
@@ -687,7 +745,7 @@ function tick() {
       if (app.rpFrame >= app.replay.inputs.length && app.S.phase !== "end") { app.S.phase = "end"; showResults(app.S.wins[0] > app.S.wins[1] ? 0 : app.S.wins[1] > app.S.wins[0] ? 1 : -1); break; }
     }
   } else {
-    const inputs = readInputs(app.mode === "local" ? "local" : "solo");
+    const inputs = readInputs(twoP() ? "local" : "solo");
     if (app.screen !== "fight") { inputs[0] = 0; inputs[1] = 0; }
     if (app.ai) inputs[1] = app.ai.think(app.S);
     if (app.dummy) inputs[1] = app.dummy.think(app.S);
@@ -841,7 +899,7 @@ async function loadRanks() {
       <div style="margin-top:calc(var(--u)*.8)">RECENT ONLINE MATCHES</div>
       ${(p.recent || []).map((m) => `<div class="rec"><span class="${m.res}">${m.res}</span><span>${escHTML(CHARS[m.mine]?.name || "?")} vs ${escHTML(CHARS[m.theirs]?.name || "?")}</span><span>${escHTML(m.vs)}</span></div>`).join("") || "<div class='dim' style='text-align:left'>Play online to start your record.</div>"}`;
     $("#board").innerHTML = `<tr><th>#</th><th>PLAYER</th><th class="n">W</th><th class="n">L</th><th class="n">%</th><th>MAIN</th></tr>` +
-      (b.length ? b.map((r, i) => { const g = r.wins + r.losses + r.draws; return `<tr class="${r.name === myName() ? "me" : ""}"><td>${i + 1}</td><td>${escHTML(r.name)}</td><td class="n">${r.wins}</td><td class="n">${r.losses}</td><td class="n">${g ? Math.round((r.wins / g) * 100) : 0}</td><td>${escHTML(CHARS[r.main]?.name || "—")}</td></tr>`; }).join("") : `<tr><td colspan="6" class="dim">No ranked online matches yet — be the first!</td></tr>`);
+      (b.length ? b.map((r, i) => { const g = r.wins + r.losses + r.draws; return `<tr class="${r.name === myName() ? "me" : ""}"><td>${i + 1}</td><td>${escHTML(r.name)}${r.title ? ` <small style="color:var(--gold)">${escHTML(r.title)}</small>` : ""}${r.champs ? " 🏆" : ""}</td><td class="n">${r.wins}</td><td class="n">${r.losses}</td><td class="n">${g ? Math.round((r.wins / g) * 100) : 0}</td><td>${escHTML(CHARS[r.main]?.name || "—")}</td></tr>`; }).join("") : `<tr><td colspan="6" class="dim">No ranked online matches yet — be the first!</td></tr>`);
   } catch { $("#profile").innerHTML = "<p class='dim'>Couldn't load rankings. Check your connection.</p>"; }
 }
 
@@ -859,7 +917,7 @@ $("#fbForm").addEventListener("submit", async (e) => {
 });
 
 // ---- controls remapping ----
-const ACTIONS = [["L", "MOVE LEFT"], ["R", "MOVE RIGHT"], ["U", "JUMP"], ["D", "CROUCH"], ["A", "ATTACK"], ["P", "PARRY"], ["S1", "SKILL 1"], ["S2", "SKILL 2"], ["S3", "ULTIMATE"], ["DASH", "DASH"], ["ST", "STANCE"]];
+const ACTIONS = [["L", "MOVE LEFT"], ["R", "MOVE RIGHT"], ["U", "JUMP"], ["D", "CROUCH"], ["A", "ATTACK"], ["P", "PARRY"], ["S1", "SKILL 1"], ["S2", "SKILL 2"], ["S3", "ULTIMATE"], ["DASH", "DASH"], ["ST", "STANCE / TAG"], ["EX", "EX / BREAKER"], ["TAUNT", "TAUNT"]];
 function buildBinds() {
   $("#bindTable").innerHTML = `<tr><th>ACTION</th><th>P1 / SOLO</th><th>P2 (LOCAL)</th></tr>` + ACTIONS.map(([k, n]) =>
     `<tr><td>${n}</td><td><button data-set="p1" data-k="${k}">${keyLabel(BINDS.p1[k][0])}</button></td><td><button data-set="p2" data-k="${k}">${keyLabel(BINDS.p2[k][0])}</button></td></tr>`).join("");
@@ -918,7 +976,7 @@ async function playReplayId(id) {
 function startReplay(rp) {
   app.replay = rp; app.mode = "replay"; app.rpFrame = 0; app.rpSpeed = 1; $("#rpSpeed").textContent = "1x";
   app.names = rp.names || ["P1", "P2"]; app.ai = null; app.dummy = null;
-  startMatch(rp.chars, rp.stage, rp.seed, rp.evo || [false, false]);
+  startMatch(rp.chars, rp.stage, rp.seed, rp.evo || [false, false], { hazards: rp.hazards ?? true, tag: rp.tag || null, alt: rp.alt || null });
 }
 $("#rpSpeed").addEventListener("click", () => { app.rpSpeed = app.rpSpeed === 1 ? 2 : app.rpSpeed === 2 ? 4 : 1; $("#rpSpeed").textContent = app.rpSpeed + "x"; });
 $("#rpExit").addEventListener("click", () => { app.S = null; app.mode = "cpu"; $("#replayBar").classList.add("hidden"); show("menu"); });
@@ -967,14 +1025,16 @@ function usesAll() { return store.get("uses", {}); }
 function usesOf(ch) { return usesAll()[ch] || 0; }
 function canEvolve(ch) { return !!ch && usesOf(ch) >= EVOLVE_AT; }
 function countUses(S) {
-  if (!["cpu", "local", "online"].includes(app.mode)) return;
-  const mine = app.mode === "local" ? [0, 1] : [mySide()];
+  if (!["cpu", "local", "online", "tag"].includes(app.mode)) return;
+  const mine = twoP() ? [0, 1] : [mySide()];
   const u = usesAll();
   for (const side of mine) {
-    const ch = S.p[side].ch, before = u[ch] || 0;
+    for (const ch of S.tag ? S.tag[side] : [S.p[side].ch]) {
+    const before = u[ch] || 0;
     u[ch] = before + 1;
     if (before < EVOLVE_AT && u[ch] >= EVOLVE_AT) setTimeout(() => { banner(`${CHARS[ch].name} CAN EVOLVE!`, "TOGGLE ★ EVOLVED FORM ON THE SELECT SCREEN", "fight", 3200); say("evolve"); sfx("ult"); }, 2400);
     fetch("/api/use", { method: "POST", body: JSON.stringify({ uid: uidOf(), ch }) }).catch(() => {});
+    }
   }
   store.set("uses", u);
 }
@@ -994,10 +1054,225 @@ function toggleEvo(p) {
 function renderEvo(side, p, id) {
   let el = side.querySelector(".evo");
   if (!el) { el = document.createElement("button"); el.className = "evo"; side.querySelector(".ctitle").after(el); el.addEventListener("click", () => toggleEvo(p)); }
-  const mineSide = app.mode === "online" ? p === app.slot : app.mode === "local" ? true : p === 0;
+  const mineSide = app.mode === "online" ? p === app.slot : twoP() ? true : p === 0;
   if (!mineSide) { const on = app.mode === "online" && app.room?.players?.[p]?.evo; el.className = "evo" + (on ? " on" : ""); el.innerHTML = on ? `<span class="star">★</span> EVOLVED` : ""; el.disabled = true; el.classList.toggle("hidden", !on); return; }
   el.classList.remove("hidden"); el.disabled = false;
   const n = usesOf(id);
-  if (n >= EVOLVE_AT) { el.className = "evo ready" + (app.evo[p] ? " on" : ""); el.innerHTML = app.evo[p] ? `<span class="star">★</span> EVOLVED FORM <small>ON · X</small>` : `<span class="star">★</span> EVOLVE AVAILABLE <small>OFF · X</small>`; }
-  else { el.className = "evo"; el.innerHTML = `EVOLUTION <span class="bar"><i style="width:${(n / EVOLVE_AT) * 100}%"></i></span> <small>${n}/${EVOLVE_AT}</small>`; }
+  const altTxt = hasAlt(id) ? ` <small>ALT ${app.alt[p] ? "ON" : "OFF"} · C</small>` : "";
+  if (n >= EVOLVE_AT) { el.className = "evo ready" + (app.evo[p] ? " on" : ""); el.innerHTML = app.evo[p] ? `<span class="star">★</span> EVOLVED FORM <small>ON · X</small>` : `<span class="star">★</span> EVOLVE AVAILABLE <small>OFF · X</small>`; el.innerHTML += altTxt; }
+  else { el.className = "evo"; el.innerHTML = `EVOLUTION <span class="bar"><i style="width:${(n / EVOLVE_AT) * 100}%"></i></span> <small>${n}/${EVOLVE_AT}</small>` + altTxt; }
+}
+
+
+// =====================================================================
+// Select-screen toggles: tag rival, stage hazards, alt colors
+// =====================================================================
+app.alt = [false, false]; app.team = [[], []];
+$("#tagRival").addEventListener("click", () => { app.tagRival = app.tagRival === "local" ? "cpu" : "local"; sfx("select"); openSelect(); });
+$("#hzBtn").addEventListener("click", () => { store.set("hazards", !store.get("hazards", true)); $("#hzBtn").textContent = "HAZARDS: " + (store.get("hazards", true) ? "ON" : "OFF"); sfx("select"); });
+function hasAlt(ch) { return !!ch && !!store.get("alts", {})[ch]; }
+addEventListener("keydown", (e) => {
+  if (app.screen !== "select" || e.code !== "KeyC" || e.repeat) return;
+  const p = app.mode === "online" ? app.slot : 0, side = $(p === 0 ? "#select .s1" : "#select .s2"), id = side.dataset.ch;
+  if (!hasAlt(id)) return;
+  app.alt[p] = !app.alt[p]; sfx("select"); renderSelect();
+});
+
+// =====================================================================
+// Rival intros: special pre-fight exchanges for certain match-ups
+// =====================================================================
+const RIVALS = {
+  "william|jog": ["Wait class.", "Detention. Now."],
+  "jiross|lian": ["Nice frisbee. Mine now.", "Catch this, loudmouth!"],
+  "dapsay|dap": ["I'm the better DAP.", "Prove it, half-DAP!"],
+  "dapsay|apsay": ["Two stances beat one.", "Blink and you'll miss me."],
+  "arbe|ged": ["One bullet. Your name.", "Where's your hall pass?"],
+  "ged|william": ["No leave pass!", "Wait class, Ged."],
+  "tanoy|johan": ["Who smells worse?", "Smell you later!"],
+  "paulite|jiross": ["Why'd the jab miss? No class!", "That joke was weaker than you."],
+  "gayle|acar": ["Batter up!", "My feet are faster!"],
+  "dumdum|arbe": ["You'll bleed.", "You'll need more than knives."],
+  "jaguilar|apsay": ["Teleport.exe has crashed.", "Too slow to ping me."],
+  "acar|johan": ["Smell my feet!", "...I'll pass."],
+};
+function rivalIntro(S) {
+  const a = S.p[0].ch, b = S.p[1].ch;
+  const lines = RIVALS[a + "|" + b] || (RIVALS[b + "|" + a] ? RIVALS[b + "|" + a].slice().reverse() : null);
+  if (a === b) { R.say(0, "Nice outfit."); setTimeout(() => R.say(1, "Mine's better."), 700); return; }
+  if (!lines) return;
+  R.say(0, lines[0], 120); setTimeout(() => R.say(1, lines[1], 120), 800);
+}
+
+// =====================================================================
+// Daily challenges, lifetime stats, titles and alt colors
+// =====================================================================
+const CHALLENGE_POOL = [
+  { id: "win2", text: "Win 2 matches", goal: 2 },
+  { id: "parry10", text: "Land 10 parries", goal: 10 },
+  { id: "slam5", text: "Land 5 air slams", goal: 5 },
+  { id: "throw5", text: "Throw opponents 5 times", goal: 5 },
+  { id: "ex5", text: "Use 5 EX skills", goal: 5 },
+  { id: "combo10", text: "Land 10 three-hit combos", goal: 10 },
+  { id: "breaker2", text: "Escape with 2 combo breakers", goal: 2 },
+  { id: "rageRound", text: "Win a round while in RAGE", goal: 1 },
+  { id: "perfect", text: "Win a round without taking damage", goal: 1 },
+  { id: "arbeClean", text: "Win a match with ARB-E without firing Last Bullet", goal: 1 },
+  { id: "charWin", text: "Win a match as {CHAR}", goal: 1 },
+  { id: "tagWin", text: "Win a Tag Team match", goal: 1 },
+  { id: "onlineWin", text: "Win an online match", goal: 1 },
+  { id: "jackpot3", text: "Grab 3 arcade jackpots", goal: 3 },
+  { id: "desk3", text: "Knock foes through 3 classroom desks", goal: 3 },
+  { id: "smash1", text: "Smash someone off the rooftop", goal: 1 },
+  { id: "taunt5", text: "Finish 5 taunts", goal: 5 },
+];
+const TITLES = [
+  { id: "ROOKIE", need: () => true, how: "Everyone starts here" },
+  { id: "PARRY GOD", need: (st) => st.parry >= 100, how: "Land 100 parries" },
+  { id: "SLAM DUNKER", need: (st) => st.slam >= 30, how: "Land 30 air slams" },
+  { id: "GRAPPLER", need: (st) => st.throw >= 30, how: "Throw opponents 30 times" },
+  { id: "UNBREAKABLE", need: (st) => st.breaker >= 10, how: "Use 10 combo breakers" },
+  { id: "COMEBACK KID", need: (st) => st.rageRound >= 5, how: "Win 5 rounds while in RAGE" },
+  { id: "TRASH TALKER", need: (st) => st.taunt >= 25, how: "Finish 25 taunts" },
+  { id: "DAILY GRINDER", need: (st) => st.challenges >= 10, how: "Complete 10 daily challenges" },
+  { id: "EVOLVED", need: () => Object.values(store.get("uses", {})).some((n) => n >= 50), how: "Evolve any fighter" },
+  { id: "CHAMPION", need: () => (app.profile?.champs || 0) > 0, how: "Win a tournament" },
+];
+function dayKey() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
+function todays() {
+  const key = dayKey();
+  let st = store.get("daily", null);
+  if (!st || st.day !== key) {
+    let h = 0; for (const c of key) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    const pick = []; const pool = CHALLENGE_POOL.slice();
+    for (let i = 0; i < 3; i++) { h = (h * 1103515245 + 12345) >>> 0; pick.push(pool.splice(h % pool.length, 1)[0].id); }
+    h = (h * 1103515245 + 12345) >>> 0;
+    st = { day: key, ids: pick, prog: {}, done: [], char: ROSTER[h % ROSTER.length] };
+    store.set("daily", st);
+  }
+  return st;
+}
+function chalText(c, st) { return c.text.replace("{CHAR}", CHARS[st.char].name); }
+function lifetime() { return store.get("stats", {}); }
+function bumpStat(k, n = 1) { const st = lifetime(); st[k] = (st[k] || 0) + n; store.set("stats", st); }
+const COUNTED = () => ["cpu", "local", "online", "tag"].includes(app.mode);
+function progress(id, n = 1, S) {
+  const st = todays();
+  if (!st.ids.includes(id) || st.done.includes(id)) return;
+  const c = CHALLENGE_POOL.find((x) => x.id === id);
+  st.prog[id] = (st.prog[id] || 0) + n;
+  if (st.prog[id] >= c.goal) {
+    st.done.push(id);
+    bumpStat("challenges");
+    const ch = S ? S.p[mySide()].ch : null;
+    if (ch) { // reward: +3 evolution progress + alt color for the fighter you used
+      const u = store.get("uses", {}); u[ch] = (u[ch] || 0) + 3; store.set("uses", u);
+      const alts = store.get("alts", {}); const newAlt = !alts[ch]; alts[ch] = true; store.set("alts", alts);
+      setTimeout(() => { banner("CHALLENGE COMPLETE!", `${chalText(c, st)} · +3 ${CHARS[ch].name} EVOLUTION${newAlt ? " · ALT COLOR UNLOCKED" : ""}`, "fight", 3000); sfx("ult"); }, 400);
+    }
+  }
+  store.set("daily", st);
+}
+function trackChallenge(e, S) {
+  if (!COUNTED() || !S) return;
+  const me = mySide();
+  const mine = (w) => w === me; // challenges belong to this device's player (P1 in local play)
+  switch (e.type) {
+    case "parry": if (mine(e.who)) { progress("parry10", 1, S); bumpStat("parry"); } break;
+    case "slam": if (mine(e.who)) { bumpStat("slam"); } break;
+    case "hit":
+      if (e.by === me) {
+        if (S.p[me].act?.ref?.endsWith(":slam")) progress("slam5", 1, S);
+        if (e.isThrow) { progress("throw5", 1, S); bumpStat("throw"); }
+        if (e.combo === 3) progress("combo10", 1, S);
+      }
+      break;
+    case "ex": if (mine(e.who)) progress("ex5", 1, S); break;
+    case "breaker": if (mine(e.who)) { progress("breaker2", 1, S); bumpStat("breaker"); } break;
+    case "pickup": if (mine(e.who)) progress("jackpot3", 1, S); break;
+    case "desk": if (e.who !== me) progress("desk3", 1, S); break;
+    case "smashthrough": if (e.who !== me) progress("smash1", 1, S); break;
+    case "tauntDone": if (mine(e.who)) { progress("taunt5", 1, S); bumpStat("taunt"); } break;
+    case "ko": if (e.by === me && e.perfect) progress("perfect", 1, S); if (e.by === me && S.p[me].rage) { progress("rageRound", 1, S); bumpStat("rageRound"); } break;
+    case "matchEnd":
+      if (e.winner === me) {
+        progress("win2", 1, S); bumpStat("wins");
+        if (app.mode === "tag") progress("tagWin", 1, S);
+        if (app.mode === "online") progress("onlineWin", 1, S);
+        if (S.p[me].ch === todays().char) progress("charWin", 1, S);
+        if (S.p[me].ch === "arbe" && !S.ultUsed[me]) progress("arbeClean", 1, S);
+      }
+      break;
+  }
+}
+function renderChallenges() {
+  const st = todays();
+  const now = new Date(), mid = new Date(now); mid.setHours(24, 0, 0, 0);
+  const hrs = Math.ceil((mid - now) / 3600000);
+  $("#chalReset").textContent = `new ones in ${hrs}h`;
+  $("#chalList").innerHTML = st.ids.map((id) => {
+    const c = CHALLENGE_POOL.find((x) => x.id === id), n = Math.min(c.goal, st.prog[id] || 0), done = st.done.includes(id);
+    return `<div class="cq ${done ? "done" : ""}">${escHTML(chalText(c, st))}<small>${done ? "DONE ✓" : n + "/" + c.goal}</small><div class="bar"><i style="width:${(n / c.goal) * 100}%"></i></div></div>`;
+  }).join("");
+  const lt = lifetime(), cur = store.get("title", "");
+  $("#titleList").innerHTML = TITLES.map((t) => {
+    const ok = t.need(lt);
+    return `<div class="tt ${ok ? "" : "locked"} ${cur === t.id ? "on" : ""}"><div>${escHTML(t.id)}<em>${escHTML(t.how)}</em></div>${ok ? `<button data-title="${escHTML(t.id)}">${cur === t.id ? "EQUIPPED" : "EQUIP"}</button>` : "<span class='dim'>LOCKED</span>"}</div>`;
+  }).join("");
+  $$("#titleList button").forEach((b) => b.addEventListener("click", () => {
+    store.set("title", b.dataset.title); sfx("confirm");
+    fetch("/api/profile", { method: "POST", body: JSON.stringify({ uid: uidOf(), name: myName(), title: b.dataset.title }) }).catch(() => {});
+    renderChallenges();
+  }));
+}
+
+// =====================================================================
+// Weekly tournaments (brackets stored on the server)
+// =====================================================================
+app.tSize = 4;
+$$(".tsz").forEach((b) => b.addEventListener("click", () => { app.tSize = +b.dataset.size; $$(".tsz").forEach((x) => x.classList.toggle("on", x === b)); sfx("select"); }));
+$("#btnTCreate").addEventListener("click", async () => {
+  sfx("confirm");
+  const r = await (await fetch("/api/tourney/create", { method: "POST", body: JSON.stringify({ uid: uidOf(), name: myName(), tname: $("#tName").value, size: app.tSize }) })).json().catch(() => null);
+  if (r && r.id) { app.tView = r.id; $("#tName").value = ""; loadTourneys(); }
+});
+let tourT = null;
+async function loadTourneys() {
+  clearTimeout(tourT);
+  if (app.screen !== "tourney") return;
+  try {
+    const list = await (await fetch("/api/tourney")).json();
+    $("#tList").innerHTML = list.length ? list.map((t) => `<div class="tt ${app.tView === t.id ? "on" : ""}"><div>${escHTML(t.name)}<em>${t.status === "done" ? "CHAMPION: " + escHTML(t.championName) : t.status === "running" ? "IN PROGRESS" : `OPEN · ${t.n}/${t.size} players`} · host ${escHTML(t.hostName)}</em></div><button data-tid="${escHTML(t.id)}">VIEW</button></div>`).join("")
+      : `<p class="dim" style="text-align:left">No tournaments this week. Create one — friends can join from here.</p>`;
+    $$("#tList button").forEach((b) => b.addEventListener("click", () => { app.tView = b.dataset.tid; sfx("select"); loadTourneys(); }));
+    if (app.tView) await viewTourney(app.tView);
+  } catch {}
+  tourT = setTimeout(loadTourneys, 5000);
+}
+async function viewTourney(id) {
+  const t = await (await fetch("/api/tourney/" + encodeURIComponent(id))).json();
+  if (!t || t.error) return;
+  const me = uidOf(), joined = t.players.some((p) => p.uid === me);
+  const rounds = []; for (const m of t.matches) (rounds[m.round - 1] ||= []).push(m);
+  const total = Math.log2(t.size);
+  const nameRow = (uid, name, m) => `<div class="${m.winner && m.winner === uid ? "w" : ""} ${uid === me ? "me" : ""}">${escHTML(name || "—")}${m.winner === uid ? " ✓" : ""}</div>`;
+  let html = `<h3>${escHTML(t.name)}</h3><p class="dim" style="text-align:left">${t.status === "open" ? `Waiting for players: ${t.players.map((p) => escHTML(p.name)).join(", ")} (${t.players.length}/${t.size})` : t.status === "done" ? `🏆 CHAMPION: ${escHTML(t.championName)}` : "Bracket in progress"}</p>`;
+  if (t.matches.length) {
+    html += `<div class="bracket">`;
+    for (let r = 0; r < total; r++) {
+      const ms = rounds[r] || [];
+      html += `<div class="bround"><div class="dim">${r === total - 1 ? "FINAL" : r === total - 2 ? "SEMIS" : "ROUND " + (r + 1)}</div>` +
+        (ms.length ? ms.map((m) => `<div class="bm">${nameRow(m.a, m.an, m)}${nameRow(m.b, m.bn, m)}</div>`).join("") : `<div class="bm dim">TBD</div>`) + `</div>`;
+    }
+    html += `</div>`;
+  }
+  const mine = t.matches.find((m) => !m.winner && (m.a === me || m.b === me));
+  html += `<div class="tbtns2">` +
+    (t.status === "open" && !joined ? `<button id="tJoin" class="big">JOIN</button>` : "") +
+    (t.status === "open" && joined ? `<button id="tLeave">LEAVE</button><button id="tShare">COPY INVITE</button>` : "") +
+    (mine ? `<button id="tPlay" class="big">PLAY MY MATCH (${escHTML(mine.a === me ? mine.bn : mine.an)})</button>` : "") + `</div>`;
+  $("#tView").innerHTML = html;
+  $("#tJoin")?.addEventListener("click", async () => { await fetch("/api/tourney/join", { method: "POST", body: JSON.stringify({ tid: id, uid: me, name: myName() }) }); sfx("confirm"); loadTourneys(); });
+  $("#tLeave")?.addEventListener("click", async () => { await fetch("/api/tourney/leave", { method: "POST", body: JSON.stringify({ tid: id, uid: me }) }); sfx("select"); loadTourneys(); });
+  $("#tShare")?.addEventListener("click", async () => { try { await navigator.clipboard.writeText(`${location.origin}/?tourney=${id}`); $("#tShare").textContent = "LINK COPIED!"; } catch {} });
+  $("#tPlay")?.addEventListener("click", () => { clearTimeout(tourT); app.noList = true; show("online"); joinRoom(mine.code); });
 }

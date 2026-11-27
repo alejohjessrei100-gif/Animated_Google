@@ -178,6 +178,8 @@ export function poseFor(f, S) {
     case "air": return POSES.air[f.vy < 0 ? 0 : 1];
     case "down": return POSES.down;
     case "wake": return POSES.wake[f.t < 7 ? 0 : 1];
+    case "roll": return POSES.wake[0];
+    case "taunt": { const L = INTRO[f.ch]; return L ? L[Math.floor(f.t / 12) % L.length] : POSES.win[0]; }
     case "dizzy": return POSES.dizzy[Math.floor(t / 10) % 4];
     case "parry": return f.act && f.act.parried ? POSES.parryOk : POSES.parry;
     case "win": { const L = WIN[f.ch] || POSES.win; return L[Math.floor(t / 20) % L.length]; }
@@ -263,7 +265,8 @@ function drawBall(ctx, f, c, lk, ox, oy, white) {
 }
 
 export function drawFighter(ctx, f, ox, oy, opts = {}) {
-  const c = CHARS[f.ch], lk = c.look, face = f.face;
+  const c = CHARS[f.ch], face = f.face;
+  let lk = c.look;
   if (!opts.pose && f.st === "act" && f.act) {
     const m = getMove(f.act.ref);
     if (m.anim === "roll" && f.act.t > m.startup && f.act.t <= m.startup + m.active) return drawBall(ctx, f, c, lk, ox, oy, opts.flash);
@@ -273,8 +276,10 @@ export function drawFighter(ctx, f, ox, oy, opts = {}) {
   const X = (p) => ox + f.x + p[0], Y = (p) => oy + f.y + p[1];
   const white = opts.flash;
   const col = (hex, k = 1) => (white ? "#ffffff" : k === 1 ? hex : shade(hex, k));
-  let top = lk.top, top2 = lk.top2;
+  const ALT = (hex) => (opts.alt ? hueRot(hex, 150) : hex);
+  let top = ALT(lk.top), top2 = ALT(lk.top2);
   if (c.id === "dapsay") { if (f.stance === "apsay") { top = "#6b3fc4"; top2 = "#d63848"; } else { top = "#d63848"; top2 = "#6b3fc4"; } }
+  lk = opts.alt ? { ...lk, bottom: hueRot(lk.bottom, 150), accent: hueRot(lk.accent, 150) } : lk;
   if (f.sx && f.sx.shirtless > 0) { top = lk.skin; top2 = shade(lk.skin, 0.85); } // GED's helicopter shirt
   if (f.evo) { top2 = "#ffd23f"; } // evolved: golden trims
   const skin = lk.skin, shoes = lk.shoes === "barefoot" ? lk.skin : f.evo ? "#ffd23f" : lk.shoes;
@@ -488,7 +493,7 @@ export function drawPortrait(canvas, ch, flip = false) {
   ctx.restore();
 }
 
-export function drawFull(canvas, ch, anim = 0, flip = false, evo = false) {
+export function drawFull(canvas, ch, anim = 0, flip = false, evo = false, alt = false) {
   const ctx = canvas.getContext("2d");
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -496,6 +501,20 @@ export function drawFull(canvas, ch, anim = 0, flip = false, evo = false) {
   const sc = Math.floor(canvas.height / 96);
   if (evo) { const g = ctx.createRadialGradient(canvas.width / 2, canvas.height * 0.55, 4, canvas.width / 2, canvas.height * 0.55, canvas.width * 0.6); g.addColorStop(0, "rgba(255,210,63,0.45)"); g.addColorStop(1, "rgba(255,210,63,0)"); ctx.fillStyle = g; ctx.fillRect(0, 0, canvas.width, canvas.height); }
   ctx.save(); ctx.scale(sc, sc);
-  drawFighter(ctx, f, canvas.width / sc / 2, canvas.height / sc - 6, {});
+  drawFighter(ctx, f, canvas.width / sc / 2, canvas.height / sc - 6, { alt });
   ctx.restore();
+}
+
+// hue rotation for alternate color palettes (mirror matches / unlocked alts)
+export function hueRot(hex, deg) {
+  const n = parseInt(hex.slice(1), 16); let r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+  let h = 0, s2 = 0;
+  if (d) { s2 = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h /= 6; }
+  if (s2 < 0.12) { const k = l < 0.5 ? 1.35 : 0.8; return shade(hex, k); } // greys: shift brightness instead
+  h = (h + deg / 360) % 1;
+  const q = l < 0.5 ? l * (1 + s2) : l + s2 - l * s2, p = 2 * l - q;
+  const f = (t) => { t = (t + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 0.5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+  const to = (v) => Math.round(v * 255).toString(16).padStart(2, "0");
+  return "#" + to(f(h + 1 / 3)) + to(f(h)) + to(f(h - 1 / 3));
 }

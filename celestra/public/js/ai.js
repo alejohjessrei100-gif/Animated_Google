@@ -50,6 +50,10 @@ export class AI {
     // pressing a button needs an edge: release every other frame
     const press = (bit) => { if (this.tap & bit) { this.tap &= ~bit; return 0; } this.tap |= bit; return bit; };
     this.tap &= ~(this.tap & 0); // keep
+    // combo breaker when being comboed with a full bar
+    if ((me.st === "hit" || me.st === "air") && me.meter >= 1000 && me.combo >= 2 && Math.random() < this.L.parry) return press(B.EX);
+    // tag team: swap a hurt fighter out
+    if (S.tag && me.st === "idle" && S.tagCd[this.side] <= 0 && S.bench[this.side]?.hp > me.hp * 1.4 && Math.random() < 0.02) return press(B.ST);
     // --- defense: react to an incoming attack ---
     if (op.act && op.st === "act") {
       const m = getMove(op.act.ref);
@@ -90,8 +94,12 @@ export class AI {
     // occasionally switch stance: aggressive when ahead on life, defensive when behind
     if (me.st === "idle" && Math.random() < 0.004) {
       const want = me.hp > op.hp * 1.2 ? 1 : me.hp < op.hp * 0.8 ? 2 : 0;
-      if (want !== me.pst) return press(B.ST);
+      if (want !== me.pst && !S.tag) return press(B.ST);
     }
+    // throw a turtling opponent; arm EX before a skill when the bar allows
+    if (dist < 36 && op.st === "block" && Math.random() < this.L.aggro * 0.3) return fwd | press(B.P);
+    if (me.meter >= 500 && !me.exArm && Math.random() < 0.01 * this.L.skill) return press(B.EX);
+    if (me.st === "idle" && dist > 200 && Math.random() < 0.002) return press(B.TAUNT);
     if (vuln) {
       if (dist < 44) {
         for (let i = 2; i >= 0; i--) if (ready(i) && inR(i) && Math.random() < this.L.skill) return press(B["S" + (i + 1)]);

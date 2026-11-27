@@ -26,6 +26,8 @@
             <div class="pl-name"><span class="nm">P1</span><span class="pips"></span></div>
             <div class="bar"><div class="trail"></div><div class="fill"></div><div class="tick"></div></div>
             <div class="status"></div>
+            <div class="meter" title="Super meter"><i></i><i></i></div>
+            <div class="partner hidden"><canvas width="32" height="32"></canvas><div class="pbar"><i></i></div><span class="ptag"></span></div>
           </div>
         </div>
         <div class="timer"><span>99</span><small class="rnd">R1</small></div>
@@ -35,6 +37,8 @@
             <div class="pl-name"><span class="pips"></span><span class="nm">P2</span></div>
             <div class="bar"><div class="trail"></div><div class="fill"></div><div class="tick"></div></div>
             <div class="status"></div>
+            <div class="meter" title="Super meter"><i></i><i></i></div>
+            <div class="partner hidden"><canvas width="32" height="32"></canvas><div class="pbar"><i></i></div><span class="ptag"></span></div>
           </div>
         </div>
       </div>
@@ -66,6 +70,9 @@
         <button class="mi" data-mode="online"><b>ONLINE PVP</b><i>Rooms, open lobbies, quick match</i></button>
         <button class="mi" data-mode="cpu"><b>VS CPU</b><i>Arcade fight vs AI</i></button>
         <button class="mi" data-mode="local"><b>LOCAL 2P</b><i>Shared keyboard / 2 gamepads</i></button>
+        <button class="mi" data-mode="tag"><b>TAG TEAM</b><i>2v2: pick two, swap mid-fight</i></button>
+        <button class="mi" data-mode="tourney"><b>TOURNAMENTS</b><i>Weekly brackets with friends</i></button>
+        <button class="mi" data-mode="challenges"><b>CHALLENGES</b><i>Daily goals, titles &amp; colors</i></button>
         <button class="mi" data-mode="training"><b>TRAINING</b><i>Dummy practice, HP refills</i></button>
         <button class="mi" data-mode="tutorial"><b>TUTORIAL</b><i>Learn every move step by step</i></button>
         <button class="mi" data-mode="ranks"><b>RANKINGS</b><i>Leaderboard &amp; your profile</i></button>
@@ -117,6 +124,7 @@
         <div class="mid">
           <div class="grid"></div>
           <div class="stagepick"><button class="sp-prev">◀</button><span id="stageName">STAGE</span><button class="sp-next">▶</button></div>
+          <div class="selopts"><button id="hzBtn">HAZARDS: ON</button><button id="tagRival" class="hidden">RIVAL: CPU</button></div>
 <div id="selRoom" class="hidden"><span>ROOM CODE</span><b id="selCode">-----</b><button id="selCopy">COPY INVITE LINK</button></div>
           <button id="btnReady" class="big">FIGHT!</button>
           <div class="hint sel-hint"></div>
@@ -185,6 +193,30 @@
       <button class="back">BACK</button>
     </section>
 
+    <!-- ===== CHALLENGES / TITLES ===== -->
+    <section id="challenges" class="scr scroll">
+      <h2 class="sh">CHALLENGES</h2>
+      <div class="chal">
+        <div><h3>TODAY'S CHALLENGES <small id="chalReset"></small></h3><div id="chalList"></div>
+          <p class="dim" style="text-align:left">Each one completed gives +3 evolution progress and unlocks the ALT COLOR of the fighter you finished it with.</p></div>
+        <div><h3>TITLES</h3><div id="titleList"></div></div>
+      </div>
+      <button class="back">BACK</button>
+    </section>
+
+    <!-- ===== TOURNAMENTS ===== -->
+    <section id="tourney" class="scr scroll">
+      <h2 class="sh">TOURNAMENTS</h2>
+      <div class="tour">
+        <div class="tlist">
+          <div class="tcreate"><input id="tName" maxlength="28" placeholder="TOURNAMENT NAME"><button data-size="4" class="tsz on">4</button><button data-size="8" class="tsz">8</button><button id="btnTCreate">CREATE</button></div>
+          <div id="tList"></div>
+        </div>
+        <div class="tview" id="tView"><p class="dim">Pick a tournament to see its bracket. When it's full, the bracket starts and each match gets its own room — tap PLAY MY MATCH.</p></div>
+      </div>
+      <button class="back">BACK</button>
+    </section>
+
     <!-- ===== CONTROLS (remap) ===== -->
     <section id="controls" class="scr scroll">
       <h2 class="sh">CONTROLS</h2>
@@ -217,7 +249,10 @@
           <tr><td>SKILL 2</td><td>T</td><td>I</td><td>NUM5 / O</td><td>Y</td></tr>
           <tr><td>SKILL 3 / ULTIMATE</td><td>Y</td><td>O</td><td>NUM6 / P</td><td>RB</td></tr>
           <tr><td>DASH</td><td>H or 2&times;TAP</td><td>L</td><td>NUM3 / ;</td><td>LB</td></tr>
-          <tr><td>STANCE</td><td>V</td><td>P</td><td>NUM0 / '</td><td>BACK</td></tr>
+          <tr><td>STANCE (TAG in Tag Team)</td><td>V</td><td>P</td><td>NUM0 / '</td><td>BACK</td></tr>
+          <tr><td>EX / COMBO BREAKER</td><td>E</td><td>;</td><td>NUM7 / [</td><td>RT</td></tr>
+          <tr><td>TAUNT</td><td>B</td><td>'</td><td>NUM8 / ]</td><td>LT</td></tr>
+          <tr><td>THROW</td><td colspan="4">Toward the foe + PARRY up close (beats blocking)</td></tr>
           <tr><td>DOUBLE JUMP</td><td colspan="4">Press jump again in the air</td></tr>
           <tr><td>AIR SLAM</td><td colspan="4">In the air: hold DOWN + ATTACK (dive + shockwave)</td></tr>
         </table>
@@ -227,6 +262,10 @@
           <p><b>COMBOS</b> Basic attack chains 3 hits. Land a basic, then cancel into any ready skill. Launchers pop foes airborne for juggles. Damage scales down over long combos.</p>
           <p><b>STATUS</b> BLEED / BURN tick damage &bull; STUN (dizzy, can't act) &bull; BLIND (-30% dmg) &bull; CONFUSE (left/right swap) &bull; SLOW &bull; RATTLED (-15% dmg).</p>
           <p><b>STANCES</b> Cycle with STANCE: BALANCED &bull; AGGRESSIVE (+15% dmg, faster, take +10%, tighter parry) &bull; DEFENSIVE (take -15%, no chip, wider parry, slower, -12% dmg).</p>
+          <p><b>SUPER METER</b> Fills as you deal and take damage, parry and taunt. Half a bar: press EX then a skill for a powered-up EX skill (+35% dmg). Full bar while being comboed: EX = COMBO BREAKER.</p>
+          <p><b>THROWS</b> Forward + PARRY up close. Beats blocking and parrying; attacks beat throws; throwing at the same time = THROW TECH.</p>
+          <p><b>MORE</b> RAGE under 25% HP (+10% dmg) &bull; FIRST ATTACK each round +10% &bull; hold a direction when knocked down to TECH ROLL &bull; blocking too much fills your guard gauge until it BREAKS &bull; TAUNT for meter (you're open while you do it).</p>
+          <p><b>STAGES</b> Rooftop: smash someone into the wall to break through to the street &bull; Arcade: grab JACKPOT power-ups &bull; Classroom: knock foes through desks.</p>
           <p><b>AIR</b> Double jump once per jump. DOWN + ATTACK in the air dives into a slam with a ground shockwave that knocks down.</p>
           <p><b>K.O.</b> The round-winning blow triggers a slow-motion finisher. Best of 3 rounds, 99s timer.</p>
         </div>
@@ -272,6 +311,8 @@
       <button data-bit="U" class="jmp"><span>JUMP</span></button>
       <button data-bit="DASH" class="dsh"><span>DASH</span></button>
       <button data-bit="ST" class="stc"><span>STN</span></button>
+      <button data-bit="EX" class="exb"><span>EX</span><i class="mtr"></i></button>
+      <button data-bit="TAUNT" class="tnt"><span>TAUNT</span></button>
     </div>
     <button id="tPause" class="tpause">II</button>
   </div>
