@@ -74,7 +74,7 @@ window.WORLD = (() => {
     add(new THREE.TorusGeometry(r - 0.1, 0.03, 6, 40), '#c62f36', 0, h + 0.85, 0, g).rotation.x = Math.PI / 2;
     const lad = group(0.6, 0, r + 0.12, g); for (const s of [-1, 1]) add(box(0.05, h + 0.9, 0.05), '#3b3f4a', s * 0.22, (h + 0.9) / 2, 0, lad); for (let k = 1; k < (h + 0.8) / 0.32; k++) add(box(0.44, 0.03, 0.04), '#3b3f4a', 0, k * 0.32, 0, lad);
     sign(g, [{ t: label_, c: '#c62f36' }], 0, h * 0.62, r + 0.03, 2.2, 0.55, { bg: '#f4f1e8', border: '#2b2f38', d: 0.02 }).rotation.x = 0;
-    const hatch = group(0, h + 0.42, 0, g); add(cyl(0.28, 0.28, 0.14, 20), '#7f8896', 0, 0, 0, hatch); const lid = group(0.28, 0.08, 0, hatch); add(cyl(0.3, 0.3, 0.05, 20), '#c62f36', -0.28, 0, 0, lid);
+    const hatch = group(0, h + 0.42, 0, g); add(cyl(0.28, 0.28, 0.14, 20), '#7f8896', 0, 0, 0, hatch); const lid = group(-0.28, 0.08, 0, hatch); add(cyl(0.3, 0.3, 0.05, 20), '#c62f36', 0.28, 0, 0, lid);
     Wd.tanks.push({ g, lid, hatch, x, z, h }); return g; };
   tank(-7.4, -6.5, 'SALAD OIL'); tank(-2.4, -6.0, 'SALAD OIL'); tank(2.6, -6.0, 'SALAD OIL', true); tank(7.6, -6.5, 'SALAD OIL');
   Wd.mainTank = Wd.tanks[2];
@@ -118,8 +118,8 @@ window.WORLD = (() => {
     Wd.oilChamber = add(cyl(0.32, 0.32, 1.5, 24), toon({ color: '#f4c430', roughness: 0.2, emissive: '#c89010', emissiveIntensity: 0.25 }), 0, h - 0.75, -2.6, CA);
     add(cyl(0.34, 0.34, 1.52, 24, true), M.glass, 0, h - 0.75, -2.6, CA, { noink: true });
     add(cyl(0.32, 0.32, 0.16, 20), '#7f8896', 0, h + 0.08, -2.6, CA);
-    Wd.cutLabelOil = sign(CA, [{ t: 'REAL OIL', c: '#2b1f1c' }], 1.25, h - 0.6, -1.9, 1.1, 0.4, { bg: '#f4d35e', d: 0.02 });
-    Wd.cutLabelSea = sign(CA, [{ t: 'SEAWATER', c: '#ffffff' }], -1.3, 2.0, -1.9, 1.4, 0.45, { bg: '#2a5fae', d: 0.02 });
+    Wd.cutLabelOil = sign(CA, [{ t: 'REAL OIL', c: '#2b1f1c' }], 1.25, h - 0.6, -1.78, 1.1, 0.4, { bg: '#f4d35e', d: 0.02 }); Wd.cutLabelOil.userData.mesh.renderOrder = 8;
+    Wd.cutLabelSea = sign(CA, [{ t: 'SEAWATER', c: '#ffffff' }], -1.3, 2.0, -1.78, 1.4, 0.45, { bg: '#2a5fae', d: 0.02 }); Wd.cutLabelSea.userData.mesh.renderOrder = 8;
     Wd.fish = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => fish(CA, ['#f28c28', '#f4d35e', '#e07a5f', '#3fa39a'][i % 4]));
     Wd.bubbles = []; for (let i = 0; i < 70; i++) Wd.bubbles.push(add(sph(0.05, 8, 6), toon({ color: '#e6f6ff', roughness: 0.1 }), 0, -50, 0, CA, { cast: false }));
     { const crab = group(1.4, 0.15, -2.3, CA); add(sph(0.18, 12, 8), '#c62f36', 0, 0.1, 0, crab).scale.set(1.4, 0.6, 1); for (const s of [-1, 1]) { add(sph(0.07, 8, 6), '#c62f36', s * 0.28, 0.16, 0.12, crab); add(cyl(0.015, 0.015, 0.14, 6), '#c62f36', s * 0.08, 0.26, 0.05, crab); add(sph(0.025, 6, 4), '#2b1f1c', s * 0.08, 0.34, 0.05, crab); } Wd.crab = crab; }
