@@ -7,7 +7,7 @@
   const S = STORY, FPS = S.FPS, TOTAL = location.hash === '#short' ? 45 : S.TOTAL;
   let size = null, playing = false, cur = 0, busy = false;
 
-  const setSize = (w, h) => { if (size && size[0] === w) return; size = [w, h]; ENGINE.init(gl, w, h); out.width = w; out.height = h; };
+  const setSize = (w, h) => { if (size && size[0] === w) return; size = [w, h]; ENGINE.init(gl, w, h, w >= 1080 ? 1.5 : w >= 720 ? 1.25 : 1); out.width = w; out.height = h; og.imageSmoothingEnabled = true; og.imageSmoothingQuality = 'high'; };
   const draw = (f) => {
     const F = S.frame(f); ENGINE.render(F);
     og.drawImage(gl, 0, 0, out.width, out.height);

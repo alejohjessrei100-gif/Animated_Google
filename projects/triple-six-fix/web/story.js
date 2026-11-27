@@ -61,7 +61,9 @@ window.STORY = (() => {
     const ballNum = o.ballNum || '6';
     const sway = o.still ? 0 : Math.sin(t * 1.3 + s0) * 0.012;
     const hop = o.hop ? o.hop : 0;
-    return { key: id + JSON.stringify(opts) + ballNum, x: x + sway, y: y + hop, z, s: o.s || 1, flip: o.flip, sq: o.sq || 0, roll: o.roll || 0, ground: o.ground ?? y,
+    const breath = o.still ? 0 : 0.012 * Math.sin(t * 2.3 + s0) + (opts.talk ? 0.01 * Math.sin(t * 11) : 0);
+    const lean = o.still ? 0 : 0.035 * Math.sin(t * 0.9 + s0 * 2) + (o.R && !Array.isArray(o.R) && o.R === 'point' ? 0.03 : 0);
+    return { key: id + JSON.stringify(opts) + ballNum, x: x + sway, y: y + hop, z, s: o.s || 1, flip: o.flip, sq: (o.sq || 0) + breath, roll: (o.roll || 0) + lean, ground: o.ground ?? y,
       draw: (g) => { PROPS.ballNum = ballNum; g.translate(300, 975); g.scale(1.1, 1.1); rick(g, C[id], opts); } };
   };
   const walkTo = (t, t0, t1, p0, p1) => { const u = ramp(t, t0, t1); return { p: L3(p0, p1, ease(u)), walk: u > 0 && u < 1 ? (t - t0) * 1.6 : null }; };
@@ -249,7 +251,7 @@ window.STORY = (() => {
     Wd.flyTickets.forEach((m, i) => { const r = PAINT.rng(i + 99); if (t < 41.2 || t > 45.2) { m.position.y = -50; return; } const tt = (t * (0.4 + r() * 0.3) + r()) % 1; m.position.set(-4 + r() * 6, 3.2 - tt * 3.1, -2.8 + r() * 3); m.rotation.set(t * 4 + i, t * 3, t * 2 + i); });
   };
   const livingState = (t) => { Wd.tvGlow.intensity = 2.5 + Math.sin(t * 13) * 0.6; Wd.catTail.rotation.z = Math.sin(t * 3) * 0.6; Wd.catHead.position.y = 0.28 + Math.abs(Math.sin(t * 1.5)) * 0.02; Wd.clockL.mm.rotation.z = -t * 0.8;
-    Wd.popcorn.forEach((p, i) => { const u = ((t * 0.9 + i / 18) % 1); p.position.set(53.95 + Math.sin(i * 2.1) * 0.25, 1.05 + Math.sin(u * Math.PI) * 0.35, 0.3 + Math.cos(i * 1.3) * 0.25); });
+    Wd.popcorn.forEach((p, i) => { const u = ((t * 1.3 + i / 18) % 1); const hop = i % 4 === 0 ? Math.sin(u * Math.PI) * 0.12 : 0; p.position.set(56.0 + Math.sin(i * 2.1) * 0.1, 0.6 + (i % 3) * 0.02 + hop, 0.6 + Math.cos(i * 1.3) * 0.1); });
     Wd.tvScreen.map = WORLD.screenTex || Wd.tvScreen.map; };
   const classState = (t) => { Wd.fanC.rotation.y = t * 7; Wd.clockC.mm.rotation.z = -t * 0.8; Wd.globeBall.rotation.y = t * 0.6;
     const pu = ((t - 51.2) / 2.6) % 1; Wd.plane.position.set(-47 + pu * 4.5, 2.6 - pu * 0.6 + Math.sin(pu * 7) * 0.1, -1 + pu * 2); Wd.plane.rotation.set(0, -1.2, Math.sin(pu * 7) * 0.3);
@@ -336,19 +338,19 @@ window.STORY = (() => {
     g.fillStyle = '#f4d35e'; g.font = '30px "Lilita One", Impact'; g.fillText('LIVE', 452, 360); g.fillStyle = 'rgba(255,255,255,.07)'; for (let y = 0; y < 384; y += 6) g.fillRect(0, y, 512, 2); scrTex.needsUpdate = true; };
 
   // ---------- captions (1–2 words, Lilita One, white with black outline, y≈1300) ----------
-  const CAPS = (() => { const out = []; const W = window.WORDS; for (let i = 0; i < W.length;) { const a = W[i], b = W[i + 1]; const clean = (s) => s.replace(/,(?!\d)/g, '').replace(/\.$/, '').toUpperCase(); const short = (s) => clean(s).length <= 4; if (b && short(a[0]) && clean(a[0] + b[0]).length <= 11 && !/[.?!,]$/.test(a[0]) && b[1] - a[2] < 0.25) { out.push({ t: a[1], txt: clean(a[0]) + ' ' + clean(b[0]) }); i += 2; } else { out.push({ t: a[1], txt: clean(a[0]) }); i += 1; } } out.forEach((c, k) => { c.e = k + 1 < out.length ? out[k + 1].t : END; }); return out; })();
+  const CAPS = (() => { const out = []; const W = window.WORDS; for (let i = 0; i < W.length;) { const a = W[i], b = W[i + 1]; const clean = (s) => s.replace(/,(?!\d)/g, '').replace(/\.$/, ''); const short = (s) => clean(s).length <= 4; if (b && short(a[0]) && clean(a[0] + b[0]).length <= 11 && !/[.?!,]$/.test(a[0]) && b[1] - a[2] < 0.25) { out.push({ t: a[1], txt: clean(a[0]) + ' ' + clean(b[0]) }); i += 2; } else { out.push({ t: a[1], txt: clean(a[0]) }); i += 1; } } out.forEach((c, k) => { c.e = k + 1 < out.length ? out[k + 1].t : END; }); return out; })();
   const drawCaption = (g, t, W, H) => {
     const c = CAPS.find((c) => t >= c.t && t < c.e && t < c.t + 1.2); if (!c) return;
-    const u = clamp((t - c.t) / 0.09), s = 0.88 + 0.12 * eout(u); const fs = Math.round(122 * W / 1080);
+    const u = clamp((t - c.t) / 0.09), s = 0.88 + 0.12 * eout(u); const fs = Math.round(61 * W / 1080);
     g.save(); g.translate(W / 2, H * 1300 / 1920); g.scale(s, s); g.font = `${fs}px "Lilita One", Impact, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
     let f = 1; const mw = g.measureText(c.txt).width; if (mw > W * 0.86) f = W * 0.86 / mw; g.scale(f, f);
-    g.lineJoin = 'round'; g.lineWidth = fs * 0.2; g.strokeStyle = '#000'; g.strokeText(c.txt, 0, 0); g.fillStyle = '#fff'; g.fillText(c.txt, 0, 0); g.restore();
+    g.lineJoin = 'round'; g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = fs * 0.18; g.shadowOffsetY = fs * 0.06; g.lineWidth = fs * 0.24; g.strokeStyle = '#000'; g.strokeText(c.txt, 0, 0); g.shadowColor = 'transparent'; g.fillStyle = '#fff'; g.fillText(c.txt, 0, 0); g.restore();
   };
 
   const SETSTATE = { studio: studioState, workshop: workshopState, street: streetState, living: livingState, classroom: classState, bookie: bookieState, court: courtState };
   const frame = (f) => {
     const t = f / FPS, C = camAt(t);
-    SETSTATE[C.set](t);
+    SETSTATE[C.set](t); Wd.tick(t);
     if (C.set === 'living') drawScreen(t);
     const L = { ...LIGHT[C.set] };
     let flash = 0; if (t >= 47.98 + 0.32 - 0.3 && t < 48.25) flash = 0.35 * (1 - ramp(t, 47.98, 48.25));

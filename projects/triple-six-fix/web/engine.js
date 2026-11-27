@@ -8,7 +8,23 @@ window.ENGINE = (() => {
 
   // ---------- materials ----------
   const grad = (() => { const d = new Uint8Array([120, 120, 120, 255, 205, 205, 205, 255, 255, 255, 255, 255]); const t = new THREE.DataTexture(d, 3, 1); t.minFilter = t.magFilter = THREE.NearestFilter; t.needsUpdate = true; return t; })();
-  const toon = (opts) => new THREE.MeshToonMaterial({ gradientMap: grad, ...opts });
+  // painted look: soft standard shading + a world-space brush-grain that breaks up flat colour
+  const PAINT_VS = 'varying vec3 vWP;\n';
+  const PAINT_FS = `varying vec3 vWP;
+    float ph(vec3 p){ return fract(sin(dot(p, vec3(127.1,311.7,74.7)))*43758.5453); }
+    float pn(vec3 p){ vec3 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
+      return mix(mix(mix(ph(i),ph(i+vec3(1,0,0)),f.x),mix(ph(i+vec3(0,1,0)),ph(i+vec3(1,1,0)),f.x),f.y),
+                 mix(mix(ph(i+vec3(0,0,1)),ph(i+vec3(1,0,1)),f.x),mix(ph(i+vec3(0,1,1)),ph(i+vec3(1,1,1)),f.x),f.y),f.z); }
+  `;
+  const painted = (m) => {
+    m.onBeforeCompile = (sh) => {
+      sh.vertexShader = PAINT_VS + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n  vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      sh.fragmentShader = PAINT_FS + sh.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\n  float g1 = pn(vWP * 7.0), g2 = pn(vWP * 31.0 + 3.1);\n  diffuseColor.rgb *= 0.9 + 0.12 * g1 + 0.06 * g2;');
+    };
+    m.customProgramCacheKey = () => 'painted' + (m.map ? 'm' : '') + (m.transparent ? 't' : '');
+    return m;
+  };
+  const toon = (opts) => { const o = { ...opts }; delete o.gradientMap; return painted(new THREE.MeshStandardMaterial({ roughness: 0.78, metalness: 0.0, ...o })); };
   E.toon = toon;
   const matCache = {};
   E.col = (c) => matCache[c] || (matCache[c] = toon({ color: c }));
@@ -37,7 +53,7 @@ window.ENGINE = (() => {
   const camera = new THREE.PerspectiveCamera(40, 9 / 16, 0.05, 800); E.camera = camera;
   const hemi = new THREE.HemisphereLight('#ffffff', '#ffffff', 1); scene.add(hemi);
   const sun = new THREE.DirectionalLight('#ffffff', 2); sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.03;
+  sun.shadow.mapSize.set(4096, 4096); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.025;
   scene.add(sun); scene.add(sun.target);
   const fill = new THREE.PointLight('#ffffff', 0, 30, 1.5); scene.add(fill);
   scene.fog = new THREE.Fog('#ffffff', 30, 120);
@@ -78,7 +94,7 @@ window.ENGINE = (() => {
   E.sign = (parent, lines, x, y, z, w, h, opts = {}) => {
     const g = E.group(x, y, z, parent); if (opts.ry) g.rotation.y = opts.ry; if (opts.rz) g.rotation.z = opts.rz; if (opts.rx) g.rotation.x = opts.rx;
     const tex = E.label(lines, { w: 1024, h: Math.round(1024 * h / w), ...opts });
-    const face = new THREE.MeshBasicMaterial({ map: tex, toneMapped: false });
+    const face = opts.glow ? new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }) : toon({ map: tex, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.35, roughness: 0.9 });
     const side = E.col(opts.frame || '#5a3a24');
     const m = add(new THREE.BoxGeometry(w, h, opts.d ?? 0.06), [side, side, side, side, opts.unlit === false ? toon({ map: tex }) : face, side], 0, 0, 0, g);
     g.userData.face = face; g.userData.mesh = m; return g;
@@ -123,9 +139,17 @@ window.ENGINE = (() => {
   const fsCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), fsGeo = new THREE.PlaneGeometry(2, 2);
   const fs = (mat) => { const s = new THREE.Scene(); s.add(new THREE.Mesh(fsGeo, mat)); return s; };
   const VS = `varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.,1.); }`;
-  const inkU = { col: { value: null }, nd: { value: null }, res: { value: new THREE.Vector2() }, px: { value: 2.5 }, sat: { value: 1.1 }, lift: { value: new THREE.Color(0, 0, 0) }, gain: { value: new THREE.Color(1, 1, 1) }, vig: { value: 0.18 }, flash: { value: 0 } };
+  const inkU = { col: { value: null }, nd: { value: null }, res: { value: new THREE.Vector2() }, px: { value: 2.5 }, sat: { value: 1.1 }, lift: { value: new THREE.Color(0, 0, 0) }, gain: { value: new THREE.Color(1, 1, 1) }, vig: { value: 0.18 }, flash: { value: 0 }, ao: { value: 0.55 } };
   const inkScene = fs(new THREE.ShaderMaterial({ uniforms: inkU, vertexShader: VS,
-    fragmentShader: `uniform sampler2D col, nd; uniform vec2 res; uniform float px, sat, vig, flash; uniform vec3 lift, gain; varying vec2 vUv;
+    fragmentShader: `uniform sampler2D col, nd; uniform vec2 res; uniform float px, sat, vig, flash, ao; uniform vec3 lift, gain; varying vec2 vUv;
+    float aoAt(vec2 uv){
+      vec4 c = texture2D(nd, uv); if (dot(c.rgb,c.rgb) < .01) return 0.; float d = c.a; float occ = 0.;
+      float R = 0.35 / d * res.y * 0.9;
+      for (int i=0;i<16;i++){ float fi = float(i); float r = (fi+1.)/16.; float a = fi*2.39996;
+        vec2 o = vec2(cos(a), sin(a)) * R * r / res; vec4 s = texture2D(nd, uv + o); float ds = s.a; if (ds <= 0.) continue;
+        float dz = d - ds; occ += smoothstep(0.02, 0.12, dz) * (1. - smoothstep(0.35, 0.9, dz)); }
+      return occ / 16.;
+    }
     float edgeAt(vec2 uv, float r){
       vec4 c = texture2D(nd, uv); if (dot(c.rgb,c.rgb) < .01) return 0.; float d = c.a; vec3 n = c.rgb*2.-1.;
       float e = 0.; float rr = r * clamp(4./d, .6, 1.3);
@@ -143,6 +167,7 @@ window.ENGINE = (() => {
     void main(){
       vec3 c = texture2D(col, vUv).rgb;
       float e = edgeAt(vUv, px);
+      c *= 1. - ao * aoAt(vUv);
       c = mix(c, vec3(.028,.018,.016), e);
       float l = dot(c, vec3(.299,.587,.114)); c = mix(vec3(l), c, sat);
       c = c*gain + lift;
@@ -169,9 +194,9 @@ window.ENGINE = (() => {
   const blurScene = fs(new THREE.ShaderMaterial({ uniforms: blurU, vertexShader: VS,
     fragmentShader: `uniform sampler2D src; uniform vec2 dir; varying vec2 vUv; void main(){ vec3 a = vec3(0.); float ws = 0.;
       for (int i=-12;i<=12;i++){ float x = float(i); float w = exp(-x*x/(2.*25.)); a += texture2D(src, vUv + dir*x).rgb*w; ws += w; } gl_FragColor = vec4(a/ws, 1.); }` }));
-  const finU = { src: { value: null }, glow: { value: null }, gk: { value: 0.4 }, whip: { value: new THREE.Vector2() } };
+  const finU = { src: { value: null }, glow: { value: null }, gk: { value: 0.4 }, whip: { value: new THREE.Vector2() }, seed: { value: 0 } };
   const finScene = fs(new THREE.ShaderMaterial({ uniforms: finU, vertexShader: VS,
-    fragmentShader: `uniform sampler2D src, glow; uniform float gk; uniform vec2 whip; varying vec2 vUv;
+    fragmentShader: `uniform sampler2D src, glow; uniform float gk, seed; uniform vec2 whip; varying vec2 vUv;
     void main(){
       vec3 c = vec3(0.);
       if (length(whip) > .0005) { for (int i=0;i<24;i++){ float t = float(i)/23. - .5; c += texture2D(src, vUv + whip*t).rgb; } c /= 24.; }
@@ -179,11 +204,14 @@ window.ENGINE = (() => {
       c = pow(max(c, 0.), vec3(1./2.2));
       vec3 g = texture2D(glow, vUv).rgb;
       c = 1. - (1. - c)*(1. - g*gk);
+      c = mix(c, c*c*(3.-2.*c), .22);                                  // gentle S-curve
+      float l = dot(c, vec3(.299,.587,.114)); c += (vec3(.03,.012,-.02)*smoothstep(.4,1.,l) + vec3(-.012,0.,.02)*(1.-smoothstep(0.,.45,l))); // warm highs, cool lows
+      c += (fract(sin(dot(vUv*vec2(913.,577.)+seed, vec2(12.9898,78.233)))*43758.5453)-.5)*.018; // fine film grain
       gl_FragColor = vec4(c, 1.); }` }));
   finScene.children[0].material.toneMapped = false;
 
-  E.init = (canvas, w, h) => {
-    W = w; H = h;
+  E.init = (canvas, w, h, ss = 1) => {
+    W = Math.round(w * ss); H = Math.round(h * ss);
     E.renderer = E.renderer || new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
     const r = E.renderer; r.setPixelRatio(1); r.setSize(W, H, false);
     r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -235,7 +263,7 @@ window.ENGINE = (() => {
     const fog = scene.fog; scene.fog = null; const sm = r.shadowMap.autoUpdate; r.shadowMap.autoUpdate = false;
     swapForNd(true); r.setRenderTarget(rtNd); r.setClearColor(0x000000, 0); r.clear(); r.render(scene, camera); swapForNd(false);
     scene.fog = fog; r.shadowMap.autoUpdate = sm;
-    inkU.px.value = 3.2 * W / 1080; inkU.flash.value = F.flash || 0;
+    inkU.px.value = 3.2 * W / 1080; inkU.flash.value = F.flash || 0; finU.seed.value = (F.t || 0) % 17;
     r.setRenderTarget(rtInk); r.render(inkScene, fsCam);
     dofU.focus.value = F.dof.focus; dofU.cinf.value = F.dof.cinf * W / 1080;
     r.setRenderTarget(rtDof); r.render(dofScene, fsCam);

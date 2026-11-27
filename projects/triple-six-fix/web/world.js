@@ -98,7 +98,7 @@ window.WORLD = (() => {
   add(tbox(16, 7, 0.3, 3), M.curtainBlue, 0, 3.5, -5.6, ST);
   for (const sx of [-1, 1]) { const w = add(tbox(0.3, 7, 12, 3), M.curtainBlue, sx * 8, 3.5, 0, ST); }
   // big lit sign + results board
-  Wd.bigSign = sign(ST, [{ t: 'DAILY NUMBER', c: '#ffffff' }], 0, 4.55, -5.35, 6.4, 1.3, { bg: '#c62f36', border: '#f4d35e', bulbs: true, frame: '#f4d35e', d: 0.18 });
+  Wd.bigSign = sign(ST, [{ t: 'DAILY NUMBER', c: '#ffffff' }], 0, 4.55, -5.35, 6.4, 1.3, { bg: '#c62f36', border: '#f4d35e', bulbs: true, frame: '#f4d35e', d: 0.18, glow: true });
   sign(ST, [{ t: 'PENNSYLVANIA LOTTERY', c: '#2b1f1c' }], 0, 3.65, -5.38, 4.2, 0.45, { bg: '#f4d35e', border: null, d: 0.06 });
   const digitTex = {}; const digitFor = (d, red) => { const k = d + (red ? 'r' : ''); return digitTex[k] || (digitTex[k] = label([{ t: d === '' ? '' : String(d), c: red ? '#ffefe0' : '#2b1f1c' }], { w: 256, h: 320, bg: red ? '#d42a32' : '#f7f2e4', border: '#2b1f1c', pad: 18 })); };
   Wd.board = [-1.15, 0, 1.15].map((x) => { const s = sign(ST, [''], x, 2.55, -5.35, 0.95, 1.15, { bg: '#f7f2e4', d: 0.12, frame: '#3b3f4a' }); return s; });
@@ -126,7 +126,7 @@ window.WORLD = (() => {
   Wd.stars = []; for (let i = 0; i < 16; i++) { const s = add(new THREE.ExtrudeGeometry(starShape, { depth: 0.05, bevelEnabled: false }), i % 3 ? '#f4d35e' : '#ffffff', -7 + R() * 14, 1.8 + R() * 3.6, -5.4, ST, { cast: false }); Wd.stars.push(s); if (Math.abs(s.position.x) < 3.6 && s.position.y > 1.8) s.position.x += s.position.x < 0 ? -3.6 : 3.6; }
   // calendar + keystone sign on the side wall
   Wd.cal1980 = sign(ST, [{ t: 'APRIL', c: '#c62f36' }, '1980'], -7.82, 2.6, -2.6, 1.0, 1.1, { ry: Math.PI / 2, bg: '#fbfaf4' });
-  sign(ST, [{ t: 'ON AIR', c: '#ffffff' }], 6.2, 3.4, -5.3, 1.4, 0.5, { bg: '#d42a32', frame: '#2b2f38' });
+  sign(ST, [{ t: 'ON AIR', c: '#ffffff' }], 6.2, 3.4, -5.3, 1.4, 0.5, { bg: '#d42a32', frame: '#2b2f38', glow: true });
   // confetti (3D paper bits)
   Wd.confetti = Wd.paperBits(ST, 90, ['#f4d35e', '#d42a32', '#2a5fae', '#3fa39a', '#ffffff'], [0.07, 0.05]);
   // 3D question mark
@@ -219,6 +219,7 @@ window.WORLD = (() => {
   for (let i = 0; i < 3; i++) add(box(0.5, 0.6, 0.04), ['#3d5a80', '#81b29a', '#f2cc8f'][i], -1.4 + i * 0.9, 2.1, -2.88, LV);
   Wd.cat = group(1.0, 0, 1.8, LV); add(sph(0.16, 14, 10), '#e6a23c', 0, 0.16, 0, Wd.cat).scale.set(1.5, 0.9, 0.9); Wd.catHead = add(sph(0.1, 12, 10), '#e6a23c', 0.24, 0.28, 0, Wd.cat); Wd.catTail = add(cyl(0.025, 0.02, 0.35, 6), '#e6a23c', -0.28, 0.32, 0, Wd.cat);
   sign(LV, ['HOME SWEET', 'HOME'], 0.4, 2.3, -2.88, 1.0, 0.45, { bg: '#fbfaf4' }); Wd.clockL = clock(LV, -2.3, 2.5, -2.88);
+  { const tb = group(0.9, 0, 0.6, LV); add(tbox(0.9, 0.06, 0.6), '#8a5734', 0, 0.42, 0, tb); for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(box(0.05, 0.42, 0.05), '#6a4a32', sx * 0.38, 0.21, sz * 0.24, tb); add(cyl(0.16, 0.1, 0.12, 18), '#d42a32', 0.1, 0.51, 0, tb); add(cyl(0.1, 0.1, 0.02, 10), '#fbfaf4', -0.25, 0.46, 0.1, tb); }
   Wd.popcorn = []; for (let i = 0; i < 18; i++) Wd.popcorn.push(add(sph(0.025, 6, 5), '#fff6d0', 0, -50, 0, scene, { cast: false }));
 
   // ================= BOOKIE OFFICE (x = 80) =================
@@ -251,5 +252,41 @@ window.WORLD = (() => {
   Wd.fanCt = fan(CT, 1.5, 4.1, 1); Wd.dust = []; for (let i = 0; i < 30; i++) Wd.dust.push(add(sph(0.012, 6, 4), '#fff3c4', 0, -50, 0, scene, { cast: false }));
   for (let i = 0; i < 4; i++) { const b = group(-2.4 + i * 1.6, 0, 2.6, CT); add(tbox(1.3, 0.1, 0.5), '#8a5734', 0, 0.48, 0, b); add(tbox(1.3, 0.6, 0.08), '#8a5734', 0, 0.8, 0.22, b); for (const sx of [-1, 1]) add(box(0.06, 0.48, 0.4), '#6a4a32', sx * 0.6, 0.24, 0, b); }
   Wd.clockCt = clock(CT, 3.2, 3.3, -3.48);
+  // ================= interior dressing: windows with a view, sunbeams with dust, trim =================
+  const viewTex = (kind) => { const [c, g] = cv(512, 512); const gr = g.createLinearGradient(0, 0, 0, 512); gr.addColorStop(0, kind === 'eve' ? '#ffb27a' : '#8fd0ff'); gr.addColorStop(1, kind === 'eve' ? '#ffe2b0' : '#e6f6ff'); g.fillStyle = gr; g.fillRect(0, 0, 512, 512);
+    const r = PAINT.rng(kind.length * 7); g.fillStyle = 'rgba(255,255,255,.85)'; for (let i = 0; i < 5; i++) { const x = r() * 512, y = 60 + r() * 140; for (let k = 0; k < 4; k++) { g.beginPath(); g.ellipse(x + k * 26, y + Math.sin(k) * 8, 34, 18, 0, 0, 7); g.fill(); } }
+    for (let layer = 0; layer < 2; layer++) { g.fillStyle = layer ? '#7d8fb0' : '#a8b8cf'; let x = 0; while (x < 512) { const w = 40 + r() * 70, h = 120 + r() * 140 - layer * 60; g.fillRect(x, 512 - h, w, h); if (layer) { g.fillStyle = '#ffe9a0'; for (let k = 0; k < 6; k++) g.fillRect(x + 8 + (k % 2) * 18, 512 - h + 16 + ((k / 2) | 0) * 26, 9, 12); g.fillStyle = '#7d8fb0'; } x += w + 6; } }
+    if (kind !== 'eve') { g.fillStyle = '#6fae45'; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(r() * 512, 470 + r() * 30, 40 + r() * 30, 0, 7); g.fill(); } }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+  Wd.motes = [];
+  const windowUnit = (parent, x, y, z, w, h, ry, kind = 'day', shaft = true) => {
+    const g = group(x, y, z, parent); g.rotation.y = ry; const trim = '#f3ead8';
+    add(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: viewTex(kind), toneMapped: false }), 0, 0, -0.04, g, { cast: false });
+    for (const sy of [-1, 1]) add(box(w + 0.2, 0.1, 0.12), trim, 0, sy * (h / 2 + 0.05), 0, g);
+    for (const sx of [-1, 1]) add(box(0.1, h + 0.2, 0.12), trim, sx * (w / 2 + 0.05), 0, 0, g);
+    add(box(w + 0.34, 0.07, 0.26), trim, 0, -h / 2 - 0.12, 0.08, g);
+    add(box(0.05, h, 0.06), trim, 0, 0, 0, g); add(box(w, 0.05, 0.06), trim, 0, h * 0.12, 0, g);
+    for (const sx of [-1, 1]) { const cur = add(tbox(0.32, h + 0.5, 0.06, 1), E.col(kind === 'eve' ? '#c0392b' : '#3d5a80'), sx * (w / 2 + 0.3), 0.05, 0.08, g); cur.scale.x = 1; }
+    add(cyl(0.025, 0.025, w + 1.1, 8), '#c9a24a', 0, h / 2 + 0.3, 0.1, g).rotation.z = Math.PI / 2;
+    const pot = group(w * 0.25, -h / 2 - 0.05, 0.12, g); add(cyl(0.08, 0.06, 0.14, 12), '#c0623a', 0, 0.07, 0, pot); for (let k = 0; k < 4; k++) add(sph(0.06, 8, 6), '#5f9a3c', Math.cos(k * 1.6) * 0.05, 0.18 + (k % 2) * 0.05, Math.sin(k * 1.6) * 0.05, pot);
+    if (shaft) { const len = 4.2; const sh = new THREE.Mesh(new THREE.BoxGeometry(w * 0.95, h * 0.9, len), new THREE.MeshBasicMaterial({ color: kind === 'eve' ? '#ffcf8a' : '#fff4d0', transparent: true, opacity: 0.075, depthWrite: false, blending: THREE.AdditiveBlending })); sh.position.set(0, -0.55, len / 2); sh.rotation.x = 0.32; sh.userData.ndSkip = true; sh.renderOrder = 7; g.add(sh);
+      const motes = []; for (let i = 0; i < 26; i++) { const m = add(sph(0.008, 5, 4), '#fff6d8', 0, 0, 0, g, { cast: false, noink: true }); m.userData.r = [Math.random(), Math.random(), Math.random()]; motes.push(m); } Wd.motes.push({ motes, w, h, len }); }
+    return g;
+  };
+  const trimRoom = (parent, w, d, wallZ, col = '#5a3a24') => { add(box(w, 0.14, 0.06), col, 0, 0.07, wallZ + 0.13, parent); add(box(w, 0.06, 0.05), col, 0, 1.0, wallZ + 0.13, parent); for (const sx of [-1, 1]) add(box(0.06, 0.14, d), col, sx * (w / 2 - 0.13), 0.07, 0, parent); };
+  windowUnit(WS, -3.78, 1.95, -0.6, 1.3, 1.1, Math.PI / 2); trimRoom(WS, 7.8, 6.8, -3.1, '#6a4a32');
+  for (const z of [-2.4, 0.3, 2.9]) windowUnit(CL, -4.38, 2.05, z, 1.4, 1.5, Math.PI / 2, 'day', z !== 2.9); trimRoom(CL, 8.8, 8.8, -4.1, '#7f8896');
+  windowUnit(LV, -3.38, 1.75, 1.2, 1.2, 1.2, Math.PI / 2, 'eve'); trimRoom(LV, 6.8, 5.8, -3.0, '#8a5734');
+  windowUnit(BK, 3.38, 1.85, -0.6, 1.2, 1.2, -Math.PI / 2, 'day'); trimRoom(BK, 6.8, 5.8, -3.0, '#3a2414');
+  for (const z of [-1.2, 1.6]) for (const sx of [-1, 1]) windowUnit(CT, sx * 4.38, 2.4, z, 1.0, 2.0, -sx * Math.PI / 2, 'day', sx < 0); trimRoom(CT, 8.8, 7.8, -3.6, '#3a2414');
+  // more set dressing: posters, rugs, clutter
+  sign(WS, [{ t: 'WPXI', c: '#c62f36' }, 'TV-11'], -3.78, 2.2, 1.6, 0.7, 0.5, { ry: Math.PI / 2, bg: '#fbfaf4' });
+  for (let i = 0; i < 5; i++) add(cyl(0.12, 0.12, 0.3, 14), ['#d42a32', '#2a5fae', '#f4d35e'][i % 3], -3.2 + i * 0.28, 0.15, -2.7, WS);
+  add(tbox(1.6, 0.02, 1.0), M.rug, -1.0, 0.012, 0.6, WS, { cast: false });
+  sign(LV, ['TV GUIDE'], 2.4, 0.62, 1.3, 0.3, 0.2, { rx: -Math.PI / 2, d: 0.01, bg: '#d42a32', fg: '#ffffff' });
+  sign(BK, [{ t: 'ODDS', c: '#2b1f1c' }, '4-6 = ???'], -3.38, 1.8, 0.6, 0.9, 0.6, { ry: Math.PI / 2, bg: '#f4d35e' });
+  for (let i = 0; i < 6; i++) add(tbox(0.4, 0.3, 0.3), '#8a5734', -2.8 + (i % 3) * 0.42, 0.15 + Math.floor(i / 3) * 0.3, -2.6, BK);
+  sign(CT, [{ t: 'IN GOD', c: '#f4d35e' }, { t: 'WE TRUST', c: '#f4d35e' }], 0, 3.95, -3.45, 1.6, 0.4, { bg: '#5a3a24', border: null, d: 0.02 });
+  Wd.tick = (t) => { for (const s of Wd.motes) s.motes.forEach((m, i) => { const r = m.userData.r; const u = (r[0] + t * 0.03 * (0.5 + r[1])) % 1; m.position.set((r[1] - 0.5) * s.w * 0.9 + Math.sin(t * 0.7 + i) * 0.05, -0.4 - u * 1.2 + Math.sin(t + i * 2) * 0.04, 0.4 + r[2] * s.len * 0.8); }); };
   return Wd;
 })();
