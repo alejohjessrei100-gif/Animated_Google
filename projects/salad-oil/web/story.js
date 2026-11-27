@@ -35,15 +35,21 @@ window.STORY = (() => {
   const lookAt = (t, s, base = 0) => q(clamp(base + 0.45 * Math.sin(t * 0.8 + s) + 0.25 * Math.sin(t * 2.3 + s * 3), -1, 1), 0.1);
   const talkAt = (t, ranges) => { for (const [a, b] of ranges || []) if (t >= a && t <= b) { const v = Math.sin((t - a) * 21) * 0.5 + 0.5; return v > 0.55 ? 1 : v > 0.2 ? 0.4 : 0; } return 0; };
   const pick = (t, sched) => { let v = sched[0][1]; for (const [a, x] of sched) if (t >= a) v = x; return v; };
-  const arm = (t, sched) => { let prev = sched[0][1], cur = sched[0][1], ta = -9; for (const [a, p] of sched) if (t >= a) { prev = cur; cur = p; ta = a; } const u = q(eout((t - ta) / 0.25), 0.02); return u >= 1 || prev === cur ? cur : { a: prev, b: cur, t: u }; };
+  const arm = (t, sched) => { let prev = sched[0][1], cur = sched[0][1], ta = -9; for (const [a, p] of sched) if (t >= a) { prev = cur; cur = p; ta = a; } const x = clamp((t - ta) / 0.3), u = q(1 + 2.70158 * Math.pow(x - 1, 3) + 1.70158 * Math.pow(x - 1, 2), 0.02); return x >= 1 || prev === cur ? cur : { a: prev, b: cur, t: u }; };
+  let CAMP = [0, 0, 10];
   const A = (id, t, x, y, z, o = {}) => {
     const s0 = SEED[id];
     const opts = { pose: o.pose || 'stand', expr: o.expr ? (Array.isArray(o.expr) ? pick(t, o.expr) : o.expr) : 'neutral', look: o.look ?? lookAt(t, s0, o.lookBase || 0),
       L: o.L ? (Array.isArray(o.L) ? arm(t, o.L) : o.L) : 'hang', R: o.R ? (Array.isArray(o.R) ? arm(t, o.R) : o.R) : 'hang', propL: o.propL || null, propR: o.propR || null,
       blink: !o.noBlink && blinkAt(t, s0), talk: talkAt(t, o.talk), headTilt: q(o.tilt ?? 3 * Math.sin(t * 0.9 + s0), 0.5) };
     if (o.walk != null) opts.walk = q(o.walk % 1, 0.02);
+    if (o.reach && o.reach.k > 0.001) { const r = o.reach, yaw = Math.atan2(CAMP[0] - x, CAMP[2] - z), rxv = Math.cos(yaw), rzv = -Math.sin(yaw);
+      const mpu = 2.25 / 1000 * 1.1; /* metres per rick unit */ let ux = ((r.to[0] - x) * rxv + (r.to[2] - z) * rzv) / mpu, uy = -(r.to[1] - y) / mpu; if (o.flip) ux = -ux;
+      const side = ux >= 0 ? 'R' : 'L', pose = { to: [q(ux, 2), q(uy, 2)], k: q(r.k, 0.02), from: (side === 'R' ? (typeof opts.R === 'string' ? opts.R : 'hang') : (typeof opts.L === 'string' ? opts.L : 'hang')), bend: r.bend ?? 0.16, wob: q(Math.sin(t * 9) * 6 * (1 - r.k), 1) };
+      opts[side] = pose; if (r.prop !== undefined) opts['prop' + side] = r.prop; }
+    const tb = opts.talk ? Math.abs(Math.sin(t * 10.5)) * 0.018 : 0;
     const sway = o.still ? 0 : Math.sin(t * 1.3 + s0) * 0.012, breath = o.still ? 0 : 0.012 * Math.sin(t * 2.3 + s0) + (opts.talk ? 0.01 * Math.sin(t * 11) : 0), lean = o.still ? 0 : 0.035 * Math.sin(t * 0.9 + s0 * 2);
-    return { key: id + JSON.stringify(opts), x: x + sway, y: y + (o.hop || 0), z, s: o.s || 1, flip: o.flip, sq: (o.sq || 0) + breath, roll: (o.roll || 0) + lean, ground: o.ground ?? y,
+    return { key: id + JSON.stringify(opts), x: x + sway, y: y + (o.hop || 0) + tb, z, s: o.s || 1, flip: o.flip, sq: (o.sq || 0) + breath, roll: (o.roll || 0) + lean, ground: o.ground ?? y,
       draw: (g) => { g.translate(300, 975); g.scale(1.1, 1.1); rick(g, C[id], opts); } };
   };
   const roofY = (x, z) => { const mt = { x: 2.6, z: -6.0 }; const d = Math.hypot(x - mt.x, z - mt.z); return 5.05 - 0.45 * Math.min(d, 2.06) / 2.06 + 0.03; };
@@ -175,12 +181,12 @@ window.STORY = (() => {
     const L = [];
     if (set === 'banks') {
       if (t < 2.4) {
-        L.push(A('tino', t, 50.15, 0, 0.35, { expr: [[0, 'beam'], [0.8, 'laugh'], [1.6, 'grin']], R: [[0, 'up'], [1.2, 'holdUp']], propR: t > 1.2 ? 'moneybag' : null, L: 'up', hop: Math.abs(Math.sin(t * 6)) * 0.05 }));
-        L.push(A('bank1', t, 48.7, 0.16, -3.3, { expr: [[0, 'smile'], [1.0, 'grin']], R: 'holdUp', propR: 'moneybag', L: 'wave' }));
+        L.push(A('tino', t, 50.15, 0, 0.35, { expr: [[0, 'beam'], [0.8, 'laugh'], [1.6, 'grin']], R: [[0, 'up'], [1.45, 'holdUp']], propR: t > 1.2 ? 'moneybag' : null, L: 'up', hop: Math.abs(Math.sin(t * 6)) * 0.05, reach: { to: [49.45, 1.25, -1.45], k: (eout(ramp(t, 0.85, 1.12)) - eout(ramp(t, 1.22, 1.5))), prop: t > 1.18 ? 'moneybag' : null } }));
+        L.push(A('bank1', t, 48.7, 0.16, -3.3, { expr: [[0, 'smile'], [1.0, 'grin']], R: 'holdUp', propR: t < 1.2 ? 'moneybag' : null, L: 'wave', reach: { to: [49.45, 1.25, -1.45], k: (eout(ramp(t, 0.15, 0.5)) - eout(ramp(t, 1.2, 1.55))), prop: t < 1.2 ? 'moneybag' : null } }));
         L.push(A('bank2', t, 51.6, 0.16, -3.4, { expr: 'beam', R: 'thumb', L: 'holdUp', propL: 'cash', flip: true }));
       } else {
-        [['bank1', 41.5], ['bank2', 46.0], ['bank3', 50.0], ['bank1', 54.4], ['bank2', 58.6]].forEach(([id, x], i) => L.push(A(id, t + i, x, 0.16, -3.3, { expr: i % 2 ? 'grin' : 'smile', R: [[25.9, 'hang'], [26.7 + i * 0.12, 'holdUp']], propR: 'moneybag', L: 'wave', flip: i % 2 === 1 })));
-        const w = walkTo(t, 26.0, 27.5, [44.5, 0, 0.6], [49.0, 0, 0.4]); L.push(A('tino', t, w.p[0], 0, w.p[2], { walk: w.walk, expr: 'beam', R: 'holdUp', propR: 'moneybag', L: 'holdUp', propL: 'cash' }));
+        const w = walkTo(t, 26.0, 27.5, [44.5, 0, 0.6], [49.0, 0, 0.4]);
+        [['bank1', 41.5], ['bank2', 46.0], ['bank3', 50.0], ['bank1', 54.4], ['bank2', 58.6]].forEach(([id, x], i) => { const near = clamp(1 - Math.abs(w.p[0] - x) / 3.2) * ramp(t, 26.0, 26.3); L.push(A(id, t + i, x, 0.16, -3.3, { expr: i % 2 ? 'grin' : 'smile', R: [[25.9, 'hang'], [26.7 + i * 0.12, 'holdUp']], propR: 'moneybag', L: 'wave', flip: i % 2 === 1, reach: { to: [w.p[0], 1.2, w.p[2] - 0.2], k: near * 0.95, prop: 'moneybag' } })); }); L.push(A('tino', t, w.p[0], 0, w.p[2], { walk: w.walk, expr: 'beam', R: 'holdUp', propR: 'moneybag', L: 'holdUp', propL: 'cash' }));
       }
     }
     if (set === 'farm') {
@@ -188,10 +194,10 @@ window.STORY = (() => {
       else if (t < 9.2) { const w = walkTo(t, 7.4, 9.0, [-13.6, 0, 0.95], [-12.6, 0, 1.1]); L.push(A('tino', t, w.p[0], 0, w.p[2], { walk: w.walk, expr: [[7.3, 'smile'], [8.3, 'smugsmile']], R: 'wave', L: 'hip' })); }
       else if (t < 14.0) {
         L.push(A('tino', t, 0.6, 0, -1.2, { expr: [[9.2, 'grin'], [10.64, 'beam'], [12.0, 'smugsmile']], R: [[9.2, 'hip'], [10.4, 'up'], [12.3, 'holdUp']], L: [[9.2, 'hip'], [10.6, 'up'], [12.3, 'hip']], propR: t > 12.3 ? 'cash' : null }));
-        if (t >= 11.5) { L.push(A('bank1', t, 2.2, 0, -1.6, { expr: 'smile', R: 'holdUp', propR: 'cash', L: 'hang', flip: true })); L.push(A('bank3', t, 3.3, 0, -2.3, { expr: 'grin', R: 'holdUp', propR: 'moneybag', L: 'hang', flip: true })); }
+        if (t >= 11.5) { L.push(A('bank1', t, 2.2, 0, -1.6, { expr: 'smile', R: 'holdUp', propR: 'cash', L: 'hang', flip: true, reach: { to: [1.05, 1.15, -1.3], k: (eout(ramp(t, 11.9, 12.3)) - eout(ramp(t, 12.5, 12.85))), prop: t < 12.4 ? 'cash' : null } })); L.push(A('bank3', t, 3.3, 0, -2.3, { expr: 'grin', R: 'holdUp', propR: 'moneybag', L: 'hang', flip: true, reach: { to: [1.0, 1.1, -1.25], k: (eout(ramp(t, 12.9, 13.3)) - eout(ramp(t, 13.45, 13.8))), prop: t < 13.35 ? 'moneybag' : null } })); }
       } else if (t < 18.9) {
         const lx = t < 15.0 ? 3.2 : 3.3, lz = t < 15.0 ? -3.3 : -5.55; const ly = t < 15.0 ? lerp(0, roofY(3.2, -3.9), ease(ramp(t, 14.1, 14.95))) : roofY(lx, lz);
-        L.push(A('insp1', t, lx, ly, lz, { expr: t < 15 ? 'think' : [[15.0, 'neutral'], [16.0, 'think'], [17.0, 'smirk'], [17.4, 'think']], R: t < 15 ? 'up' : [[15.0, 'point'], [16.0, 'holdUp'], [17.0, 'mouth']], propR: (t >= 15.4 && t < 15.85) || (t >= 16.7 && t < 18.9) ? 'dipstick' : null, L: t < 15 ? 'up' : 'hip', walk: t < 15 ? t * 1.4 : null, blob: false }));
+        L.push(A('insp1', t, lx, ly, lz, { expr: t < 15 ? 'think' : [[15.0, 'neutral'], [16.0, 'think'], [17.0, 'smirk'], [17.4, 'think']], R: t < 15 ? 'up' : [[15.0, 'point'], [16.0, 'holdUp'], [17.0, 'mouth']], propR: (t >= 15.4 && t < 15.85) || (t >= 16.7 && t < 18.9) ? 'dipstick' : null, reach: t >= 15.0 && t < 18.9 ? { to: [3.05, 5.75 - 0.6 * (eout(ramp(t, 15.9, 16.3)) - eout(ramp(t, 16.6, 17.0))), -5.2], k: (eout(ramp(t, 15.7, 15.88)) - eout(ramp(t, 16.68, 16.85))), bend: 0.08 } : null, L: t < 15 ? 'up' : 'hip', walk: t < 15 ? t * 1.4 : null, blob: false }));
         L.push(A('insp2', t, 2.75, roofY(2.75, -7.25), -7.25, { expr: [[14, 'bored'], [17.2, 'smirk']], R: 'hold', propR: 'clipboard', L: 'hip' }));
         if (t >= 16.7) L.push(A('tino', t, 0.4, 0, -1.6, { expr: 'nervous', R: 'mouth', L: 'hang', look: 0.5 }));
       } else if (t < 20.5) {
@@ -206,19 +212,20 @@ window.STORY = (() => {
       }
     }
     if (set === 'amex') {
-      L.push(A('exec', t, 75.0, 0.46, -2.15, { pose: 'sit', expr: t < 30.2 ? [[27.5, 'neutral'], [28.5, 'grin'], [29.6, 'smugsmile']] : [[30.2, 'smugsmile'], [30.6, 'smirk']], R: t < 30.2 ? [[27.5, 'hold'], [28.4, 'holdUp'], [28.6, 'hold'], [29.1, 'holdUp'], [29.3, 'hold']] : 'thumb', L: t < 30.2 ? 'hold' : 'hip', propL: t < 30.2 ? 'clipboard' : null }));
+      const sp = new THREE.Vector3(); Wd.stamp3D.getWorldPosition(sp);
+      L.push(A('exec', t, 75.0, 0.46, -2.15, { reach: t >= 28.2 && t < 29.9 ? { to: [sp.x, sp.y + 0.26, sp.z], k: (eout(ramp(t, 28.2, 28.4)) - eout(ramp(t, 29.65, 29.85))), prop: null, bend: 0.1 } : null, pose: 'sit', expr: t < 30.2 ? [[27.5, 'neutral'], [28.5, 'grin'], [29.6, 'smugsmile']] : [[30.2, 'smugsmile'], [30.6, 'smirk']], R: t < 30.2 ? [[27.5, 'hold'], [28.4, 'holdUp'], [28.6, 'hold'], [29.1, 'holdUp'], [29.3, 'hold']] : 'thumb', L: t < 30.2 ? 'hold' : 'hip', propL: t < 30.2 ? 'clipboard' : null }));
       if (t >= 30.2) L.push(A('insp1', t, 73.2, 0, -1.6, { expr: 'smile', R: 'thumb', L: 'hold', propL: 'clipboard' }));
     }
     if (set === 'kitchen' && t >= 36.32) {
-      L.push(A('kid1', t, t >= 37.5 ? -26.4 : -25.55, 0, t >= 37.5 ? -0.6 : -0.3, { expr: t < 36.2 ? 'grin' : [[36.2, 'beam'], [37.5, 'smugsmile']], R: t < 36.2 ? 'point' : [[36.2, 'mouth'], [37.0, 'holdUp']], propR: t >= 36.2 ? 'fork' : null, L: 'hang' }));
-      L.push(A('kid2', t, t >= 37.5 ? -26.0 : -24.75, 0, t >= 37.5 ? -0.75 : -0.3, { expr: t < 37.5 ? 'laugh' : [[37.5, 'think'], [38.0, 'shock']], R: t < 36.2 ? 'hang' : 'mouth', L: 'hip', flip: true }));
+      L.push(A('kid1', t, t >= 37.5 ? -26.4 : -25.55, 0, t >= 37.5 ? -0.6 : -0.3, { reach: t < 37.5 ? { to: [-25.08, 1.48, -1.4], k: (eout(ramp(t, 36.45, 36.75)) - eout(ramp(t, 36.95, 37.25))), prop: 'fork' } : null, expr: t < 36.2 ? 'grin' : [[36.2, 'beam'], [37.5, 'smugsmile']], R: t < 36.2 ? 'point' : [[36.2, 'mouth'], [37.0, 'holdUp']], propR: t >= 36.2 ? 'fork' : null, L: 'hang' }));
+      L.push(A('kid2', t, t >= 37.5 ? -26.0 : -24.75, 0, t >= 37.5 ? -0.75 : -0.3, { reach: t < 37.5 ? { to: [-24.92, 1.48, -1.4], k: (eout(ramp(t, 36.8, 37.05)) - eout(ramp(t, 37.2, 37.45))), prop: 'fork' } : null, expr: t < 37.5 ? 'laugh' : [[37.5, 'think'], [38.0, 'shock']], R: t < 36.2 ? 'hang' : 'mouth', L: 'hip', flip: true }));
     }
     if (set === 'exchange') {
       const panic = t >= 40.3; const spots = [['tr1', 97.4, 1.2], ['tr2', 98.9, -0.6], ['tr3', 101.1, -0.4], ['tr4', 102.8, 1.0], ['tr5', 100.0, 0.6]];
       spots.forEach(([id, x, z], i) => L.push(A(id, t + i, x + (panic ? Math.sin(t * 5 + i) * 0.08 : 0), 0, z, { expr: !panic ? 'neutral' : t < 42.24 ? (i % 2 ? 'shock' : 'nervous') : (i % 2 ? 'angry' : 'shock'), R: !panic ? 'hold' : t < 42.24 ? 'up' : 'point', propR: !panic ? 'phoneR' : 'notepad', L: panic ? 'mouth' : 'hip', hop: panic ? Math.abs(Math.sin(t * 7 + i)) * 0.06 : 0, flip: i % 2 === 1 })));
     }
     if (set === 'omaha') {
-      L.push(A('buffett', t, 125.0, 0.46, -2.15, { pose: 'sit', expr: [[43.55, 'think'], [44.3, 'smirk'], [44.66, 'grin'], [46.0, 'beam'], [47.8, 'wink']], R: [[43.55, 'holdUp'], [44.4, 'holdUp'], [44.66, 'hold'], [45.2, 'thumb'], [47.3, 'thumb']], propR: t < 44.4 ? 'newspaper' : t < 45.2 ? 'stamp' : null, L: [[43.55, 'holdUp'], [44.4, 'hang'], [46.2, 'up']], propL: t < 44.4 ? null : null }));
+      L.push(A('buffett', t, 125.0, 0.46, -2.15, { reach: t >= 44.3 && t < 45.3 ? { to: [124.75, 0.95 + 0.35 * (1 - eout(ramp(t, 44.45, 44.66))), -1.05], k: (eout(ramp(t, 44.3, 44.5)) - eout(ramp(t, 44.95, 45.2))), prop: 'stamp', bend: 0.12 } : null, pose: 'sit', expr: [[43.55, 'think'], [44.3, 'smirk'], [44.66, 'grin'], [46.0, 'beam'], [47.8, 'wink']], R: [[43.55, 'holdUp'], [44.4, 'holdUp'], [44.66, 'hold'], [45.2, 'thumb'], [47.3, 'thumb']], propR: t < 44.4 ? 'newspaper' : t < 45.2 ? 'stamp' : null, L: [[43.55, 'holdUp'], [44.4, 'hang'], [46.2, 'up']], propL: t < 44.4 ? null : null }));
     }
     return L;
   };
@@ -235,7 +242,7 @@ window.STORY = (() => {
 
   const frame = (f) => {
     const t = f / FPS, C = camAt(t);
-    SETSTATE[C.set](t); Wd.tick(t);
+    SETSTATE[C.set](t); Wd.tick(t); CAMP = C.pos;
     return { t, cam: C, light: { ...LIGHT[C.set] }, dof: dofAt(C), actors: actors(t, C.set), whip: C.whip, flash: 0, ca: caAt(t) };
   };
   const SHOTS = []; K.forEach((k, i) => { if (!i || K[i - 1].set !== k.set) SHOTS.push({ t: k.t, set: k.set }); });

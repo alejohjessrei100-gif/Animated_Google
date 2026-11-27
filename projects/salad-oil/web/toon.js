@@ -197,12 +197,21 @@ const rickBody = (g, o, opts = {}) => {
     cross: (s) => [sh(s), [s * (BW + 10), bodyTop + 110], [-s * 26, bodyTop + 96]],
     thumb: (s) => [sh(s), [s * (BW + 44), bodyTop + 80], [s * (BW + 70), bodyTop + 34]],
   };
-  const front = new Set(["hold", "chin", "mouth", "cross"]);
-  const armPts = (s, pose) => { if (pose && typeof pose === 'object') { const A = (ARM[pose.a] ?? ARM.hang)(s), B = (ARM[pose.b] ?? ARM.hang)(s), t = pose.t; return A.map((p, i) => [p[0] + (B[i][0] - p[0]) * t, p[1] + (B[i][1] - p[1]) * t]); } return (ARM[pose] ?? ARM.hang)(s); };
-  const pname = (p) => (p && typeof p === 'object' ? (p.t < 0.5 ? p.a : p.b) : p);
+  const front = new Set(["hold", "chin", "mouth", "cross", "reach"]);
+  // rubber-hose reach: {to:[x,y] (rick units, feet origin), k: 0..1 blend from the base pose, from: base pose, bend: elbow sag}
+  const reachPts = (s, pose) => { const base = (ARM[pose.from] ?? ARM.hang)(s), a = sh(s), k = pose.k ?? 1;
+    let hx = pose.to[0], hy = pose.to[1]; const dx = hx - a[0], dy = hy - a[1], d = Math.hypot(dx, dy), mx = 620; if (d > mx) { hx = a[0] + dx / d * mx; hy = a[1] + dy / d * mx; }
+    const h = [base[2][0] + (hx - base[2][0]) * k, base[2][1] + (hy - base[2][1]) * k];
+    const L = Math.hypot(h[0] - a[0], h[1] - a[1]) || 1, nx = -(h[1] - a[1]) / L, ny = (h[0] - a[0]) / L, sag = (pose.bend ?? 0.18) * L * (1 - 0.5 * Math.min(1, L / 500)) + (pose.wob || 0);
+    const m = [(a[0] + h[0]) / 2 + nx * sag * s, (a[1] + h[1]) / 2 + Math.abs(ny * sag) + 6];
+    const elbow = [base[1][0] + (m[0] - base[1][0]) * k, base[1][1] + (m[1] - base[1][1]) * k];
+    return [a, elbow, h]; };
+  const swing = (s, pts) => { if (opts.walk == null) return pts; const ph = Math.sin(2 * Math.PI * (opts.walk + (s > 0 ? 0 : 0.5))); return [pts[0], [pts[1][0] + ph * 8, pts[1][1]], [pts[2][0] + ph * 22, pts[2][1] - Math.abs(ph) * 10]]; };
+  const armPts = (s, pose) => { if (pose && typeof pose === 'object' && pose.to) return reachPts(s, pose); if (pose && typeof pose === 'object') { const A = (ARM[pose.a] ?? ARM.hang)(s), B = (ARM[pose.b] ?? ARM.hang)(s), t = pose.t; return A.map((p, i) => [p[0] + (B[i][0] - p[0]) * t, p[1] + (B[i][1] - p[1]) * t]); } const pts = (ARM[pose] ?? ARM.hang)(s); return pose === 'hang' || pose == null ? swing(s, pts) : pts; };
+  const pname = (p) => (p && typeof p === 'object' ? (p.to ? 'reach' : (p.t < 0.5 ? p.a : p.b)) : p);
   const drawArm = (s, pose0, prop) => {
     const [a, k, h] = armPts(s, pose0), pose = pname(pose0);
-    limbStroke(g, qc(a, k, h, 10), limb, limb * 0.9);
+    limbStroke(g, qc(a, k, h, pose === 'reach' ? 18 : 10), limb, limb * 0.9);
     if (prop && PROPS[prop] && prop !== "pipe") PROPS[prop](g, h[0], h[1]);
     ell(g, h[0], h[1], 10.5 * weight, 10.5 * weight, FC, 0);
     if (pose === "point") line(g, [[h[0], h[1]], [h[0] + s * 22, h[1] - 3]], 7, FC);
