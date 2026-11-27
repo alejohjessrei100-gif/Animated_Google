@@ -4,7 +4,7 @@
   const gl = document.createElement('canvas');
   const out = $('screen'), og = out.getContext('2d');
   const audio = $('mix');
-  const S = STORY, FPS = S.FPS, TOTAL = S.TOTAL;
+  const S = STORY, FPS = S.FPS, TOTAL = location.hash === '#short' ? 45 : S.TOTAL;
   let size = null, playing = false, cur = 0, busy = false;
 
   const setSize = (w, h) => { if (size && size[0] === w) return; size = [w, h]; ENGINE.init(gl, w, h); out.width = w; out.height = h; };
