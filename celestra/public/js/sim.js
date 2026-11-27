@@ -20,34 +20,37 @@ export function rnd(S) {
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
 
-function newFighter(ch, side) {
+function newFighter(ch, side, evo = false) {
   const c = CHARS[ch];
+  const hp = evo ? Math.round(c.hp * 1.08) : c.hp; // evolved form: +8% HP
   return {
+    evo: !!evo,
     ch, side, x: STAGE_W / 2 + (side === 0 ? -70 : 70), y: 0, vx: 0, vy: 0, face: side === 0 ? 1 : -1,
-    hp: c.hp, maxHp: c.hp, st: "intro", t: 0, act: null, stun: 0,
+    hp, maxHp: hp, st: "intro", t: 0, act: null, stun: 0,
     cd: [0, 0, 0], buf: { A: 0, P: 0, S1: 0, S2: 0, S3: 0, DASH: 0, U: 0, ST: 0 }, pst: 0, dj: false, slamUsed: false, prev: 0,
     tapDir: 0, tapT: 0, chainNext: false, combo: 0, juggle: 0, inv: 0, kd: false,
-    sx: { bleed: 0, bleedT: 0, burn: 0, burnT: 0, blind: 0, confuse: 0, slow: 0, rattled: 0, floaty: 0, momentum: 0, counter: 0, smoke: 0, silence: 0, sad: 0, poison: 0, poisonT: 0 },
+    sx: { bleed: 0, bleedT: 0, burn: 0, burnT: 0, blind: 0, confuse: 0, slow: 0, rattled: 0, floaty: 0, momentum: 0, counter: 0, smoke: 0, silence: 0, sad: 0, poison: 0, poisonT: 0, dark: 0, darkT: 0, shirtless: 0 },
     dizzy: 0, lastSkill: null, stance: "dap", passiveT: ch === "william" ? 240 : ch === "paulite" ? 720 : 600,
     armor: 0, flash: 0, sinceHit: 999, wallBounced: false, crouch: false, guard: false, anim: 0,
     stolen: null, talk: null, talkT: 0, wins: 0,
   };
 }
 
-export function newMatch({ chars, seed = 1, mode = "vs", stage = 0, rounds = 2 }) {
+export function newMatch({ chars, seed = 1, mode = "vs", stage = 0, rounds = 2, evo = [false, false] }) {
   const S = {
     frame: 0, rng: seed | 0, mode, stage, roundsToWin: rounds,
     phase: "intro", phaseT: 0, round: 1, timer: ROUND_TIME, hitstop: 0, slow: 0,
     shake: 0, flashT: 0, wins: [0, 0], winner: -1, matchWinner: -1, koBy: -1,
-    p: [newFighter(chars[0], 0), newFighter(chars[1], 1)],
+    p: [newFighter(chars[0], 0, evo[0]), newFighter(chars[1], 1, evo[1])],
     projs: [], zones: [], nextId: 1,
+    evo: [!!evo[0], !!evo[1]], ultUsed: [false, false], // ultUsed: once-per-match ultimates (ARB-E's bullet)
   };
   return S;
 }
 
 function resetRound(S) {
   const chars = [S.p[0].ch, S.p[1].ch], pst = [S.p[0].pst, S.p[1].pst];
-  S.p = [newFighter(chars[0], 0), newFighter(chars[1], 1)];
+  S.p = [newFighter(chars[0], 0, S.evo[0]), newFighter(chars[1], 1, S.evo[1])];
   S.p[0].pst = pst[0]; S.p[1].pst = pst[1];
   S.projs = []; S.zones = [];
   S.phase = "intro"; S.phaseT = 0; S.timer = ROUND_TIME; S.hitstop = 0; S.slow = 0; S.winner = -1; S.koBy = -1;
@@ -83,12 +86,20 @@ export function basicRef(f, i) {
 
 function emit(S, ev) { if (S._ev) S._ev.push(ev); }
 
+// skill slot -> move ref (ARB-E's ultimate changes once his single bullet is spent)
+function skillRef(S, f, i) {
+  const c = CHARS[f.ch];
+  if (i === 3 && c.ultAfter && S.ultUsed[f.side]) return f.ch + ":" + c.ultAfter;
+  return f.ch + ":s" + i;
+}
+export function currentSkillRef(S, f, i) { return skillRef(S, f, i); }
+
 function startMove(S, f, op, ref, opts = {}) {
   const m = getMove(ref);
   f.act = { ref, t: 0, hits: 0, last: -99, hit: false, parried: false, src: opts.src || null };
   f.st = "act"; f.t = 0; f.chainNext = false;
   if (m.skill && !opts.free) {
-    f.cd[m.skill - 1] = m.cd;
+    f.cd[m.skill - 1] = f.evo && m.skill === 3 ? Math.round(m.cd * 0.85) : m.cd; // evolved: faster ultimate
     if (CHARS[f.ch].moves["s" + m.skill] === m) f.lastSkill = ref;
   }
   if (m.stance && f.ch === "dapsay") f.stance = m.stance;
@@ -178,6 +189,22 @@ const HOOKS = {
     },
     onHit(S, f, op) { if (f.act && f.act.ref === "acar:s3") f.cd[0] = 0; },
   },
+  lastBullet: {
+    frame(S, f, op) {
+      if (f.act.t === 2) emit(S, { type: "aim", who: f.side });
+      if (f.act.t === 32) { S.ultUsed[f.side] = true; S.shake = Math.max(S.shake, 10); emit(S, { type: "gunshot", who: f.side, x: f.x + f.face * 30, y: f.y - 58 }); }
+    },
+  },
+  heli: {
+    frame(S, f, op) {
+      if (f.act.t === 14) {
+        f.sx.shirtless = 720;
+        S.zones = S.zones.filter((z) => !(z.kind === "paper" && z.owner === f.side));
+        S.zones.push({ id: S.nextId++, kind: "paper", owner: f.side, x: f.x, y: 0, w: 150, t: 0, life: 720 });
+        emit(S, { type: "shirt", who: f.side });
+      }
+    },
+  },
   slam: {
     frame(S, f, op) {
       const a = f.act;
@@ -266,7 +293,7 @@ function applyHit(S, a, d, m, opt = {}) {
   const hx = opt.x ?? (a.x + d.x) / 2, hy = opt.y ?? d.y - 44;
 
   // --- PARRY ---
-  if (d.st === "parry" && d.act && !d.act.parried && d.act.t >= 1 && d.act.t <= PARRY.window + STANCES[d.pst].parry && !m.unblock) {
+  if (d.st === "parry" && d.act && !d.act.parried && d.act.t >= 1 && d.act.t <= PARRY.window + STANCES[d.pst].parry + (d.ch === "ged" ? 2 : 0) && (!m.unblock || m.parryable)) {
     d.act.parried = true; d.act.t = PARRY.window; // jump to success
     d.sx.counter = PARRY.counter; d.inv = 8;
     S.hitstop = Math.max(S.hitstop, 12); S.shake = Math.max(S.shake, 4);
@@ -318,7 +345,9 @@ function applyHit(S, a, d, m, opt = {}) {
   mult *= STANCES[a.pst].dmg * STANCES[d.pst].taken;
   if (d.ch === "dap") mult *= 0.9;
   if (a.ch === "jog" && d.sx.silence > 0) mult *= 1.15;
-  const dmg = Math.max(1, Math.round(base * mult));
+  mult *= 1 - a.sx.dark / 1000; // ARB-E's Dark Aura: -0.1% attack per second spent in it
+  let dmg = Math.max(1, Math.round(base * mult));
+  if (m.pctCur) dmg = Math.max(1, Math.round(d.hp * m.pctCur)); // % of the target's CURRENT health
   d.hp -= dmg; d.combo += 1; d.sinceHit = 0; d.flash = 5;
   d.act = null; d.chainNext = false; d.armor = 0;
   if (d.ch === "jiross") d.sx.momentum = Math.max(0, d.sx.momentum - 2);
@@ -471,7 +500,7 @@ function neutral(S, f, op, raw, fwdBit, backBit, dashReq, cancel) {
   if (f.sx.silence > 0) { f.buf.S1 = f.buf.S2 = f.buf.S3 = 0; }
   for (let i = 3; i >= 1; i--) {
     const k = "S" + i;
-    if (f.buf[k] && f.cd[i - 1] <= 0 && grounded(f)) { f.buf[k] = 0; startMove(S, f, op, f.ch + ":s" + i); return; }
+    if (f.buf[k] && f.cd[i - 1] <= 0 && grounded(f)) { f.buf[k] = 0; startMove(S, f, op, skillRef(S, f, i)); return; }
   }
   if (f.buf.A) { f.buf.A = 0; if (grounded(f)) startMove(S, f, op, basicRef(f, 0)); return; }
   if (cancel) return;
@@ -536,7 +565,7 @@ function stepAct(S, f, op, raw) {
   // hit-confirm cancel: basic -> skill
   if (!m.skill && a.hit && a.t >= activeEnd && f.sx.silence <= 0) {
     for (let i = 3; i >= 1; i--) {
-      if (f.buf["S" + i] && f.cd[i - 1] <= 0) { f.buf["S" + i] = 0; startMove(S, f, op, f.ch + ":s" + i); return; }
+      if (f.buf["S" + i] && f.cd[i - 1] <= 0) { f.buf["S" + i] = 0; startMove(S, f, op, skillRef(S, f, i)); return; }
     }
   }
   // air move landing
@@ -634,6 +663,12 @@ function stepZones(S) {
       }
     } else if (z.kind === "antigrav") {
       if (inside) { tgt.sx.floaty = 2; tgt.sx.slow = 2; if (z.t % 30 === 0) dot(S, tgt, 7, "gravity"); }
+    } else if (z.kind === "paper") {
+      if (owner.hp > 0) z.x = owner.x; // the storm follows GED
+      if (z.t % 240 === 0 && S.phase === "fight") {
+        emit(S, { type: "leavepass", who: z.owner, x: z.x });
+        if (inside) dot(S, tgt, Math.max(1, Math.round(tgt.maxHp * 0.025)), "paper");
+      }
     } else if (z.kind === "stink") {
       if (inside) { tgt.sx.poison = Math.max(tgt.sx.poison, 40); tgt.sx.slow = 2; }
     } else if (z.kind === "smoke") {
@@ -688,7 +723,7 @@ function stepProjs(S) {
 // ---------------- status ticks & passives ----------------
 function stepStatus(S, f, op) {
   const s = f.sx;
-  for (const k of ["blind", "confuse", "slow", "rattled", "floaty", "counter", "smoke", "silence", "sad"]) if (s[k] > 0) s[k]--;
+  for (const k of ["blind", "confuse", "slow", "rattled", "floaty", "counter", "smoke", "silence", "sad", "shirtless"]) if (s[k] > 0) s[k]--;
   if (s.poison > 0) {
     s.poison--; s.poisonT++;
     if (s.poisonT % 30 === 0) dot(S, f, 5, "poison");
@@ -724,6 +759,8 @@ function stepStatus(S, f, op) {
       if (canAct(f) && op.hp > 0) { f.passiveT = 720; tellJoke(S, f, op, 120, 170); }
       else f.passiveT = 30;
     }
+  } else if (f.ch === "arbe") {
+    if (Math.abs(op.x - f.x) < 72 && op.hp > 0) { op.sx.darkT++; if (op.sx.darkT % 60 === 0) op.sx.dark = Math.min(300, op.sx.dark + 1); }
   } else if (f.ch === "johan") {
     if (Math.abs(op.x - f.x) < 58 && op.hp > 0) op.sx.poison = Math.max(op.sx.poison, 30);
   } else if (f.ch === "william") {

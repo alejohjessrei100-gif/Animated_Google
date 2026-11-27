@@ -297,9 +297,50 @@ export const CHARS = {
       s3: D({ name: "Avalanche", skill: 3, ult: true, cd: 1020, startup: 14, active: 44, recovery: 22, dmg: 46, hs: 26, kb: [2, -2], rehit: 8, maxHits: 4, finalKb: [9, -7], wallBounce: true, armor: [1, 58], box: [-16, -40, 46, 40], stop: 7, vel: [[14, 58, 6.8]], fx: { poison: 240 }, anim: "roll", sfx: "slam", heavy: true, desc: "Giant ARMORED boulder rampage — 4 hits, poisons, launches." }),
     },
   },
+  arbe: {
+    id: "arbe", name: "ARB-E", title: "Last-Bullet Enforcer", color: "#c8283c",
+    hp: 1060, walk: 1.5, back: 1.3, jump: 5.8, scale: 1.0, hurtH: 68,
+    voice: "am_eric",
+    look: { skin: "#d8a982", hair: "#141016", hairStyle: "bowl", top: "#24232b", top2: "#3a3842", bottom: "#17161c", shoes: "#0e0d12", accent: "#c8283c", prop: "rifle", bodyW: 9, upper: 6, scarf: "#c8283c" },
+    passive: { name: "Dark Aura", desc: "Foes standing in his aura lose 0.1% attack for every second they stay in it (lasts the round)." },
+    basic: ["b1", "b2", "b3"], air: "air", ultAfter: "s3b",
+    moves: {
+      b1: jab({ name: "Muzzle Jab", anim: "batpoke", sfx: "bat", box: [8, -60, 34, 12] }),
+      b2: cross({ name: "Stock Strike", anim: "batswing", sfx: "bat", box: [6, -62, 36, 20] }),
+      b3: fin({ name: "Rifle Smash", anim: "batover", sfx: "heavybat", box: [8, -70, 40, 50], dmg: 58, kb: [5, -1] }),
+      air: air({ name: "Butt Drop", anim: "airbat", sfx: "bat" }),
+      s1: D({ name: "Stock Uppercut", skill: 1, cd: 390, startup: 10, active: 5, recovery: 22, dmg: 64, hs: 40, kb: [1.5, -7.2], launch: true, box: [6, -76, 30, 54], stop: 9, anim: "batterup", sfx: "heavybat", heavy: true, desc: "Rifle-stock launcher into a juggle." }),
+      s2: D({ name: "Bayonet Lunge", skill: 2, cd: 450, startup: 12, active: 10, recovery: 20, dmg: 74, hs: 26, kb: [6, -1.5], box: [10, -60, 40, 18], stop: 9, vel: [[12, 21, 6.2]], anim: "batpoke", sfx: "slash", heavy: true, desc: "Charging bayonet thrust across half the stage." }),
+      s3: D({ name: "Last Bullet", skill: 3, ult: true, kind: "proj", cd: 600, startup: 32, active: 1, recovery: 30, hook: "lastBullet", anim: "aim", sfx: "gunshot",
+        proj: [{ at: 32, kind: "bullet", vx: 16, y: -58, w: 26, h: 4, life: 60, pctCur: 0.5, hs: 34, kb: [6, -3], lvl: "M", stop: 18, unblock: true, parryable: true }],
+        desc: "ONCE PER MATCH: one rifle shot that takes HALF the foe's current health. Duck it or parry it! After that, this button is Rifle Fury." }),
+      s3b: D({ name: "Rifle Fury", skill: 3, cd: 600, startup: 12, active: 22, recovery: 22, dmg: 26, hs: 20, kb: [1, 0], rehit: 5, maxHits: 4, finalKb: [7, -4], box: [4, -66, 42, 46], stop: 5, anim: "xslash", sfx: "heavybat", desc: "Out of ammo: a 4-hit rifle-butt beating." }),
+    },
+  },
+
+  ged: {
+    id: "ged", name: "GED", title: "Hall-Pass Helicopter", color: "#f2f2f2",
+    hp: 1040, walk: 1.55, back: 1.3, jump: 5.8, scale: 1.0, hurtH: 68,
+    voice: "am_santa",
+    look: { skin: "#e8b991", hair: "#2a2220", hairStyle: "neat", top: "#f4f4f6", top2: "#d8d8e2", bottom: "#3a4256", shoes: "#5a4a3a", accent: "#7aa7ff", prop: "none", bodyW: 10, belly: 4, glasses: true },
+    passive: { name: "Dad Reflexes", desc: "Parry window is 2 frames wider." },
+    basic: ["b1", "b2", "b3"], air: "air",
+    moves: {
+      b1: jab({ name: "Clipboard Tap", anim: "palm" }),
+      b2: cross({ name: "Dad Slap", anim: "backhand" }),
+      b3: fin({ name: "Belly Bump", anim: "push", dmg: 54, kb: [7, -1] }),
+      air: air({ name: "Dad Drop", anim: "airknee" }),
+      s1: D({ name: "Detention Slip", skill: 1, kind: "proj", cd: 300, startup: 10, active: 1, recovery: 14, anim: "throw", sfx: "disc",
+        proj: [{ at: 10, kind: "paperplane", vx: 4.6, vy: -0.4, y: -64, w: 14, h: 8, life: 120, dmg: 44, hs: 20, kb: [2, -1], lvl: "M", stop: 4, fx: { slow: 90 } }],
+        desc: "Throws a paper-plane detention slip that SLOWS." }),
+      s2: D({ name: "Hallway Charge", skill: 2, cd: 420, startup: 11, active: 12, recovery: 20, dmg: 70, hs: 26, kb: [8, -2], wallBounce: true, armor: [1, 22], box: [0, -58, 34, 48], stop: 10, vel: [[11, 23, 5.4]], anim: "shoulder", sfx: "heavy", heavy: true, desc: "ARMORED dad-bod charge that wall-bounces." }),
+      s3: D({ name: "No Leave Pass!", skill: 3, ult: true, cd: 1080, startup: 14, active: 40, recovery: 18, dmg: 22, hs: 20, kb: [1.2, 0], rehit: 8, maxHits: 5, finalKb: [6, -5], box: [-26, -70, 52, 60], stop: 4, vel: [[14, 54, 1.4]], hook: "heli", anim: "heli", sfx: "cast",
+        desc: "Whips his shirt off and helicopter-spins, then a paper storm follows him for 12s: every 4s it rains paper — 'NO LEAVE PASS!' — for 2.5% of the foe's health." }),
+    },
+  },
 };
 
-export const ROSTER = ["jiross", "lian", "dumdum", "gayle", "dapsay", "william", "tanoy", "acar", "apsay", "dap", "jog", "jaguilar", "paulite", "johan"];
+export const ROSTER = ["jiross", "lian", "dumdum", "gayle", "dapsay", "william", "tanoy", "acar", "apsay", "dap", "jog", "jaguilar", "paulite", "johan", "arbe", "ged"];
 
 // moves every fighter shares
 export const COMMON = {

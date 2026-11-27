@@ -120,6 +120,8 @@ const A = {
   fusion: { s: P({ hd: 10, tor: 20, flu: 60, flk: -110, blu: 40, blk: -110 }), a: [P({ hy: -32, tor: -82, hed: 20, flu: 92, flk: 0, blu: 88, blk: 0, fu: -120, fe: 20, bu: -140, be: 20 })], r: P({ hd: 10, tor: 20, flu: 50, flk: -90 }) },
 };
 
+A.aim = { s: P({ fu: 88, fe: 4, bu: 80, be: 30, tor: 4, hed: 2, flu: 26, flk: -24, blu: -20, blk: 10 }), a: [P({ fu: 92, fe: 2, bu: 82, be: 28, tor: -10, hed: -4, flu: 22, flk: -20, blu: -26, blk: 12 })], r: P({ fu: 110, fe: -10, bu: 100, be: 10, tor: -14, hed: -8 }) };
+A.heli = { s: P({ fu: 175, fe: 0, bu: 170, be: 0, tor: -4, hed: -10 }), a: [P({ fu: 178, fe: 0, bu: 20, be: 60, tor: 0, hed: -6, flu: 20, flk: -20 }), P({ fu: 176, fe: 0, bu: 60, be: 90, tor: 4, hed: -6, flu: 10, flk: -10 })], r: P({ fu: 120, fe: 20, bu: 30, be: 80 }) };
 A.chairswing = A.batswing; A.chairover = A.batover; A.beam = A.cast;
 A.roll = { s: P({ hd: 14, tor: 50, hed: 30, fu: 60, fe: 130, bu: 50, be: 130, flu: 90, flk: -140, blu: 70, blk: -140 }), a: [P({})], r: P({ hd: 10, tor: 30, flu: 60, flk: -100, blu: 30, blk: -100 }) };
 
@@ -137,6 +139,7 @@ const POINT = P({ fu: 100, fe: -6, tor: -4, hed: -8, bu: 20, be: 60 });
 const ARMS_X = P({ fu: 80, fe: 150, bu: 80, be: 150, tor: -6, hed: -8 });
 const CHEER = P({ fu: 175, fe: 0, bu: 170, be: 0, tor: -6, hed: -12, hd: -2 });
 const INTRO = {
+  arbe: [A.aim.s, A.aim.a[0]], ged: [P({ fu: 30, fe: 120, bu: 25, be: 90, tor: -8, hed: -6 }), A.palm.a[0]],
   jiross: [ARMS_X, POINT], lian: [A.throw.s, A.spin.a[0]], dumdum: [A.xslash.s, A.xslash.a[1]],
   gayle: [P({ fu: 160, fe: -40, bu: 150, be: -30, tor: -6 }), A.batpoke.a[0]], dapsay: [A.kick.a[0], A.jab.a[0]],
   william: [{ ...A.cast2.a[0], lift: 8 }, { ...A.cast.a[0], lift: 6 }], tanoy: [A.exhale.s, A.exhale.a[0]],
@@ -146,6 +149,7 @@ const INTRO = {
   johan: [P({ fu: 165, fe: 20, tor: -4 }), P({ fu: 150, fe: -15, tor: -4 })],
 };
 const WIN = {
+  arbe: [A.aim.r, ARMS_X], ged: [A.heli.a[0], A.heli.a[1]],
   jiross: [POINT, ARMS_X], lian: [CHEER, A.spin.a[1]], dumdum: [A.xslash.a[0], ARMS_X],
   gayle: [P({ fu: 175, fe: 0, bu: 170, be: 0, tor: -8, hed: -10 }), A.homerun.a[0]], dapsay: [A.highkick.a[0], CHEER],
   william: [{ ...CHEER, lift: 12 }, { ...A.cast2.a[0], lift: 14 }], tanoy: [A.exhale.a[0], ARMS_X],
@@ -271,7 +275,9 @@ export function drawFighter(ctx, f, ox, oy, opts = {}) {
   const col = (hex, k = 1) => (white ? "#ffffff" : k === 1 ? hex : shade(hex, k));
   let top = lk.top, top2 = lk.top2;
   if (c.id === "dapsay") { if (f.stance === "apsay") { top = "#6b3fc4"; top2 = "#d63848"; } else { top = "#d63848"; top2 = "#6b3fc4"; } }
-  const skin = lk.skin, shoes = lk.shoes === "barefoot" ? lk.skin : lk.shoes;
+  if (f.sx && f.sx.shirtless > 0) { top = lk.skin; top2 = shade(lk.skin, 0.85); } // GED's helicopter shirt
+  if (f.evo) { top2 = "#ffd23f"; } // evolved: golden trims
+  const skin = lk.skin, shoes = lk.shoes === "barefoot" ? lk.skin : f.evo ? "#ffd23f" : lk.shoes;
   const bw = lk.bodyW;
   // body-shape knobs: limb (+thickness), upper (boulder chest), thinLegs, belly
   const armR = 3 + (lk.limb || 0) + (lk.upper ? 2 : 0), foreR = 2 + (lk.limb || 0) + (lk.upper ? 1 : 0);
@@ -329,6 +335,10 @@ export function drawFighter(ctx, f, ox, oy, opts = {}) {
   partPair(ctx, X(fE), Y(fE), X(fW), Y(fW), armR, foreR, col(skin));
   disc(ctx, X(fW), Y(fW), foreR, col(skin, 1.08));
   drawProp(ctx, f, lk, fW, fD, X, Y, false, pose, white);
+  if (f.st === "act" && f.act && f.act.ref === "ged:s3" && f.act.t > 10) { // shirt rotor
+    const cx = X(fW), cy = Y(fW) - 2, a = f.anim * 0.9;
+    for (const k of [0, Math.PI]) { const ex2 = cx + Math.cos(a + k) * 18, ey2 = cy + Math.sin(a + k) * 4; capsule(ctx, cx, cy, ex2, ey2, 3, 2, OUT); capsule(ctx, cx, cy, ex2, ey2, 2, 1, "#f4f4f6"); }
+  }
 
   return { hand: [X(fW), Y(fW)], foot: [X(fF), Y(fF)], head: [X(sk.Hd), Y(sk.Hd)], chest: [mx, my] };
 }
@@ -368,6 +378,7 @@ function drawHead(ctx, x, y, face, ang, lk, c, f, white) {
     case "neat": fl(-7, -8, 14, 4); fl(-8, -5, 3, 5); fl(0, -9, 6, 2); break;
     case "messy": fl(-7, -9, 14, 5); fl(-8, -5, 4, 6); fl(2, -10, 2, 2); fl(-4, -11, 2, 2); fl(5, -6, 2, 2); break;
     case "buzz": fl(-7, -7, 14, 3); fl(-7, -5, 2, 4); break;
+    case "bowl": fl(-8, -9, 16, 6); fl(-9, -4, 4, 10); fl(-1, -4, 9, 2); fl(5, -3, 3, 6); break;
     case "flat": fl(-7, -8, 15, 4); fl(-8, -5, 3, 6); fl(2, -5, 6, 1); break;
     case "sidepart": fl(-7, -8, 14, 3); fl(-8, -5, 3, 6); fl(-2, -6, 9, 2); fl(4, -4, 3, 1); ctx.fillStyle = white ? "#fff" : shade(lk.skin, 0.9); fl(-3, -8, 1, 2); break;
     case "short": fl(-7, -8, 14, 4); fl(-8, -5, 3, 7); fl(1, -5, 5, 1); fl(-6, -10, 2, 2); break;
@@ -383,6 +394,16 @@ function drawHead(ctx, x, y, face, ang, lk, c, f, white) {
   else { ctx.fillRect(ex, y - 2, 2, 3); ctx.fillStyle = white ? "#fff" : "#ffffff"; ctx.fillRect(ex + (face === 1 ? 1 : 0), y - 2, 1, 1); }
   ctx.fillStyle = white ? "#fff" : OUT; ctx.fillRect(ex - (face === 1 ? 1 : 0), y - 4, 3, 1);
   ctx.fillStyle = white ? "#fff" : shade(lk.skin, 0.55); ctx.fillRect(face === 1 ? x + 2 : x - 4, y + 4, 3, 1);
+  if (lk.scarf) { // big scarf over the mouth, tail flapping behind
+    const sc = white ? "#fff" : lk.scarf, sd = white ? "#fff" : shade(lk.scarf, 0.7);
+    ctx.fillStyle = OUT; ctx.fillRect(x - 8, y + 1, 17, 8);
+    ctx.fillStyle = sc; ctx.fillRect(x - 7, y + 2, 15, 6);
+    ctx.fillStyle = sd; ctx.fillRect(x - 7, y + 5, 15, 1);
+    const wv = Math.round(Math.sin(f.anim * 0.25) * 2);
+    ctx.fillStyle = OUT; ctx.fillRect(face === 1 ? x - 16 : x + 7, y + 3 + wv, 10, 5);
+    ctx.fillStyle = sc; ctx.fillRect(face === 1 ? x - 15 : x + 8, y + 4 + wv, 8, 3);
+  }
+  if (f.evo && !white && (f.anim >> 3) % 3 !== 0) { ctx.fillStyle = "#ffe14d"; ctx.fillRect(ex, y - 2, 2, 2); }
   if (lk.nose === "big") { ctx.fillStyle = white ? "#fff" : OUT; ctx.fillRect(face === 1 ? x + 7 : x - 9, y - 1, 3, 4); ctx.fillStyle = white ? "#fff" : shade(lk.skin, 0.95); ctx.fillRect(face === 1 ? x + 7 : x - 9, y - 1, 2, 3); }
   if (lk.acne && !white) { ctx.fillStyle = "#c83a3a"; for (let i = 0; i < lk.acne; i++) { const ax = ((i * 37) % 9) - 3, ay = ((i * 53) % 7) - 2; ctx.fillRect(x + face * ax, y + ay + 1, 1, 1); } }
   if (lk.glasses || lk.prop === "glasses") {
@@ -407,6 +428,14 @@ function drawProp(ctx, f, lk, W, d, X, Y, isBack, pose, white) {
     capsule(ctx, x, y, ex, ey, 1, 2, white ? "#fff" : "#c98a4b");
     disc(ctx, ex, ey, 2, white ? "#fff" : "#e0a868");
     ctx.fillStyle = white ? "#fff" : "#3a2414"; ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
+  } else if (lk.prop === "rifle" && !isBack) {
+    const ax = d[0], ay = d[1], px = -ay, py = ax;
+    const tip = 30, butt = -10;
+    const bx = x + ax * butt, by = y + ay * butt, tx = x + ax * tip, ty = y + ay * tip;
+    capsule(ctx, bx, by, tx, ty, 2, 1, OUT);
+    capsule(ctx, bx, by, x + ax * 6, y + ay * 6, 2, 2, white ? "#fff" : "#4a3524"); // stock
+    capsule(ctx, x + ax * 6, y + ay * 6, tx, ty, 1, 1, white ? "#fff" : "#2a2a30"); // barrel
+    capsule(ctx, x + ax * 10 + px * 2, y + ay * 10 + py * 2, x + ax * 12 + px * 6, y + ay * 12 + py * 6, 1, 1, white ? "#fff" : "#2a2a30"); // magazine
   } else if (lk.prop === "blades") {
     const ax = d[0], ay = d[1];
     const ex = x + ax * 9, ey = y + ay * 9;
@@ -459,12 +488,13 @@ export function drawPortrait(canvas, ch, flip = false) {
   ctx.restore();
 }
 
-export function drawFull(canvas, ch, anim = 0, flip = false) {
+export function drawFull(canvas, ch, anim = 0, flip = false, evo = false) {
   const ctx = canvas.getContext("2d");
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const f = { ch, x: 0, y: 0, face: flip ? -1 : 1, st: "idle", anim, stance: "dap", sx: {} };
+  const f = { ch, x: 0, y: 0, face: flip ? -1 : 1, st: "idle", anim, stance: "dap", sx: {}, evo };
   const sc = Math.floor(canvas.height / 96);
+  if (evo) { const g = ctx.createRadialGradient(canvas.width / 2, canvas.height * 0.55, 4, canvas.width / 2, canvas.height * 0.55, canvas.width * 0.6); g.addColorStop(0, "rgba(255,210,63,0.45)"); g.addColorStop(1, "rgba(255,210,63,0)"); ctx.fillStyle = g; ctx.fillRect(0, 0, canvas.width, canvas.height); }
   ctx.save(); ctx.scale(sc, sc);
   drawFighter(ctx, f, canvas.width / sc / 2, canvas.height / sc - 6, {});
   ctx.restore();

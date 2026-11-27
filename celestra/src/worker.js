@@ -30,7 +30,7 @@ export default {
     const p = url.pathname;
     if (p === "/api/new") return json({ code: newCode() });
     // hub: profiles, leaderboard, replays, feedback, open rooms
-    if (/^\/api\/(profile|leaderboard|rooms|replay|feedback)(\/|$)/.test(p)) {
+    if (/^\/api\/(profile|leaderboard|rooms|replay|feedback|use)(\/|$)/.test(p)) {
       const hub = env.HUB.get(env.HUB.idFromName("hub"));
       const u = new URL(req.url); u.pathname = p.replace("/api", "");
       if (p.startsWith("/api/feedback") && req.method === "GET" && u.searchParams.get("key") !== env.ADMIN_KEY) return json({ error: "forbidden" }, 403);
@@ -132,7 +132,7 @@ export class Room extends DurableObject {
   }
   roomState(except) {
     const socks = this.sockets(except);
-    const players = socks.map((ws) => (ws ? (({ name, char, ready }) => ({ name, char, ready, here: true }))(ws.deserializeAttachment()) : null));
+    const players = socks.map((ws) => (ws ? (({ name, char, ready, evo }) => ({ name, char, ready, evo: !!evo, here: true }))(ws.deserializeAttachment()) : null));
     return { t: "room", players, stage: this._meta?.stage || 0, phase: this._meta?.phase || "select" };
   }
   broadcast(o, except) {
@@ -159,7 +159,7 @@ export class Room extends DurableObject {
     switch (m.t) {
       case "pick":
         if (meta.phase !== "select") return;
-        a.char = typeof m.char === "string" ? m.char.slice(0, 12) : null; a.ready = false; ws.serializeAttachment(a); this.broadcastRoom(); break;
+        a.char = typeof m.char === "string" ? m.char.slice(0, 12) : null; a.evo = !!m.evo; a.ready = false; ws.serializeAttachment(a); this.broadcastRoom(); break;
       case "ready": {
         if (meta.phase !== "select" || !a.char) return;
         a.ready = !!m.v; ws.serializeAttachment(a);
@@ -216,7 +216,7 @@ export class Room extends DurableObject {
     meta.phase = "match"; meta.rematch = [false, false]; meta.round++; meta.results = {};
     const seed = crypto.getRandomValues(new Uint32Array(1))[0] | 0;
     await this.save();
-    this.broadcast({ t: "start", seed, stage: meta.stage, chars: [ps[0].char, ps[1].char], names: [ps[0].name, ps[1].name], delay: 2, n: meta.round });
+    this.broadcast({ t: "start", seed, stage: meta.stage, chars: [ps[0].char, ps[1].char], names: [ps[0].name, ps[1].name], evo: [!!ps[0].evo, !!ps[1].evo], delay: 2, n: meta.round });
   }
   async webSocketClose(ws, code, reason) {
     const a = ws.deserializeAttachment();
@@ -247,6 +247,7 @@ export class Hub extends DurableObject {
       CREATE TABLE IF NOT EXISTS replays (id TEXT PRIMARY KEY, at INTEGER, title TEXT, data TEXT);
       CREATE TABLE IF NOT EXISTS feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, name TEXT, cat TEXT, text TEXT, device TEXT);
       CREATE TABLE IF NOT EXISTS rooms (code TEXT PRIMARY KEY, host TEXT, char TEXT, n INTEGER, pub INTEGER, phase TEXT, at INTEGER);`);
+    try { this.sql.exec("ALTER TABLE players ADD COLUMN uses TEXT DEFAULT '{}'"); } catch {} // per-fighter match counts (evolution)
   }
   q(sql, ...b) { return this.sql.exec(sql, ...b).toArray(); }
   async fetch(req) {
@@ -259,6 +260,15 @@ export class Hub extends DurableObject {
       return json(this.profile(uid));
     }
     if (p === "/profile") return json(this.profile(clean(url.searchParams.get("uid"), 40)));
+    if (p === "/use" && req.method === "POST") {
+      const uid = clean(body.uid, 40), ch = clean(body.ch, 12);
+      if (!uid || !ch) return json({ ok: false });
+      this.q("INSERT INTO players (uid, name, seen) VALUES (?, '', ?) ON CONFLICT(uid) DO NOTHING", uid, now);
+      const u = JSON.parse(this.q("SELECT uses FROM players WHERE uid = ?", uid)[0]?.uses || "{}");
+      u[ch] = (u[ch] || 0) + 1;
+      this.q("UPDATE players SET uses = ? WHERE uid = ?", JSON.stringify(u), uid);
+      return json({ ok: true, uses: u[ch] });
+    }
     if (p === "/leaderboard") {
       const rows = this.q("SELECT name, wins, losses, draws, chars FROM players WHERE wins + losses + draws > 0 ORDER BY wins DESC, (wins * 1.0 / (wins + losses + 1)) DESC LIMIT 30");
       return json(rows.map((r) => ({ name: r.name, wins: r.wins, losses: r.losses, draws: r.draws, main: topChar(r.chars) })));
@@ -308,13 +318,14 @@ export class Hub extends DurableObject {
     return json({ error: "not found" }, 404);
   }
   profile(uid) {
-    const r = uid && this.q("SELECT name, wins, losses, draws, chars FROM players WHERE uid = ?", uid)[0];
-    if (!r) return { name: null, wins: 0, losses: 0, draws: 0, main: null, recent: [] };
+    const r = uid && this.q("SELECT name, wins, losses, draws, chars, uses FROM players WHERE uid = ?", uid)[0];
+    if (!r) return { name: null, wins: 0, losses: 0, draws: 0, main: null, recent: [], uses: {} };
     const recent = this.q("SELECT at, an, bn, ac, bc, winner, a FROM matches WHERE a = ? OR b = ? ORDER BY id DESC LIMIT 6", uid, uid)
       .map((m) => { const me = m.a === uid ? 0 : 1; return { at: m.at, vs: me ? m.an : m.bn, mine: me ? m.bc : m.ac, theirs: me ? m.ac : m.bc, res: m.winner < 0 ? "D" : m.winner === me ? "W" : "L" }; });
     let rank = null;
     if (r.wins + r.losses + r.draws > 0) rank = 1 + this.q("SELECT COUNT(*) AS n FROM players WHERE wins > ?", r.wins)[0].n;
-    return { name: r.name, wins: r.wins, losses: r.losses, draws: r.draws, main: topChar(r.chars), recent, rank };
+    let uses = {}; try { uses = JSON.parse(r.uses || "{}"); } catch {}
+    return { name: r.name, wins: r.wins, losses: r.losses, draws: r.draws, main: topChar(r.chars), recent, rank, uses };
   }
 }
 function topChar(j) { try { const o = JSON.parse(j || "{}"); let b = null, n = 0; for (const k in o) if (o[k] > n) { n = o[k]; b = k; } return b; } catch { return null; } }

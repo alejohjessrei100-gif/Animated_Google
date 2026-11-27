@@ -1,5 +1,5 @@
 // Celestra Chronicles — app shell: screens, select, HUD, game loop, online flow.
-import { newMatch, step, B, VIEW_W } from "./sim.js";
+import { newMatch, step, B, VIEW_W, currentSkillRef } from "./sim.js";
 import { CHARS, ROSTER, STAGES, getMove, PARRY, STANCES } from "./chars.js";
 import { Renderer } from "./render.js";
 import { drawPortrait, drawFull } from "./sprites.js";
@@ -109,7 +109,7 @@ ROSTER.forEach((id, i) => {
   b.addEventListener("mouseenter", () => { const p = activePicker(); if (p < 0) return; app.cursor[p] = i; sfx("move"); renderSelect(); });
   grid.appendChild(b);
 });
-const NCELL = ROSTER.length + 1, RANDOM = ROSTER.length, COLS = 5;
+const NCELL = ROSTER.length + 1, RANDOM = ROSTER.length, COLS = 6;
 {
   const b = document.createElement("button");
   b.className = "cell rnd"; b.dataset.i = RANDOM;
@@ -170,6 +170,7 @@ function renderSelect() {
     side.querySelector(".cname").textContent = c.name;
     side.querySelector(".cname").style.color = c.color;
     side.querySelector(".ctitle").textContent = c.title + (app.mode === "online" && app.room?.players?.[p] ? " — " + app.room.players[p].name : "");
+    renderEvo(side, p, id);
     side.querySelector(".kitlist").innerHTML = kitHTML(id);
     side.dataset.ch = id;
     side.querySelector(".rdy").classList.toggle("hidden", !app.locked[p]);
@@ -186,7 +187,8 @@ function animSelect() {
     const side = $(p === 0 ? "#select .s1" : "#select .s2");
     const id = side.dataset.ch; if (!id) continue;
     if (app.mode === "online" && p !== app.slot && !app.room?.players?.[p]) continue;
-    drawFull(side.querySelector(".big-spr"), id, selAnim, p === 1);
+    const evoOn = app.mode === "online" && p !== app.slot ? !!app.room?.players?.[p]?.evo : app.evo[p] && canEvolve(id);
+    drawFull(side.querySelector(".big-spr"), id, selAnim, p === 1, evoOn);
   }
 }
 function confirmPick(p) {
@@ -196,7 +198,7 @@ function confirmPick(p) {
   if (app.voiceOn) voice("n_" + id);
   if (app.mode === "online") {
     app.locked[p] = true;
-    app.net.send({ t: "pick", char: id }); app.net.send({ t: "ready", v: true });
+    app.net.send({ t: "pick", char: id, evo: canEvolve(id) && app.evo[p] }); app.net.send({ t: "ready", v: true });
   } else {
     app.locked[p] = true;
     if (app.mode !== "local" && p === 0) app.cursor[1] = app.cursor[1] ?? 4;
@@ -234,6 +236,7 @@ function selectInput() {
     if (c !== app.cursor[p]) { app.cursor[p] = c; sfx("move"); renderSelect(); }
     if (pk(K.ok)) confirmPick(p);
   }
+  if (keyPressed("KeyX")) toggleEvo(app.mode === "online" ? app.slot : 0);
   if (keyPressed("KeyQ")) changeStage(-1);
   if (keyPressed("KeyE")) changeStage(1);
   if (keyPressed("Escape") || keyPressed("KeyG")) goBack();
@@ -243,16 +246,17 @@ function selectInput() {
 function beginOffline() {
   const seed = (Math.random() * 2 ** 31) | 0;
   app.names = app.mode === "local" ? ["P1", "P2"] : app.mode === "training" || app.mode === "tutorial" ? [myName(), "DUMMY"] : [myName(), "CPU"];
-  startMatch(app.picks, app.stage, seed);
+  const evo = [canEvolve(app.picks[0]) && app.evo[0], app.mode === "local" && canEvolve(app.picks[1]) && app.evo[1]];
+  startMatch(app.picks, app.stage, seed, evo);
   app.ai = app.mode === "cpu" ? new AI(app.diff, 1) : null;
   app.dummy = app.mode === "training" ? new AI("normal", 1, app.dummyMode || "stand") : app.mode === "tutorial" ? new AI("normal", 1, "stand") : null;
   $("#btnTrainDummy").classList.toggle("hidden", app.mode !== "training");
   if (app.mode === "tutorial") startTutorial();
 }
-function startMatch(chars, stage, seed) {
+function startMatch(chars, stage, seed, evo = [false, false]) {
   const simMode = app.mode === "replay" ? app.replay.mode : app.mode === "training" || app.mode === "tutorial" ? "training" : "vs";
-  app.S = newMatch({ chars, seed, mode: simMode, stage });
-  app.rec = []; app.recMeta = { v: 1, chars: chars.slice(), seed, stage, mode: simMode, names: (app.names || []).slice(), at: Date.now() };
+  app.S = newMatch({ chars, seed, mode: simMode, stage, evo });
+  app.rec = []; app.recMeta = { v: 1, chars: chars.slice(), seed, stage, mode: simMode, names: (app.names || []).slice(), at: Date.now(), evo: evo.slice() };
   app.replaySaved = null;
   $("#tut").classList.toggle("hidden", app.mode !== "tutorial");
   $("#replayBar").classList.toggle("hidden", app.mode !== "replay");
@@ -261,7 +265,7 @@ function startMatch(chars, stage, seed) {
   buildHud();
   show("fight");
   music("fight");
-  preloadVoices(["round1", "round2", "final", "fight", "ko", "perfect", "parry", "counter", "timeup", "youwin", "youlose", "p1wins", "p2wins", "draw", "doubleko", ...chars.flatMap((c) => [c + "_ult", c + "_win"]), "william_wait", "dapsay_s1", "jiross_t0", "jiross_t1", "jiross_t2", "jiross_t3", "jiross_t4", "dap_s1", "apsay_s1", "jog_s1b", ...(chars.includes("paulite") ? [0, 1, 2, 3, 4, 5].map((n) => "paulite_j" + n) : [])]);
+  preloadVoices(["round1", "round2", "final", "fight", "ko", "perfect", "parry", "counter", "timeup", "youwin", "youlose", "p1wins", "p2wins", "draw", "doubleko", ...chars.flatMap((c) => [c + "_ult", c + "_win"]), "william_wait", "dapsay_s1", "jiross_t0", "jiross_t1", "jiross_t2", "jiross_t3", "jiross_t4", "dap_s1", "apsay_s1", "jog_s1b", "ged_nlp", "evolve", ...(chars.includes("paulite") ? [0, 1, 2, 3, 4, 5].map((n) => "paulite_j" + n) : [])]);
   clearPressed();
 }
 
@@ -275,6 +279,7 @@ function buildHud() {
   const S = app.S;
   for (const i of [0, 1]) {
     const f = S.p[i], c = CHARS[f.ch], side = i === 0 ? ".p1" : ".p2";
+    $(`.pl${side} .nm`).classList.toggle("evo", !!f.evo);
     $(`.pl${side} .nm`).textContent = c.name + (app.names[i] && app.mode === "online" ? " · " + app.names[i] : "");
     $(`.pl${side} .nm`).style.color = c.color;
     drawPortrait($(`.pl${side} .por`), f.ch, i === 1);
@@ -334,7 +339,9 @@ function updateHud() {
     setCls($(".par", kit), "par" + i, "live", f.st === "parry" && !f.act?.parried);
     setCls($(".par", kit), "parc" + i, "ctr", s.counter > 0);
     for (let n = 1; n <= 3; n++) {
-      const el = $(".s" + n, kit), cd = f.cd[n - 1], max = CHARS[f.ch].moves["s" + n].cd;
+      const curRef = currentSkillRef(S, f, n), mv = getMove(curRef);
+      const el = $(".s" + n, kit), cd = f.cd[n - 1], max = mv.cd;
+      if (app.hudCache[`ref${i}${n}`] !== curRef) { app.hudCache[`ref${i}${n}`] = curRef; $(".ic", el).textContent = abbr(mv.name); el.title = mv.name; if (app.touchOn && i === mySide() && touchBtns[n - 1] && n === 3) touchBtns[2].querySelector("span").textContent = curRef.endsWith("s3") ? "ULT" : abbr(mv.name); }
       const frac = cd > 0 ? (cd / max).toFixed(3) : "0";
       if (app.hudCache[`cd${i}${n}`] !== frac) { app.hudCache[`cd${i}${n}`] = frac; el.style.setProperty("--cd", frac); }
       setText($(".sec", el), `sec${i}${n}`, cd > 0 ? String(Math.ceil(cd / 60)) : "");
@@ -416,6 +423,8 @@ function handleEvents(evs, S) {
       case "armor": sfx("block"); break;
       case "taunt": say("jiross_t" + e.line); break;
       case "waitclass": say("william_wait"); break;
+      case "leavepass": say("ged_nlp", 1500); break;
+      case "gunshot": sfx("gunshot"); buzz(60); break;
       case "joke": say("paulite_j" + e.line); break;
       case "silence": sfx("stun"); break;
       case "sad": sfx("dot"); break;
@@ -430,6 +439,7 @@ function handleEvents(evs, S) {
         break;
       }
       case "matchEnd": {
+        countUses(S);
         if (app.mode === "online" && app.net) app.net.send({ t: "result", winner: e.winner });
         clearTimeout(app.resultsT);
         app.resultsT = setTimeout(() => showResults(e.winner), 1900);
@@ -565,7 +575,7 @@ async function joinRoom(code, quick = false, reconnect = false) {
   net.on("start", (m) => {
     app.names = m.names;
     app.picks = m.chars.slice();
-    startMatch(m.chars, m.stage, m.seed);
+    startMatch(m.chars, m.stage, m.seed, m.evo || [false, false]);
     // adaptive input delay: hide part of the one-way latency, roll back the rest (max 12f)
     const oneWay = (net.peerRtt || 60) / 2 / 16.67;
     const delay = Math.max(m.delay || 2, Math.min(5, Math.ceil(oneWay) - 7));
@@ -791,7 +801,7 @@ $("#nameForm").addEventListener("submit", (e) => {
   app.returning = !!store.get("name", "");
   store.set("name", n); $("#pname").value = n; $("#nameInput").blur();
   sfx("confirm");
-  fetch("/api/profile", { method: "POST", body: JSON.stringify({ uid: uidOf(), name: n }) }).then((r) => r.json()).then((p) => { app.profile = p; greet(); }).catch(() => {});
+  fetch("/api/profile", { method: "POST", body: JSON.stringify({ uid: uidOf(), name: n }) }).then((r) => r.json()).then((p) => { app.profile = p; mergeUses(p.uses); greet(); }).catch(() => {});
   const cb = nameCb || (() => show("menu")); nameCb = null; cb();
 });
 $("#btnName").addEventListener("click", () => askName(() => show("settings")));
@@ -822,7 +832,7 @@ async function loadRanks() {
   $("#profile").innerHTML = "<p class='dim'>Loading…</p>"; $("#board").innerHTML = "";
   try {
     const [p, b] = await Promise.all([fetch("/api/profile?uid=" + encodeURIComponent(uidOf())).then((r) => r.json()), fetch("/api/leaderboard").then((r) => r.json())]);
-    app.profile = p;
+    app.profile = p; mergeUses(p.uses);
     const main = p.main && CHARS[p.main] ? CHARS[p.main].name : "—";
     const games = p.wins + p.losses + p.draws, pct = games ? Math.round((p.wins / games) * 100) : 0;
     $("#profile").innerHTML = `<h3>${escHTML(myName())}</h3>
@@ -908,7 +918,7 @@ async function playReplayId(id) {
 function startReplay(rp) {
   app.replay = rp; app.mode = "replay"; app.rpFrame = 0; app.rpSpeed = 1; $("#rpSpeed").textContent = "1x";
   app.names = rp.names || ["P1", "P2"]; app.ai = null; app.dummy = null;
-  startMatch(rp.chars, rp.stage, rp.seed);
+  startMatch(rp.chars, rp.stage, rp.seed, rp.evo || [false, false]);
 }
 $("#rpSpeed").addEventListener("click", () => { app.rpSpeed = app.rpSpeed === 1 ? 2 : app.rpSpeed === 2 ? 4 : 1; $("#rpSpeed").textContent = app.rpSpeed + "x"; });
 $("#rpExit").addEventListener("click", () => { app.S = null; app.mode = "cpu"; $("#replayBar").classList.add("hidden"); show("menu"); });
@@ -944,4 +954,50 @@ function tutTick() {
   // the dummy only attacks while you're on the parry step
   const want = !app.tut.done.has("parry") && ["walk", "jump", "djump", "dash", "combo", "skill", "ult"].every((k) => app.tut.done.has(k)) ? "attack" : "stand";
   if (app.dummy && app.dummy.dummy !== want) app.dummy.dummy = want;
+}
+
+
+// =====================================================================
+// Evolution: 50 completed matches with a fighter unlocks their evolved form
+// (golden look + aura, +8% HP, ultimate cooldown -15%).
+// =====================================================================
+const EVOLVE_AT = 50;
+app.evo = [false, false];
+function usesAll() { return store.get("uses", {}); }
+function usesOf(ch) { return usesAll()[ch] || 0; }
+function canEvolve(ch) { return !!ch && usesOf(ch) >= EVOLVE_AT; }
+function countUses(S) {
+  if (!["cpu", "local", "online"].includes(app.mode)) return;
+  const mine = app.mode === "local" ? [0, 1] : [mySide()];
+  const u = usesAll();
+  for (const side of mine) {
+    const ch = S.p[side].ch, before = u[ch] || 0;
+    u[ch] = before + 1;
+    if (before < EVOLVE_AT && u[ch] >= EVOLVE_AT) setTimeout(() => { banner(`${CHARS[ch].name} CAN EVOLVE!`, "TOGGLE ★ EVOLVED FORM ON THE SELECT SCREEN", "fight", 3200); say("evolve"); sfx("ult"); }, 2400);
+    fetch("/api/use", { method: "POST", body: JSON.stringify({ uid: uidOf(), ch }) }).catch(() => {});
+  }
+  store.set("uses", u);
+}
+// keep the higher of this device's and the server's counts (e.g. new phone, same name/profile)
+function mergeUses(server) {
+  if (!server) return;
+  const u = usesAll(); let changed = false;
+  for (const k in server) if ((server[k] | 0) > (u[k] || 0)) { u[k] = server[k] | 0; changed = true; }
+  if (changed) store.set("uses", u);
+}
+function toggleEvo(p) {
+  const side = $(p === 0 ? "#select .s1" : "#select .s2"), id = side.dataset.ch || app.picks[p];
+  if (!canEvolve(id) || (app.locked[p] && app.mode === "online")) { sfx("select"); return; }
+  app.evo[p] = !app.evo[p]; sfx(app.evo[p] ? "ult" : "select");
+  renderSelect();
+}
+function renderEvo(side, p, id) {
+  let el = side.querySelector(".evo");
+  if (!el) { el = document.createElement("button"); el.className = "evo"; side.querySelector(".ctitle").after(el); el.addEventListener("click", () => toggleEvo(p)); }
+  const mineSide = app.mode === "online" ? p === app.slot : app.mode === "local" ? true : p === 0;
+  if (!mineSide) { const on = app.mode === "online" && app.room?.players?.[p]?.evo; el.className = "evo" + (on ? " on" : ""); el.innerHTML = on ? `<span class="star">★</span> EVOLVED` : ""; el.disabled = true; el.classList.toggle("hidden", !on); return; }
+  el.classList.remove("hidden"); el.disabled = false;
+  const n = usesOf(id);
+  if (n >= EVOLVE_AT) { el.className = "evo ready" + (app.evo[p] ? " on" : ""); el.innerHTML = app.evo[p] ? `<span class="star">★</span> EVOLVED FORM <small>ON · X</small>` : `<span class="star">★</span> EVOLVE AVAILABLE <small>OFF · X</small>`; }
+  else { el.className = "evo"; el.innerHTML = `EVOLUTION <span class="bar"><i style="width:${(n / EVOLVE_AT) * 100}%"></i></span> <small>${n}/${EVOLVE_AT}</small>`; }
 }

@@ -35,7 +35,10 @@
    "n_jog": "Joggernaut!",
    "n_jaguilar": "Jaguaro!",
    "n_paulite": "Polite!",
-   "n_johan": "Jobacur!"
+   "n_johan": "Jobacur!",
+   "n_arbe": "Arby!",
+   "n_ged": "Ged!",
+   "evolve": "Evolution unlocked!"
   }
  },
  "jiross": {
@@ -164,6 +167,23 @@
   "lines": {
    "johan_ult": "Avalanche!",
    "johan_win": "Smell you later!"
+  }
+ },
+ "arbe": {
+  "voice": "am_eric",
+  "speed": 0.9,
+  "lines": {
+   "arbe_ult": "Last bullet.",
+   "arbe_win": "Lights out."
+  }
+ },
+ "ged": {
+  "voice": "am_santa",
+  "speed": 1.0,
+  "lines": {
+   "ged_ult": "No leave pass!",
+   "ged_nlp": "No leave pass!",
+   "ged_win": "Back to class, everyone."
   }
  }
 }
