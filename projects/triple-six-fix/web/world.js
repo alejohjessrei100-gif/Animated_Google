@@ -26,7 +26,7 @@ window.WORLD = (() => {
     brick: texM(bricks(10), 1, 1), brick2: texM(bricks(28), 1, 1, '#ffe6c8'), asphalt: texM(asphalt(), 6, 3), walk: texM(tiles('#c9c3b8', '#d8d2c6', 6), 8, 1),
     panel: texM(panel(), 2, 1), paperA: texM(wallpaper('#e7d7a8', '#c99a58'), 3, 2), paperB: texM(wallpaper('#bfe0d6', '#7fb3a8'), 3, 2), rug: texM(rug()),
     green: texM(stripesTex('#2f6b4f', '#2a604a', 2), 1, 1), lino: texM(tiles('#d9c9a3', '#b9a57d', 8), 3, 3), roof: texM(PAINT.roof(9), 2, 2),
-    glass: new THREE.MeshPhongMaterial({ color: '#cfe9ff', transparent: true, opacity: 0.18, shininess: 90, depthWrite: false, side: THREE.DoubleSide }),
+    glass: E.glass(),
     beam: new THREE.MeshBasicMaterial({ color: '#fff3c4', transparent: true, opacity: 0.09, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }),
   };
   Wd.M = M;
@@ -93,17 +93,17 @@ window.WORLD = (() => {
 
   // ================= STUDIO (x = 0) =================
   const ST = group(0, 0, 0); Wd.studio = ST;
-  add(tbox(16, 0.1, 12, 4), M.studioFloor, 0, -0.05, 0, ST, { cast: false });
+  E.addReflector(add(tbox(16, 0.1, 12, 4), E.reflective(M.studioFloor, 0.34), 0, -0.05, 0, ST, { cast: false }), 'studio');
   add(tbox(9, 0.22, 4.2, 2), M.stage, 0, 0.11, -3.2, ST);
   for (let k = 0; k < 7; k++) add(box(0.5, 0.03, 0.04), toon({ color: '#ffe9a0', emissive: '#ffd860', emissiveIntensity: 0.5 }), -3.6 + k * 1.2, 0.2, -1.08, ST);
   add(tbox(16, 7, 0.3, 3), M.curtainBlue, 0, 3.5, -5.6, ST);
   for (const sx of [-1, 1]) { const w = add(tbox(0.3, 7, 12, 3), M.curtainBlue, sx * 8, 3.5, 0, ST); }
   // big lit sign + results board
-  Wd.bigSign = sign(ST, [{ t: 'DAILY NUMBER', c: '#ffffff' }], 0, 4.55, -5.35, 6.4, 1.3, { bg: '#c62f36', border: '#f4d35e', bulbs: true, frame: '#f4d35e', d: 0.18, glow: true });
+  Wd.bigSign = sign(ST, [{ t: 'DAILY NUMBER', c: '#ffffff' }], 0, 4.55, -5.35, 6.4, 1.3, { bg: '#c62f36', border: '#f4d35e', bulbs: true, frame: '#f4d35e', d: 0.18, glow: 0.32 });
   sign(ST, [{ t: 'PENNSYLVANIA LOTTERY', c: '#2b1f1c' }], 0, 3.65, -5.38, 4.2, 0.45, { bg: '#f4d35e', border: null, d: 0.06 });
   const digitTex = {}; const digitFor = (d, red) => { const k = d + (red ? 'r' : ''); return digitTex[k] || (digitTex[k] = label([{ t: d === '' ? '' : String(d), c: red ? '#ffefe0' : '#2b1f1c' }], { w: 256, h: 320, bg: red ? '#d42a32' : '#f7f2e4', border: '#2b1f1c', pad: 18 })); };
   Wd.board = [-1.15, 0, 1.15].map((x) => { const s = sign(ST, [''], x, 2.55, -5.35, 0.95, 1.15, { bg: '#f7f2e4', d: 0.12, frame: '#3b3f4a' }); return s; });
-  Wd.setBoard = (vals, red) => Wd.board.forEach((s, i) => { const t = digitFor(vals[i] ?? '', red), f = s.userData.face; if (f.map !== t) { f.map = t; if ('emissiveMap' in f) f.emissiveMap = t; f.needsUpdate = true; } });
+  Wd.setBoard = (vals, red) => Wd.board.forEach((s, i) => { const t = digitFor(vals[i] ?? '', red), f = s.userData.face; f.userData.bloomK = red ? 0.75 : 0; if (f.map !== t) { f.map = t; if ('emissiveMap' in f) f.emissiveMap = t; f.needsUpdate = true; } });
   // bulbs strip around the board (3D, chase-animated)
   Wd.bulbs = []; for (let i = 0; i < 28; i++) { const a = i / 28 * Math.PI * 2; const m = add(sph(0.06, 10, 8), toon({ color: '#ffe9a0', emissive: '#ffcf4a', emissiveIntensity: 0.2 }), Math.cos(a) * 2.2, 2.55 + Math.sin(a) * 0.95, -5.25, ST, { cast: false }); Wd.bulbs.push(m); }
   // counter + machines
@@ -120,7 +120,7 @@ window.WORLD = (() => {
   Wd.cams = [tvCam(ST, -3.4, 2.6, Math.PI + 0.35), tvCam(ST, 2.4, 3.4, Math.PI - 0.2), tvCam(ST, 5.6, 0.5, Math.PI - 0.9)];
   for (const z of [-4.5, -1.5, 1.5]) add(box(15, 0.16, 0.16), '#7f8896', 0, 6.2, z, ST);
   for (let x = -6; x <= 6; x += 3) add(box(0.16, 0.16, 6.2), '#7f8896', x, 6.2, -1.5, ST);
-  Wd.spots = []; for (let i = 0; i < 5; i++) { const x = -5 + i * 2.5; const g = group(x, 6.05, -1.5, ST); add(cyl(0.18, 0.12, 0.4, 14), '#2b2f38', 0, -0.2, 0, g).rotation.x = 0.5; const cone = add(new THREE.ConeGeometry(1.4, 6, 24, 1, true), M.beam, 0, -3.2, 0, g, { noink: true, cast: false }); cone.renderOrder = 6; Wd.spots.push(g); }
+  Wd.spots = []; for (let i = 0; i < 5; i++) { const x = -5 + i * 2.5; const g = group(x, 6.05, -1.5, ST); add(cyl(0.18, 0.12, 0.4, 14), '#2b2f38', 0, -0.2, 0, g).rotation.x = 0.5; Wd.spots.push(g); }
   // cables on floor (foreground), sandbags, stars on curtains
   for (let i = 0; i < 4; i++) { const pts = []; for (let k = 0; k < 8; k++) pts.push(new THREE.Vector3(-6 + i * 3 + Math.sin(k + i) * 0.6, 0.02, 4.5 - k * 1.1)); add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.03, 6), '#2b2f38', 0, 0, 0, ST, { cast: false }); }
   const starShape = new THREE.Shape(); for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2 - Math.PI / 2, r = k % 2 ? 0.12 : 0.3; k ? starShape.lineTo(Math.cos(a) * r, Math.sin(a) * r) : starShape.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
@@ -173,7 +173,7 @@ window.WORLD = (() => {
 
   // ================= CLASSROOM (x = -45) =================
   const CL = group(-45, 0, 0); Wd.classroom = CL;
-  add(tbox(9, 0.1, 9, 3), M.lino, 0, -0.05, 0, CL, { cast: false });
+  E.addReflector(add(tbox(9, 0.1, 9, 3), E.reflective(M.lino, 0.14), 0, -0.05, 0, CL, { cast: false }), 'classroom');
   add(tbox(9, 3.6, 0.2, 2), M.paperB, 0, 1.8, -4.1, CL); add(tbox(0.2, 3.6, 9, 2), M.paperB, -4.5, 1.8, 0, CL); add(tbox(0.2, 3.6, 9, 2), M.paperB, 4.5, 1.8, 0, CL);
   add(tbox(4.4, 1.6, 0.06), M.green, 0, 1.9, -3.95, CL); add(tbox(4.6, 0.1, 0.15), '#8a5734', 0, 1.05, -3.9, CL);
   sign(CL, [{ t: 'MATH TEST TODAY', c: '#ffffff' }, { t: '2 + 2 = ?', c: '#f4d35e' }], 0, 2.0, -3.9, 3.6, 1.2, { bg: '#2f6b4f', border: null, d: 0.01 });
@@ -214,7 +214,7 @@ window.WORLD = (() => {
   add(tbox(7, 3.2, 0.2), M.paperA, 0, 1.6, -3.0, LV); add(tbox(0.2, 3.2, 6), M.paperA, -3.5, 1.6, 0, LV); add(tbox(0.2, 3.2, 6), M.paperA, 3.5, 1.6, 0, LV);
   // couch facing the TV (TV at x+2.6), family sits on it
   { const c = group(-1.2, 0, 0.6, LV); c.rotation.y = Math.PI / 2; add(tbox(2.4, 0.45, 0.9), '#e07a5f', 0, 0.3, 0, c); add(tbox(2.4, 0.6, 0.25), '#d0694f', 0, 0.75, -0.42, c); for (const s of [-1, 1]) add(tbox(0.25, 0.65, 0.9), '#d0694f', s * 1.25, 0.4, 0, c); }
-  Wd.tv = group(2.6, 0, 0.6, LV); { const t = Wd.tv; t.rotation.y = -Math.PI / 2; add(tbox(1.2, 0.6, 0.6), '#8a5734', 0, 0.3, 0, t); add(tbox(1.1, 0.85, 0.7), '#6a4a32', 0, 1.05, 0, t); Wd.tvScreen = new THREE.MeshBasicMaterial({ map: label(['DAILY #', '- - -']) }); const s = add(new THREE.PlaneGeometry(0.85, 0.62), Wd.tvScreen, -0.05, 1.07, 0.36, t); s.userData.ndSkip = false; for (const k of [-1, 1]) add(cyl(0.008, 0.008, 0.6, 4), '#2b2f38', k * 0.2, 1.7, 0, t).rotation.z = k * 0.5; add(sph(0.03), '#c9a24a', 0.48, 0.8, 0.36, t); }
+  Wd.tv = group(2.6, 0, 0.6, LV); { const t = Wd.tv; t.rotation.y = -Math.PI / 2; add(tbox(1.2, 0.6, 0.6), '#8a5734', 0, 0.3, 0, t); add(tbox(1.1, 0.85, 0.7), '#6a4a32', 0, 1.05, 0, t); Wd.tvScreen = new THREE.MeshBasicMaterial({ map: label(['DAILY #', '- - -']) }); Wd.tvScreen.userData.bloomK = 0.16; const s = add(new THREE.PlaneGeometry(0.85, 0.62), Wd.tvScreen, -0.05, 1.07, 0.36, t); s.userData.ndSkip = false; for (const k of [-1, 1]) add(cyl(0.008, 0.008, 0.6, 4), '#2b2f38', k * 0.2, 1.7, 0, t).rotation.z = k * 0.5; add(sph(0.03), '#c9a24a', 0.48, 0.8, 0.36, t); }
   Wd.tvGlow = new THREE.PointLight('#9fd0ff', 0, 5, 1.5); Wd.tvGlow.position.set(56.8, 1.2, 0.6); scene.add(Wd.tvGlow);
   lamp(LV, -2.8, 1.9, -2.4, '#f4d35e'); add(cyl(0.03, 0.03, 1.7, 8), '#8a5734', -2.8, 0.85, -2.4, LV);
   for (let i = 0; i < 3; i++) add(box(0.5, 0.6, 0.04), ['#3d5a80', '#81b29a', '#f2cc8f'][i], -1.4 + i * 0.9, 2.1, -2.88, LV);
@@ -225,7 +225,7 @@ window.WORLD = (() => {
 
   // ================= BOOKIE OFFICE (x = 80) =================
   const BK = group(80, 0, 0); Wd.bookie = BK;
-  add(tbox(7, 0.1, 6, 2), M.planks, 0, -0.05, 0, BK, { cast: false });
+  E.addReflector(add(tbox(7, 0.1, 6, 2), E.reflective(texM(PAINT.planks(13), 2, 2, '#c8a07a'), 0.12), 0, -0.05, 0, BK, { cast: false }), 'bookie');
   add(tbox(7, 3.4, 0.2, 2), M.panel, 0, 1.7, -3.0, BK); add(tbox(0.2, 3.4, 6, 2), M.panel, -3.5, 1.7, 0, BK); add(tbox(0.2, 3.4, 6, 2), M.panel, 3.5, 1.7, 0, BK);
   Wd.chalk = sign(BK, [{ t: '4-4-6  6-4-4', c: '#ffffff' }, { t: '6-6-4  4-6-6', c: '#ffffff' }, { t: '6-6-6  4-4-4', c: '#ffffff' }, { t: '4 & 6 ONLY?!', c: '#f4d35e' }], -0.6, 1.95, -2.88, 2.6, 1.6, { bg: '#2f3f3a', border: '#8a5734', d: 0.06 });
   { const d = group(0.6, 0, -0.6, BK); add(tbox(2.0, 0.08, 0.9), '#6a4a32', 0, 0.8, 0, d); add(tbox(1.9, 0.75, 0.8), '#5a3a24', 0, 0.38, 0, d); Wd.cashBox = group(0.5, 0.84, 0, d); add(tbox(0.4, 0.16, 0.28), '#2f6b4f', 0, 0.08, 0, Wd.cashBox); Wd.cashLid = group(0, 0.16, -0.14, Wd.cashBox); add(tbox(0.4, 0.03, 0.28), '#2f6b4f', 0, 0.015, 0.14, Wd.cashLid); Wd.cash = []; for (let i = 0; i < 6; i++) Wd.cash.push(add(box(0.16, 0.01, 0.08), '#8fbf6a', 0.4 + (i % 3) * 0.05, 0.14 + i * 0.012, (i % 2) * 0.05 - 0.02, Wd.cashBox)); for (let k = 0; k < 2; k++) { const ph = group(-0.6 + k * 0.4, 0.84, 0.1, d); add(tbox(0.22, 0.08, 0.16), k ? '#d42a32' : '#2b2f38', 0, 0.04, 0, ph); add(cyl(0.025, 0.025, 0.24, 8), k ? '#d42a32' : '#2b2f38', 0, 0.12, 0, ph).rotation.z = Math.PI / 2; if (!k) Wd.phone = ph; } }
@@ -237,7 +237,7 @@ window.WORLD = (() => {
 
   // ================= COURTROOM (x = 105) =================
   const CT = group(105, 0, 0); Wd.court = CT;
-  add(tbox(9, 0.1, 8, 3), M.planks, 0, -0.05, 0, CT, { cast: false });
+  E.addReflector(add(tbox(9, 0.1, 8, 3), E.reflective(texM(PAINT.planks(11), 2, 2, '#e8c8a0'), 0.17), 0, -0.05, 0, CT, { cast: false }), 'court');
   add(tbox(9, 4.2, 0.2, 2), M.panel, 0, 2.1, -3.6, CT); add(tbox(0.2, 4.2, 8, 2), M.panel, -4.5, 2.1, 0, CT); add(tbox(0.2, 4.2, 8, 2), M.panel, 4.5, 2.1, 0, CT);
   add(tbox(3.2, 1.3, 1.0), '#6a4a32', 0, 0.65, -2.6, CT); add(tbox(3.4, 0.08, 1.1), '#8a5734', 0, 1.34, -2.6, CT); add(tbox(3.2, 0.5, 1.2), '#5a3a24', 0, 0.25, -3.0, CT);
   sign(CT, [{ t: 'COURT', c: '#f4d35e' }], 0, 3.3, -3.45, 1.6, 0.55, { bg: '#5a3a24', border: '#f4d35e' });
@@ -262,7 +262,7 @@ window.WORLD = (() => {
   Wd.motes = [];
   const windowUnit = (parent, x, y, z, w, h, ry, kind = 'day', shaft = true) => {
     const g = group(x, y, z, parent); g.rotation.y = ry; const trim = '#f3ead8';
-    add(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: viewTex(kind), toneMapped: false }), 0, 0, -0.04, g, { cast: false });
+    { const vm = new THREE.MeshBasicMaterial({ map: viewTex(kind), toneMapped: false }); vm.userData.bloomK = 0.22; add(new THREE.PlaneGeometry(w, h), vm, 0, 0, -0.04, g, { cast: false }); }
     for (const sy of [-1, 1]) add(box(w + 0.2, 0.1, 0.12), trim, 0, sy * (h / 2 + 0.05), 0, g);
     for (const sx of [-1, 1]) add(box(0.1, h + 0.2, 0.12), trim, sx * (w / 2 + 0.05), 0, 0, g);
     add(box(w + 0.34, 0.07, 0.26), trim, 0, -h / 2 - 0.12, 0.08, g);
@@ -270,7 +270,7 @@ window.WORLD = (() => {
     for (const sx of [-1, 1]) { const cur = add(tbox(0.32, h + 0.5, 0.06, 1), E.col(kind === 'eve' ? '#c0392b' : '#3d5a80'), sx * (w / 2 + 0.3), 0.05, 0.08, g); cur.scale.x = 1; }
     add(cyl(0.025, 0.025, w + 1.1, 8), '#c9a24a', 0, h / 2 + 0.3, 0.1, g).rotation.z = Math.PI / 2;
     const pot = group(w * 0.25, -h / 2 - 0.05, 0.12, g); add(cyl(0.08, 0.06, 0.14, 12), '#c0623a', 0, 0.07, 0, pot); for (let k = 0; k < 4; k++) add(sph(0.06, 8, 6), '#5f9a3c', Math.cos(k * 1.6) * 0.05, 0.18 + (k % 2) * 0.05, Math.sin(k * 1.6) * 0.05, pot);
-    if (shaft) { const len = 4.2; const sh = new THREE.Mesh(new THREE.BoxGeometry(w * 0.95, h * 0.9, len), new THREE.MeshBasicMaterial({ color: kind === 'eve' ? '#ffcf8a' : '#fff4d0', transparent: true, opacity: 0.075, depthWrite: false, blending: THREE.AdditiveBlending })); sh.position.set(0, -0.55, len / 2); sh.rotation.x = 0.32; sh.userData.ndSkip = true; sh.renderOrder = 7; g.add(sh);
+    if (false) { const len = 4.2; const sh = new THREE.Mesh(new THREE.BoxGeometry(w * 0.95, h * 0.9, len), new THREE.MeshBasicMaterial({ color: kind === 'eve' ? '#ffcf8a' : '#fff4d0', transparent: true, opacity: 0.075, depthWrite: false, blending: THREE.AdditiveBlending })); sh.position.set(0, -0.55, len / 2); sh.rotation.x = 0.32; sh.userData.ndSkip = true; sh.renderOrder = 7; g.add(sh);
       const motes = []; for (let i = 0; i < 26; i++) { const m = add(sph(0.008, 5, 4), '#fff6d8', 0, 0, 0, g, { cast: false, noink: true }); m.userData.r = [Math.random(), Math.random(), Math.random()]; motes.push(m); } Wd.motes.push({ motes, w, h, len }); }
     return g;
   };

@@ -70,13 +70,13 @@ window.STORY = (() => {
 
   // ---------- lights per set ----------
   const LIGHT = {
-    studio: { sky: '#e6ecff', ground: '#8a90c0', hemi: 1.45, sun: '#fff0d8', sunI: 1.5, az: -70, el: 62, fog: '#2a3270', bg: '#1d2458', fogNear: 14, fogFar: 42, sat: 1.12, fillCol: '#ffd9a8', fillI: 2.5, shadowExt: 8 },
-    workshop: { sky: '#fff1dc', ground: '#a8846a', hemi: 1.4, sun: '#ffe2b8', sunI: 1.4, az: -50, el: 58, fog: '#7a5c48', bg: '#4a3a30', fogNear: 10, fogFar: 30, sat: 1.1, fillCol: '#ffe2b0', fillI: 2.0, shadowExt: 6 },
+    studio: { expo: 1.85, sky: '#e6ecff', ground: '#8a90c0', hemi: 1.45, sun: '#fff0d8', sunI: 1.5, az: -70, el: 62, fog: '#2a3270', bg: '#1d2458', fogNear: 14, fogFar: 42, sat: 1.12, fillCol: '#ffd9a8', fillI: 2.5, shadowExt: 8 },
+    workshop: { expo: 1.45, sky: '#f6f2ec', ground: '#9a8a7a', hemi: 1.4, sun: '#fff0dc', sunI: 1.4, az: -50, el: 58, fog: '#7a5c48', bg: '#4a3a30', fogNear: 10, fogFar: 30, sat: 0.98, fillCol: '#fff4e6', fillI: 2.0, shadowExt: 6 },
     classroom: { sky: '#ffffff', ground: '#b8ccd4', hemi: 1.55, sun: '#fff6e2', sunI: 1.6, az: -40, el: 55, fog: '#cfe6ee', bg: '#bfe0e8', fogNear: 12, fogFar: 34, sat: 1.1, fillI: 1.5, shadowExt: 7 },
     street: { sky: '#c8e6ff', ground: '#cdb98e', hemi: 1.3, sun: '#fff1d0', sunI: 2.1, az: -35, el: 48, fog: '#bfe2ff', bg: '#9fd0ff', fogNear: 16, fogFar: 55, sat: 1.12, fillI: 1.0, shadowExt: 10 },
     living: { sky: '#ffe9cc', ground: '#a8806a', hemi: 1.35, sun: '#ffd8a8', sunI: 1.2, az: -60, el: 55, fog: '#7a5c48', bg: '#5a4436', fogNear: 10, fogFar: 26, sat: 1.12, fillCol: '#ffe0b0', fillI: 2.2, shadowExt: 6 },
-    bookie: { sky: '#f3eaff', ground: '#9a7a6a', hemi: 1.35, sun: '#ffe4bc', sunI: 1.3, az: -55, el: 60, fog: '#5a4a5a', bg: '#3a3040', fogNear: 10, fogFar: 26, sat: 1.12, fillCol: '#d8ffe0', fillI: 1.8, shadowExt: 6 },
-    court: { sky: '#fff6e6', ground: '#a8846a', hemi: 1.45, sun: '#fff0d4', sunI: 1.6, az: -45, el: 60, fog: '#8a6a50', bg: '#5a4436', fogNear: 12, fogFar: 32, sat: 1.1, fillCol: '#ffe8c0', fillI: 2.0, shadowExt: 8 },
+    bookie: { expo: 1.75, sky: '#f3eaff', ground: '#9a7a6a', hemi: 1.35, sun: '#ffe4bc', sunI: 1.3, az: -55, el: 60, fog: '#5a4a5a', bg: '#3a3040', fogNear: 10, fogFar: 26, sat: 1.12, fillCol: '#d8ffe0', fillI: 1.8, shadowExt: 6 },
+    court: { expo: 1.75, sky: '#fff6e6', ground: '#a8846a', hemi: 1.45, sun: '#fff0d4', sunI: 1.6, az: -45, el: 60, fog: '#8a6a50', bg: '#5a4436', fogNear: 12, fogFar: 32, sat: 1.1, fillCol: '#ffe8c0', fillI: 2.0, shadowExt: 8 },
   };
 
   // ---------- camera compositions (t = start, set, pos, look, fov, drift) ----------
@@ -159,7 +159,9 @@ window.STORY = (() => {
     { t: 66.3, set: 'court', pos: [107.6, 1.8, 2.2], look: [106.8, 1.6, 0.0], fov: 42, drift: [-0.1, 0.02, -0.12], roll: 2 },
   ];
   K.forEach((k, i) => { k.t1 = i + 1 < K.length ? K[i + 1].t : END + 0.5; });
-  const SHAKES = [[21.62, 0.05], [24.92, 0.02], [45.54, 0.03], [61.82, 0.04], [64.28, 0.07], [66.36, 0.05], [2.58, 0.02]];
+  const SHAKES = [[21.62, 0.06], [24.92, 0.02], [45.54, 0.03], [47.98, 0.06], [61.82, 0.04], [64.28, 0.08], [66.36, 0.05], [2.58, 0.02]];
+  const IMPACTS = [21.62, 47.98, 64.28]; // chromatic aberration hits: heavy ball, the 666 jackpot, the gavel
+  const caAt = (t) => { let c = 0; for (const a of IMPACTS) if (t >= a && t < a + 0.35) c = Math.max(c, 0.018 * Math.exp(-(t - a) * 11)); return c; };
   const compAt = (t) => { let i = 0; for (let k = 0; k < K.length; k++) if (t >= K[k].t) i = k; return i; };
   const compState = (k, t) => { const u = ease(clamp((t - k.t) / Math.max(0.6, k.t1 - k.t))) * 0.85 + clamp((t - k.t) / (k.t1 - k.t)) * 0.15; const d = k.drift || [0, 0, 0], dl = k.dlook || [0, 0, 0];
     return { pos: [k.pos[0] + d[0] * u, k.pos[1] + d[1] * u, k.pos[2] + d[2] * u], look: [k.look[0] + dl[0] * u, k.look[1] + dl[1] * u, k.look[2] + dl[2] * u], fov: k.fov, roll: k.roll || 0 }; };
@@ -359,7 +361,7 @@ window.STORY = (() => {
     if (C.set === 'living') drawScreen(t);
     const L = { ...LIGHT[C.set] };
     let flash = 0;
-    return { t, cam: C, light: L, dof: dofAt(C), actors: actors(t, C.set), whip: C.whip, flash };
+    return { t, cam: C, light: L, dof: dofAt(C), actors: actors(t, C.set), whip: C.whip, flash, ca: caAt(t) };
   };
   const SHOTS = []; K.forEach((k, i) => { if (!i || K[i - 1].set !== k.set) SHOTS.push({ t: k.t, set: k.set }); });
   return { FPS, END, TOTAL, frame, drawCaption, K, SHOTS, CAPS };
