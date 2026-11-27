@@ -65,30 +65,30 @@ window.STORY = (() => {
     { t: 0.76, set: 'banks', pos: [50.2, 2.05, 3.9], look: [50.1, 1.95, -1.0], fov: 50, drift: [0, 0.1, -0.4], roll: 2 },
     { t: 2.32, set: 'farm', pos: [-6, 7.5, 6], look: [1, 3, -6], fov: 50, drift: [6, -1.0, -1] },
     { t: 3.76, set: 'farm', pos: [3.6, 1.6, 0.2], look: [2.6, 3.0, -4.0], fov: 46, drift: [-0.6, 0.3, 0.2], roll: -2 },
-    { t: 5.08, set: 'cut', pos: [25, 3.4, 7.5], look: [25, 3.0, -2.4], fov: 50, drift: [0, 0.2, -2.0] },
-    { t: 7.3, set: 'farm', pos: [-10.5, 1.9, 4.2], look: [-12.9, 1.7, -0.4], fov: 50, drift: [0.8, 0, -0.4], roll: 1.5 },
-    { t: 9.2, set: 'farm', pos: [0.9, 1.3, 3.6], look: [0.6, 2.4, -3.0], fov: 52, drift: [-0.4, 0.6, 0.4], dlook: [0, 0.8, 0] },
-    { t: 11.5, set: 'farm', pos: [2.2, 1.8, 3.4], look: [1.25, 1.4, -2.0], fov: 52, drift: [-0.3, 0, -0.2], roll: -1.5 },
+    { t: 5.08, set: 'cut', pos: [25, 3.4, 7.5], look: [25, 3.0, -2.4], fov: 50, drift: [-0.50, 0.36, -2.30] },
+    { t: 7.3, set: 'farm', pos: [-10.5, 1.9, 4.2], look: [-12.9, 1.7, -0.4], fov: 50, drift: [1.25, 0.03, 0.39], roll: 1.5 },
+    { t: 9.2, set: 'farm', pos: [0.9, 1.3, 3.6], look: [0.6, 2.4, -3.0], fov: 52, drift: [-1.09, 0.81, 1.55], dlook: [0, 0.8, 0] },
+    { t: 11.5, set: 'farm', pos: [2.2, 1.8, 3.4], look: [1.25, 1.4, -2.0], fov: 52, drift: [-0.82, 0.07, 0.65], roll: -1.5 },
     { t: 14.0, set: 'farm', pos: [4.7, 1.4, -0.8], look: [3.2, 1.7, -3.9], fov: 50, drift: [0, 3.6, 0.3], dlook: [0, 3.3, 0] },
-    { t: 15.0, set: 'farm', pos: [4.2, 6.5, -3.0], look: [2.6, 5.1, -6.0], fov: 48, drift: [0.2, 0, 0.2], ein: 0.3 },
-    { t: 16.7, set: 'farm', pos: [4.6, 6.0, -2.2], look: [3.3, 5.8, -5.4], fov: 44, drift: [-0.2, 0, 0.2], roll: 2 },
+    { t: 15.0, set: 'farm', pos: [4.2, 6.5, -3.0], look: [2.6, 5.1, -6.0], fov: 48, drift: [0.30, 0.34, 1.27], ein: 0.3 },
+    { t: 16.7, set: 'farm', pos: [4.6, 6.0, -2.2], look: [3.3, 5.8, -5.4], fov: 44, drift: [-0.44, 0.05, 1.34], roll: 2 },
     { t: 18.9, set: 'farm', pos: [1.0, 1.65, 1.8], look: [1.6, 1.8, -2.4], fov: 46, drift: [0.2, 0.1, -0.3] },
-    { t: 20.5, set: 'cut', pos: [25.4, 8.2, -0.4], look: [25, 6.0, -2.6], fov: 46, drift: [0, -0.4, 0.3] },
-    { t: 21.9, set: 'cut', pos: [25.9, 5.3, 1.8], look: [25, 5.2, -2.6], fov: 42, drift: [-0.2, 0, -0.3], roll: 1.5 },
-    { t: 24.0, set: 'cut', pos: [25.2, 3.4, 3.6], look: [25, 2.6, -2.6], fov: 50, drift: [0, -0.6, -0.4], dlook: [0, -0.6, 0] },
+    { t: 20.5, set: 'cut', pos: [25.4, 8.2, -0.4], look: [25, 6.0, -2.6], fov: 46, drift: [-0.24, -0.01, 1.17] },
+    { t: 21.9, set: 'cut', pos: [25.9, 5.3, 1.8], look: [25, 5.2, -2.6], fov: 42, drift: [-0.63, 0.02, 0.50], roll: 1.5 },
+    { t: 24.0, set: 'cut', pos: [25.2, 3.4, 3.6], look: [25, 2.6, -2.6], fov: 50, drift: [-0.47, -0.84, 0.27], dlook: [0, -0.6, 0] },
     { t: 25.95, set: 'banks', pos: [56, 3.0, 7], look: [50, 2.6, -4], fov: 52, drift: [-3, 0, -1] },
-    { t: 27.55, set: 'amex', pos: [76.6, 1.65, 1.6], look: [75.0, 1.25, -1.6], fov: 46, drift: [-0.4, 0.1, -0.3] },
+    { t: 27.55, set: 'amex', pos: [76.6, 1.65, 1.6], look: [75.0, 1.25, -1.6], fov: 46, drift: [-0.68, 0.26, 0.54] },
     { t: 30.2, set: 'amex', pos: [76.3, 2.0, 1.1], look: [75.1, 1.45, -1.6], fov: 46, drift: [0.2, 0.2, -0.2], roll: -2 },
-    { t: 31.3, set: 'farm', pos: [-0.6, 6.7, -0.8], look: [2.4, 5.4, -5.6], fov: 50, drift: [1.2, 0, 0.6] },
-    { t: 33.7, set: 'kitchen', pos: [-24.6, 1.7, 1.9], look: [-25, 1.15, -1.4], fov: 40, drift: [0.2, 0, -0.2] },
+    { t: 31.3, set: 'farm', pos: [-0.6, 6.7, -0.8], look: [2.4, 5.4, -5.6], fov: 50, drift: [1.04, 0.20, 1.45] },
+    { t: 33.7, set: 'kitchen', pos: [-24.6, 1.7, 1.9], look: [-25, 1.15, -1.4], fov: 40, drift: [-0.06, 0.15, 0.62] },
     { t: 36.2, set: 'kitchen', pos: [-25.85, 1.55, 2.6], look: [-25.15, 1.05, -0.8], fov: 54, drift: [0.4, 0.05, -0.2], roll: 2 },
-    { t: 37.5, set: 'kitchen', pos: [-24.0, 1.1, -0.1], look: [-25, 1.15, -1.4], fov: 40, drift: [0, 0, 0.1] },
+    { t: 37.5, set: 'kitchen', pos: [-24.0, 1.1, -0.1], look: [-25, 1.15, -1.4], fov: 40, drift: [0.15, -0.03, 1.18] },
     { t: 38.7, set: 'farm', pos: [6.8, 3.0, 6.0], look: [2.6, 2.6, -5.0], fov: 50, drift: [-1, 0.3, -0.6] },
     { t: 39.9, set: 'exchange', pos: [100.6, 2.3, 5.2], look: [100, 2.4, -3.0], fov: 52, drift: [-0.4, 0.2, -0.8] },
     { t: 42.24, set: 'exchange', pos: [96.4, 1.9, 4.4], look: [100.2, 1.4, -0.6], fov: 52, drift: [1.4, 0, 0] },
-    { t: 43.55, set: 'omaha', pos: [125.9, 1.5, 1.4], look: [125, 1.25, -1.9], fov: 44, drift: [-0.3, 0.05, -0.3] },
-    { t: 44.6, set: 'omaha', pos: [124.1, 1.85, 1.2], look: [124.8, 1.25, -1.4], fov: 48, drift: [0.3, 0.2, 0.3], roll: -2 },
-    { t: 47.3, set: 'omaha', pos: [124.6, 1.28, -0.05], look: [124.25, 1.0, -1.1], fov: 42, drift: [-0.08, 0.02, 0.12] },
+    { t: 43.55, set: 'omaha', pos: [125.9, 1.5, 1.4], look: [125, 1.25, -1.9], fov: 44, drift: [-0.72, 0.15, 0.52] },
+    { t: 44.6, set: 'omaha', pos: [124.1, 1.85, 1.2], look: [124.8, 1.25, -1.4], fov: 48, drift: [-0.22, 0.52, 1.20], roll: -2 },
+    { t: 47.3, set: 'omaha', pos: [124.6, 1.28, -0.05], look: [124.25, 1.0, -1.1], fov: 42, drift: [-0.22, 0.14, 0.68] },
   ];
   K.forEach((k, i) => { k.t1 = i + 1 < K.length ? K[i + 1].t : END + 0.5; });
   const SHAKES = [[0.0, 0.02], [15.1, 0.02], [28.58, 0.025], [38.98, 0.09], [40.64, 0.04], [44.66, 0.05], [21.48, 0.015]];
@@ -118,12 +118,12 @@ window.STORY = (() => {
     Wd.waterU.t.value = t; Wd.ship.position.x = 14 - t * 0.12;
     Wd.runSmoke(Wd.shipSmoke, t, Wd.ship.position.x - 4, 6.8, -40, 3, 0.6, 0.25, 3);
     Wd.gulls.forEach((g, i) => { if (i === 0 && t >= 18.3 && t < 21) { const u = eout(ramp(t, 18.3, 18.8)); g.g.position.set(lerp(-2, 3.7, u), lerp(9, 5.55, u), lerp(-2, -5.0, u)); const f = u < 1 ? Math.sin(t * 16) * 0.8 : 0; g.w1.rotation.x = f; g.w2.rotation.x = -f; g.g.rotation.y = -0.6; return; }
-      const u = (t * 0.05 + i * 0.21) % 1; g.g.position.set(-22 + u * 44, 8 + Math.sin(t * 0.6 + i) * 0.8 + i * 0.4, -10 - i * 1.5); g.g.rotation.y = 0; const f = Math.sin(t * 9 + i) * 0.7; g.w1.rotation.x = f; g.w2.rotation.x = -f; });
+      const u = (t * (0.05 + (i % 3) * 0.02) + i * 0.21) % 1; g.g.position.set(-22 + u * 44, (i > 4 ? 6.2 : 8) + Math.sin(t * 0.6 + i) * 0.8 + (i % 5) * 0.4, (i > 4 ? -3 : -10) - (i % 5) * 1.5); g.g.rotation.y = 0; const f = Math.sin(t * 9 + i) * 0.7; g.w1.rotation.x = f; g.w2.rotation.x = -f; });
     const mt = Wd.mainTank;
     mt.lid.rotation.z = t >= 15.1 && t < 31 ? -Math.min(1.9, eout(ramp(t, 15.1, 15.5)) * 1.9) : 0;
     const dp = Wd.dipstick; if (t >= 15.5 && t < 18.9) { const down = eout(ramp(t, 15.9, 16.3)) - eout(ramp(t, 16.6, 17.0)); dp.position.set(mt.x + 0.5 - (t > 16.6 ? 0.25 * eout(ramp(t, 16.6, 17.0)) : 0), mt.h + 1.4 - down * 1.1 + (t > 16.6 ? 0.2 : 0), mt.z + 0.75); dp.rotation.set(0.15, 0, t > 16.6 ? -0.5 : 0.05); } else dp.position.y = -50;
     Wd.gallonSign.visible = t >= 12.6 && t < 14.2; if (Wd.gallonSign.visible) Wd.gallonSign.scale.setScalar(eout(ramp(t, 12.6, 12.9)));
-    fall(Wd.tankBills, t >= 11.6 && t < 14.2 ? t : -1, 11.6, [-0.8, 3.6, 4.2, -3.2, 2.4], 50);
+    fall(Wd.tankBills, t >= 9.2 && t < 14.2 ? t : -1, 9.2, [-0.8, 3.6, 4.2, -3.2, 2.4], 50);
     // collapse at 38.98: the tank skin crumples and seawater bursts out
     const g = mt.g, c = ramp(t, 38.98, 39.5);
     if (t >= 38.9 && t < 40.5) { g.scale.set(1 + c * 0.12, 1 - eout(c) * 0.55, 1 + c * 0.12); g.rotation.z = Math.sin(c * 9) * 0.04 * c; } else { g.scale.set(1, 1, 1); g.rotation.z = 0; }
@@ -148,9 +148,9 @@ window.STORY = (() => {
     const n = Math.floor(clamp((t - 27.5) / 3.2) * Wd.receipts.length) + 4; Wd.receipts.forEach((m, i) => { m.visible = i < n; if (t > 30.2) m.position.x = -0.5 + Math.sin(i * 1.7) * 0.02 + Math.sin(t * 3) * 0.004 * i; });
     const st = Wd.stamp3D; let sy = 0; for (const a of [28.58, 29.22, 29.54]) sy = Math.max(sy, pulse(t, a - 0.12, 0.3)); st.position.y = 0.86 + 0.18 * (1 - sy); st.position.x = 0.3 - 0.8 * Math.min(1, sy * 1.5);
     Wd.certified.visible = t >= 28.6; if (Wd.certified.visible) Wd.certified.scale.setScalar(eout(ramp(t, 28.6, 28.85)));
-    fall(Wd.amexPapers, t >= 30.25 ? t : -1, 30.25, [-1.5, 3, 3.2, -1.8, 2], 3, 0.7);
+    fall(Wd.amexPapers, t >= 27.6 ? t : -1, 27.6, [-1.5, 3, 3.2, -1.8, 2], 3, 0.7);
   };
-  const kitchenState = (t) => {
+  const kitchenState = (t) => { Wd.runSmoke(Wd.potSteam, t, -2.38, 1.2, -2.35, 0.9, 0.12, 0.6);
     const fr = Wd.frosting; fr.position.y = 0.44 + (1 - eout(ramp(t, 34.3, 34.6))) * 0.5; fr.scale.y = 1 - pulse(t, 34.6, 0.2) * 0.3;
     const see = ramp(t, 37.7, 38.0); Wd.boxWalls.forEach((m) => { m.material.opacity = 1 - see * 0.75; m.material.depthWrite = see < 0.5; }); Wd.bestCake.visible = see < 0.5;
     Wd.emptyLabel.visible = t >= 37.9; if (Wd.emptyLabel.visible) Wd.emptyLabel.scale.setScalar(eout(ramp(t, 37.9, 38.15)));
@@ -164,7 +164,7 @@ window.STORY = (() => {
   const omahaState = (t) => {
     Wd.buyStamp.visible = t >= 44.66; if (Wd.buyStamp.visible) Wd.buyStamp.scale.setScalar(1 + 0.6 * (1 - eout(ramp(t, 44.66, 44.9))));
     Wd.cert.visible = t >= 44.9; if (Wd.cert.visible) { Wd.cert.scale.setScalar(eout(ramp(t, 44.9, 45.2))); Wd.cert.rotation.z = Math.sin(t * 2) * 0.05; }
-    fall(Wd.omBills, t >= 45.6 ? t : -1, 45.6, [-2.4, 4.8, 3.2, -2.4, 3.6], 31, 0.9); fall(Wd.omConfetti, t >= 46.3 ? t : -1, 46.3, [-2, 4, 3.2, -2.2, 3.4], 77, 1.0);
+    fall(Wd.omBills, t >= 44.7 ? t : -1, 44.7, [-2.4, 4.8, 3.2, -2.4, 3.6], 31, 0.9); fall(Wd.omConfetti, t >= 43.6 ? t : -1, 43.6, [-2, 4, 3.2, -2.2, 3.4], 77, 1.0);
     const tf = Wd.tinyFish; tf.position.set(Math.sin(t * 1.6) * 0.07, 0.14 + Math.sin(t * 2.3) * 0.03, Math.cos(t * 1.6) * 0.07); tf.rotation.y = -t * 1.6;
   };
   const SETSTATE = { farm: farmState, cut: cutState, banks: banksState, amex: amexState, kitchen: kitchenState, exchange: exchangeState, omaha: omahaState };
