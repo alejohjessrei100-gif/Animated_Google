@@ -19,7 +19,7 @@ def main():
     raw = open(a[0]).read()
     text = re.sub(r'\[[^\]]*\]', '', raw); text = re.sub(r'\s+', ' ', text).strip()
     words = re.findall(r"[A-Za-z0-9][A-Za-z0-9'\-,]*", text)
-    sents = [s.strip() for s in re.split(r'(?<=[.?!])\s+', text) if s.strip()]
+    sents = [s.strip() for s in re.split(r'(?<=[.?!])["\u201d]?\s+', text) if s.strip()]
     n = len(words); dur = n / wps
     hook = []
     for s in sents:
@@ -40,7 +40,7 @@ def main():
     nums = re.findall(r'\b\d[\d,]*\b|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|hundred|thousand|million)\b', text, re.I)
     chk('specific numbers (>= 4)', len(nums) >= 4, f'{len(nums)} found')
     chk('no CTA / outro', not CTA.search(text), 'CTAs cut retention at the end')
-    last = sents[-1].lower(); hook_kw = {w.lower().strip('.,?!') for w in hook_t.split() if len(w) > 3}
+    last = sents[-1].lower(); hook_kw = {w.lower().strip('.,?!') for w in words[:25] if len(w) > 4}
     loop = hook_kw & {w.strip('.,?!') for w in last.split()}
     chk('ending calls back to the hook', bool(loop) or bool(re.search(r'number|again|first|never', last)), f'shared words: {sorted(loop) or "none"} | last line: "{sents[-1]}"', warn=True)
     longs = [s for s in sents if len(s.split()) > 16]
