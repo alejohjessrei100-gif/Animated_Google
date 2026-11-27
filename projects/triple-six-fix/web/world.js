@@ -3,6 +3,7 @@
 window.WORLD = (() => {
   const E = ENGINE, { add, box, tbox, group, sign, col, toon, texM, label, scene } = E;
   const R = PAINT.rng(2026);
+  const eout = (u) => 1 - Math.pow(1 - Math.max(0, Math.min(1, u)), 3);
   const Wd = {};
   const cyl = (rt, rb, h, n = 20) => new THREE.CylinderGeometry(rt, rb, h, n);
   const sph = (r, a = 20, b = 14) => new THREE.SphereGeometry(r, a, b);
@@ -47,7 +48,7 @@ window.WORLD = (() => {
     const cup = add(cyl(0.14, 0.09, 0.08, 20), '#c8323a', w / 2 - 0.2, h + 1.12, 0, g);
     const vent = add(cyl(0.16, 0.2, 0.1, 18), '#7f8896', 0, 0.2, 0, g);
     const balls = []; for (let i = 0; i < 10; i++) balls.push(Wd.ball(i, 0.075, g));
-    const puffs = []; for (let i = 0; i < 6; i++) { const p = add(sph(0.06, 10, 8), '#eaf6ff', 0, 0.3, 0, g, { cast: false }); puffs.push(p); }
+    const puffs = [];
     return { g, w, h, d, balls, puffs, tubeX: w / 2 - 0.2, cupY: h + 1.2, base: 0.26 };
   };
   // ball physics-ish: deterministic bounce in the drum; air 0..1; heavy balls barely move
@@ -61,7 +62,8 @@ window.WORLD = (() => {
       const pk = picks && picks.find((p) => p.d === i && t >= p.t);
       if (pk) { const u = Math.min(1, (t - pk.t) / 0.32), e = 1 - Math.pow(1 - u, 3); const tx = mc.tubeX, ty = mc.cupY; x = x + (tx - x) * e; z = z * (1 - e); y = y + (ty - y) * e; if (u >= 1) y = ty + Math.sin((t - pk.t - 0.32) * 18) * 0.012 * Math.exp(-(t - pk.t - 0.32) * 4); }
       b.position.set(x, y, z); b.rotation.set(t * (1 + i * 0.3) * a * 4, -Math.PI / 2 + t * a * 3, 0);
-      if (pk && t - pk.t > 0.32) b.rotation.set(0, -Math.PI / 2 + 0.25, 0);
+      b.scale.setScalar(1);
+      if (pk && t - pk.t > 0.32) { const g = eout((t - pk.t - 0.32) / 0.15); b.rotation.set(0, -Math.PI / 2 + 0.25, 0); b.scale.setScalar(1 + g * 0.9); b.position.y += g * 0.07; }
     });
     mc.puffs.forEach((p, k) => { const u = ((t * 1.6 + k / mc.puffs.length) % 1); p.visible = air > 0.05; p.position.set(Math.sin(k * 2.3) * 0.25 * u, mc.base + u * 0.9 * air, Math.cos(k * 1.7) * 0.2 * u); p.scale.setScalar((0.4 + u * 1.4) * (1 - u) * 1.6); });
   };
@@ -113,7 +115,6 @@ window.WORLD = (() => {
   // host podium
   const pod = group(3.7, 0.22, -1.6, ST); add(tbox(0.9, 0.78, 0.6), '#c62f36', 0, 0.39, 0, pod); add(tbox(1.0, 0.06, 0.7), '#f4d35e', 0, 0.81, 0, pod);
   sign(pod, ['DAILY', '#'], 0, 0.42, 0.31, 0.5, 0.5, { d: 0.02, bg: '#f7f2e4' }); Wd.podium = pod;
-  add(cyl(0.012, 0.012, 0.35, 6), '#2b2f38', 0.42, 0.98, 0.1, pod).rotation.z = -0.5; add(sph(0.05), '#b6bec7', 0.5, 1.12, 0.12, pod);
   // cameras, truss, lights
   Wd.cams = [tvCam(ST, -3.4, 2.6, Math.PI + 0.35), tvCam(ST, 2.4, 3.4, Math.PI - 0.2), tvCam(ST, 5.6, 0.5, Math.PI - 0.9)];
   for (const z of [-4.5, -1.5, 1.5]) add(box(15, 0.16, 0.16), '#7f8896', 0, 6.2, z, ST);
@@ -149,20 +150,20 @@ window.WORLD = (() => {
   Wd.handsOff = sign(WS, [{ t: 'LOTTERY PROPERTY', c: '#c62f36' }, 'HANDS OFF'], -0.6, 2.95, -2.97, 1.8, 0.55, { bg: '#fbfaf4' });
   // bench props
   const prop = (x, txt, mk) => { const g = group(-20 + x, 1.0, -2.3); mk(g); if (txt) sign(g, [txt], 0, txt.y ?? 0.16, 0.13, 0.26, 0.1, { d: 0.005, bg: '#fbfaf4' }); return g; };
-  Wd.powder = group(-21.9, 1.0, -2.25); add(cyl(0.1, 0.1, 0.32, 18), '#fbfaf4', 0, 0.16, 0, Wd.powder); add(cyl(0.1, 0.08, 0.06, 18), '#7fb3e0', 0, 0.35, 0, Wd.powder); sign(Wd.powder, ['BABY', 'POWDER'], 0, 0.16, 0.1, 0.18, 0.14, { d: 0.005, bg: '#bfe0f6' });
-  Wd.sugar = group(-21.1, 1.0, -2.25); add(sph(0.2, 16, 12), '#efe3c4', 0, 0.18, 0, Wd.sugar).scale.set(0.9, 1.1, 0.7); sign(Wd.sugar, ['SUGAR'], 0, 0.18, 0.15, 0.24, 0.1, { d: 0.005, bg: '#fbfaf4' });
-  Wd.vas = group(-20.3, 1.0, -2.25); add(cyl(0.11, 0.11, 0.16, 20), '#d9ecff', 0, 0.08, 0, Wd.vas); Wd.vasLid = add(cyl(0.115, 0.115, 0.05, 20), '#2a5fae', 0, 0.18, 0, Wd.vas); sign(Wd.vas, ['VASELINE'], 0, 0.08, 0.115, 0.2, 0.07, { d: 0.005, bg: '#2a5fae', fg: '#ffffff' });
-  Wd.paint = group(-19.4, 1.0, -2.25); add(cyl(0.16, 0.16, 0.34, 22), '#c9ccd4', 0, 0.17, 0, Wd.paint); Wd.paintLid = add(cyl(0.165, 0.165, 0.03, 22), '#9aa0aa', 0, 0.355, 0, Wd.paint); add(new THREE.TorusGeometry(0.16, 0.012, 6, 22, Math.PI), '#7f8896', 0, 0.36, 0, Wd.paint); sign(Wd.paint, [{ t: 'WHITE', c: '#2b1f1c' }, { t: 'LATEX', c: '#c62f36' }], 0, 0.17, 0.162, 0.26, 0.2, { d: 0.005, bg: '#fbfaf4' });
+  Wd.powder = group(-22.3, 1.0, -2.25); add(cyl(0.1, 0.1, 0.32, 18), '#fbfaf4', 0, 0.16, 0, Wd.powder); add(cyl(0.1, 0.08, 0.06, 18), '#7fb3e0', 0, 0.35, 0, Wd.powder); sign(Wd.powder, ['BABY', 'POWDER'], 0, 0.16, 0.1, 0.18, 0.14, { d: 0.005, bg: '#bfe0f6' });
+  Wd.sugar = group(-21.7, 1.0, -2.25); add(sph(0.2, 16, 12), '#efe3c4', 0, 0.18, 0, Wd.sugar).scale.set(0.9, 1.1, 0.7); sign(Wd.sugar, ['SUGAR'], 0, 0.18, 0.15, 0.24, 0.1, { d: 0.005, bg: '#fbfaf4' });
+  Wd.vas = group(-21.1, 1.0, -2.25); add(cyl(0.11, 0.11, 0.16, 20), '#d9ecff', 0, 0.08, 0, Wd.vas); Wd.vasLid = add(cyl(0.115, 0.115, 0.05, 20), '#2a5fae', 0, 0.18, 0, Wd.vas); sign(Wd.vas, ['VASELINE'], 0, 0.08, 0.115, 0.2, 0.07, { d: 0.005, bg: '#2a5fae', fg: '#ffffff' });
+  Wd.paint = group(-20.4, 1.0, -2.25); add(cyl(0.16, 0.16, 0.34, 22), '#c9ccd4', 0, 0.17, 0, Wd.paint); Wd.paintLid = add(cyl(0.165, 0.165, 0.03, 22), '#9aa0aa', 0, 0.355, 0, Wd.paint); add(new THREE.TorusGeometry(0.16, 0.012, 6, 22, Math.PI), '#7f8896', 0, 0.36, 0, Wd.paint); sign(Wd.paint, [{ t: 'WHITE', c: '#2b1f1c' }, { t: 'LATEX', c: '#c62f36' }], 0, 0.17, 0.162, 0.26, 0.2, { d: 0.005, bg: '#fbfaf4' });
   Wd.paintPool = add(cyl(0.14, 0.14, 0.01, 20), '#ffffff', 0, 0.33, 0, Wd.paint, { cast: false });
   // big syringe (3D)
-  Wd.syringe = group(-18.6, 1.3, -2.0); { const s = Wd.syringe; add(cyl(0.045, 0.045, 0.34, 16), M.glass, 0, 0, 0, s, { noink: true }); add(cyl(0.04, 0.04, 0.2, 14), '#fbfaf4', 0, -0.06, 0, s); add(cyl(0.006, 0.006, 0.2, 6), '#b6bec7', 0, -0.27, 0, s); Wd.plunger = add(cyl(0.012, 0.012, 0.3, 8), '#c62f36', 0, 0.25, 0, s); add(cyl(0.05, 0.05, 0.015, 14), '#c62f36', 0, 0.4, 0, s); for (const y of [0.17, -0.17]) add(new THREE.TorusGeometry(0.046, 0.008, 6, 16), '#2b2f38', 0, y, 0, s).rotation.x = Math.PI / 2; }
+  Wd.syringe = group(-18.6, 1.3, -2.0); { const s = Wd.syringe; const bar = add(cyl(0.032, 0.032, 0.3, 18), M.glass, 0, 0, 0, s, { noink: true }); bar.renderOrder = 6; Wd.fill = add(cyl(0.028, 0.028, 0.16, 14), '#fbfaf4', 0, -0.07, 0, s); add(cyl(0.029, 0.029, 0.025, 14), '#2b2f38', 0, 0.025, 0, s); for (let k = 0; k < 5; k++) add(box(0.012, 0.003, 0.003), '#2b2f38', 0.031, -0.12 + k * 0.05, 0, s, { cast: false }); add(new THREE.ConeGeometry(0.03, 0.04, 14), '#d8dde6', 0, -0.17, 0, s).rotation.x = Math.PI; add(cyl(0.0035, 0.0035, 0.16, 6), '#c9ced6', 0, -0.27, 0, s); add(box(0.13, 0.012, 0.04), '#d8dde6', 0, 0.15, 0, s); Wd.plunger = group(0, 0.2, 0, s); add(cyl(0.008, 0.008, 0.2, 8), '#d8dde6', 0, -0.02, 0, Wd.plunger); add(cyl(0.035, 0.035, 0.012, 16), '#d8dde6', 0, 0.08, 0, Wd.plunger); s.scale.setScalar(1.25); }
   Wd.drop = add(sph(0.025, 10, 8), '#ffffff', 0, -50, 0, scene, { cast: false });
   // tray of balls 0-9 on the bench
-  Wd.tray = group(-20.6, 1.0, -1.95); add(tbox(1.3, 0.04, 0.35), '#3b3f4a', 0, 0.02, 0, Wd.tray); Wd.trayBalls = []; for (let i = 0; i < 10; i++) { const b = Wd.ball(i, 0.055, Wd.tray); b.position.set(-0.56 + i * 0.125, 0.1, 0); Wd.trayBalls.push(b); }
+  Wd.tray = group(-19.2, 1.0, -1.95); add(tbox(1.3, 0.04, 0.35), '#3b3f4a', 0, 0.02, 0, Wd.tray); Wd.trayBalls = []; for (let i = 0; i < 10; i++) { const b = Wd.ball(i, 0.055, Wd.tray); b.position.set(-0.56 + i * 0.125, 0.1, 0); Wd.trayBalls.push(b); }
   // desk fan + float ball, scale, lamp, coffee + steam, clock, moth
   Wd.fan = group(-18.0, 1.0, -2.3); { add(cyl(0.1, 0.12, 0.05, 16), '#2a5fae', 0, 0.03, 0, Wd.fan); add(cyl(0.02, 0.02, 0.25, 8), '#2a5fae', 0, 0.15, 0, Wd.fan); const cage = add(new THREE.TorusGeometry(0.17, 0.012, 6, 24), '#b6bec7', 0, 0.32, 0, Wd.fan); cage.rotation.x = Math.PI / 2; Wd.fanBlades = group(0, 0.32, 0, Wd.fan); Wd.fanBlades.rotation.x = -Math.PI / 2; for (let k = 0; k < 3; k++) { const b = add(box(0.14, 0.01, 0.06), '#f4d35e', 0, 0, 0, Wd.fanBlades); b.position.set(Math.cos(k * 2.09) * 0.08, 0, Math.sin(k * 2.09) * 0.08); b.rotation.y = -k * 2.09; } }
   Wd.floatBall = Wd.ball(4, 0.07, scene); Wd.heavyBall = Wd.ball(2, 0.07, scene);
-  Wd.lampW = lamp(scene, -21.0, 2.2, -2.2); Wd.mug = group(-17.6, 1.0, -2.6); add(cyl(0.06, 0.05, 0.12, 14), '#d42a32', 0, 0.06, 0, Wd.mug); Wd.steam = smoke(scene, 6, '#f4f4f8');
+  Wd.lampW = lamp(scene, -21.0, 2.2, -2.2); Wd.mug = group(-18.4, 1.0, -2.7); add(cyl(0.06, 0.05, 0.12, 14), '#d42a32', 0, 0.06, 0, Wd.mug); Wd.steam = smoke(scene, 6, '#f4f4f8');
   Wd.clockW = clock(WS, 1.8, 2.7, -2.98); Wd.moth = add(sph(0.025, 8, 6), '#8a7a6a', 0, -50, 0, scene, { cast: false });
   Wd.puffs = smoke(scene, 14, '#ffffff'); Wd.sugarBits = []; for (let i = 0; i < 30; i++) Wd.sugarBits.push(add(box(0.02, 0.02, 0.02), '#ffffff', 0, -50, 0, scene, { cast: false }));
   // foreground: stacked crates, chair, hanging bulb
@@ -175,7 +176,7 @@ window.WORLD = (() => {
   add(tbox(9, 3.6, 0.2, 2), M.paperB, 0, 1.8, -4.1, CL); add(tbox(0.2, 3.6, 9, 2), M.paperB, -4.5, 1.8, 0, CL); add(tbox(0.2, 3.6, 9, 2), M.paperB, 4.5, 1.8, 0, CL);
   add(tbox(4.4, 1.6, 0.06), M.green, 0, 1.9, -3.95, CL); add(tbox(4.6, 0.1, 0.15), '#8a5734', 0, 1.05, -3.9, CL);
   sign(CL, [{ t: 'MATH TEST TODAY', c: '#ffffff' }, { t: '2 + 2 = ?', c: '#f4d35e' }], 0, 2.0, -3.9, 3.6, 1.2, { bg: '#2f6b4f', border: null, d: 0.01 });
-  Wd.desks = []; for (let r_ = 0; r_ < 3; r_++) for (let c = 0; c < 3; c++) { const x = -2.4 + c * 2.4, z = -1.4 + r_ * 1.8; const g = group(x, 0, z, CL); add(tbox(1.0, 0.06, 0.6), '#c9a571', 0, 0.72, 0, g); for (const sx of [-1, 1]) add(box(0.05, 0.72, 0.5), '#7f8896', sx * 0.45, 0.36, 0, g); chair(g, 0, 0.55, Math.PI, '#2a5fae'); Wd.desks.push(g); }
+  Wd.desks = []; for (let r_ = 0; r_ < 3; r_++) for (let c = 0; c < 3; c++) { const x = -2.4 + c * 2.4, z = -1.4 + r_ * 1.8; const g = group(x, 0, z, CL); add(tbox(1.0, 0.06, 0.6), '#c9a571', 0, 0.72, 0, g); for (const sx of [-1, 1]) add(box(0.05, 0.72, 0.5), '#7f8896', sx * 0.45, 0.36, 0, g); chair(g, 0, -0.55, 0, '#2a5fae'); Wd.desks.push(g); }
   Wd.tests = []; for (let i = 0; i < 12; i++) { const m = add(box(0.3, 0.004, 0.4), toon({ map: label([{ t: '100', c: '#d42a32' }, { t: 'A+', c: '#d42a32' }], { w: 256, h: 340, bg: '#fbfaf4', border: '#9aa0aa' }) }), 0, -50, 0, CL, { cast: false }); Wd.tests.push(m); }
   Wd.book = group(-45 + 0.28, 0.75, 0.32); { const b = Wd.book; add(tbox(0.4, 0.09, 0.3), '#2a5fae', 0, 0.045, 0, b); add(box(0.39, 0.075, 0.28), '#fbfaf4', 0.01, 0.045, 0, b); sign(b, ['NEVER', 'OPENED'], 0, 0.092, 0, 0.3, 0.16, { rx: -Math.PI / 2, d: 0.004, bg: '#f4d35e' }); add(box(0.06, 0.12, 0.33), '#b6bec7', -0.05, 0.05, 0, b); const lk = add(new THREE.TorusGeometry(0.04, 0.012, 6, 14, Math.PI), '#e6c25a', -0.05, 0.13, 0.17, b); for (let k = 0; k < 5; k++) { const w = add(cyl(0.002, 0.002, 0.25, 4), '#e8e8f0', 0.08 + k * 0.03, 0.12, -0.02, b, { cast: false }); w.rotation.z = 0.9 + k * 0.15; } }
   Wd.clockC = clock(CL, 3.0, 2.9, -3.98); Wd.fanC = fan(CL, 0, 3.6, 0.5); Wd.globe = group(-45 - 3.4, 1.0, -3.2); add(cyl(0.12, 0.16, 0.08, 14), '#8a5734', 0, 0.04, 0, Wd.globe); Wd.globeBall = add(sph(0.24, 20, 14), texM(stripesTex('#3f7fc4', '#62a85a', 6)), 0, 0.36, 0, Wd.globe); add(tbox(0.6, 1.0, 0.6), '#8a5734', 0, -0.5, 0, Wd.globe);
@@ -244,7 +245,7 @@ window.WORLD = (() => {
   add(tbox(1.6, 0.06, 0.8), '#8a5734', 1.8, 0.8, 0.4, CT); for (const sx of [-1, 1]) add(box(0.06, 0.8, 0.7), '#6a4a32', 1.8 + sx * 0.7, 0.4, 0.4, CT);
   Wd.exhibit = Wd.machine(CT, -0.9, 1.38, -2.6); Wd.exhibit.g.scale.setScalar(0.6);
   sign(CT, [{ t: 'EXHIBIT A', c: '#c62f36' }], -0.9, 1.05, -2.08, 0.7, 0.2, { bg: '#fbfaf4', d: 0.01 });
-  Wd.sevenSign = sign(CT, [{ t: '7 YEARS', c: '#ffffff' }], 0, 4.6, -2.2, 1.9, 0.7, { bg: '#c62f36', border: '#f4d35e' });
+  Wd.sevenSign = sign(CT, [{ t: '7 YEARS', c: '#ffffff' }], 0, 4.6, -2.4, 1.6, 0.6, { bg: '#c62f36', border: '#f4d35e' });
   Wd.seven = Wd.ball(7, 0.14, scene); Wd.seven.position.set(0, -50, 0);
   Wd.rain = Wd.paperBits(CT, 120, ['#f6e27a', '#f6c4d6', '#a8dcf0', '#ffffff'], [0.16, 0.09]);
   Wd.fanCt = fan(CT, 1.5, 4.1, 1); Wd.dust = []; for (let i = 0; i < 30; i++) Wd.dust.push(add(sph(0.012, 6, 4), '#fff3c4', 0, -50, 0, scene, { cast: false }));
