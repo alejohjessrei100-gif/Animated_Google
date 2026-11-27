@@ -1,0 +1,147 @@
+<!doctype html><meta charset="utf-8"><title>Character Lineup</title>
+<style>html,body{margin:0;background:#1d1a2b}canvas{display:block}</style>
+<canvas id="c" width="3000" height="1500"></canvas>
+<script>
+// Five original star-character proposals. Each: one silhouette hook, one palette, one outline colour, one expression.
+const c = document.getElementById('c'), g = c.getContext('2d');
+const P = (pts, close = true) => { g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); if (close) g.closePath(); };
+const ink = (fill, lw, col) => { if (fill) { g.fillStyle = fill; g.fill(); } if (lw) { g.lineWidth = lw; g.strokeStyle = col; g.lineJoin = 'round'; g.lineCap = 'round'; g.stroke(); } };
+const ell = (x, y, rx, ry, fill, lw, col, rot = 0) => { g.beginPath(); g.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2); ink(fill, lw, col); };
+const line = (pts, lw, col) => { P(pts, false); g.lineWidth = lw; g.strokeStyle = col; g.lineCap = 'round'; g.lineJoin = 'round'; g.stroke(); };
+const qc = (a, m, b, n = 16) => { const o = []; for (let i = 0; i <= n; i++) { const t = i / n, s = 1 - t; o.push([s * s * a[0] + 2 * s * t * m[0] + t * t * b[0], s * s * a[1] + 2 * s * t * m[1] + t * t * b[1]]); } return o; };
+const limb = (pts, w, fill, col, ow = 9) => { line(pts, w + ow * 2, col); line(pts, w, fill); };
+const shade = (pts, cx, cy, r, base, dark) => { P(pts); const gr = g.createRadialGradient(cx - r * 0.35, cy - r * 0.4, r * 0.1, cx, cy, r * 1.3); gr.addColorStop(0, base); gr.addColorStop(1, dark); g.fillStyle = gr; g.fill(); };
+const shadeEll = (x, y, rx, ry, base, dark, lw, col) => { g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); const gr = g.createRadialGradient(x - rx * 0.35, y - ry * 0.4, Math.min(rx, ry) * 0.1, x, y, Math.max(rx, ry) * 1.2); gr.addColorStop(0, base); gr.addColorStop(1, dark); g.fillStyle = gr; g.fill(); g.lineWidth = lw; g.strokeStyle = col; g.stroke(); };
+const eyeShine = (x, y, r) => ell(x - r * 0.3, y - r * 0.35, r * 0.28, r * 0.28, '#ffffff', 0);
+
+// ---------- background: a soft stage per slot ----------
+const SLOT = 600, GY = 1180;
+const BGS = [['#ffe9b8', '#f6c66b'], ['#d9f3e6', '#8fd1b0'], ['#ffd9cc', '#f19c84'], ['#e4dcff', '#a995ee'], ['#d6ecff', '#7fb6ea']];
+BGS.forEach(([a, b], i) => { const x0 = i * SLOT; const gr = g.createLinearGradient(0, 0, 0, 1500); gr.addColorStop(0, a); gr.addColorStop(1, b); g.fillStyle = gr; g.fillRect(x0, 0, SLOT, 1500);
+  g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.ellipse(x0 + 300, GY + 150, 360, 120, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = 'rgba(0,0,0,.16)'; g.beginPath(); g.ellipse(x0 + 300, GY + 6, 150, 24, 0, 0, Math.PI * 2); g.fill(); });
+g.fillStyle = 'rgba(0,0,0,.12)'; for (let i = 1; i < 5; i++) g.fillRect(i * SLOT - 2, 0, 4, 1500);
+const label = (i, name, line1) => { const x = i * SLOT + 300; g.textAlign = 'center'; g.fillStyle = '#1d1a2b'; g.font = '700 46px "Arial Black", Arial, sans-serif'; g.fillText(`${i + 1}. ${name}`, x, 1300); g.font = '500 28px Arial, sans-serif'; g.fillStyle = 'rgba(29,26,43,.78)'; g.fillText(line1, x, 1350); };
+
+// ---------- 1. BEAN: egg head, unibrow, red scarf that never stops flapping ----------
+{ const X = 300, O = '#2b1f1c'; g.save(); g.translate(X, 0);
+  // legs + shoes
+  limb([[-34, 940], [-44, 1060], [-50, 1150]], 26, '#2b3a67', O, 8); limb([[34, 940], [48, 1060], [56, 1150]], 26, '#2b3a67', O, 8);
+  ell(-62, 1162, 52, 26, '#7a4a2a', 8, O); ell(70, 1162, 52, 26, '#7a4a2a', 8, O);
+  // pear torso
+  const tor = [...qc([-70, 760], [-118, 900], [-58, 960]), [58, 960], ...qc([58, 960], [118, 900], [70, 760])]; shade(tor, 0, 860, 120, '#ffd166', '#d9a032'); P(tor); ink(null, 9, O);
+  // arms: one waving
+  limb([[-72, 790], [-150, 860], [-176, 950]], 22, '#ffd166', O, 8); ell(-180, 968, 22, 22, '#fff4dc', 7, O);
+  limb([[72, 790], [160, 730], [196, 640]], 22, '#ffd166', O, 8); ell(200, 622, 24, 24, '#fff4dc', 7, O); line([[192, 596], [188, 574]], 7, O); line([[206, 598], [210, 576]], 7, O);
+  // scarf tails (behind head, flapping right)
+  P([[30, 740], ...qc([30, 740], [150, 700], [250, 760]), [236, 800], ...qc([236, 800], [140, 760], [44, 790])]); ink('#d8402f', 9, O);
+  P([[30, 760], ...qc([30, 760], [130, 790], [214, 870]), [186, 896], ...qc([186, 896], [110, 820], [36, 800])]); ink('#e85a45', 9, O);
+  // egg head
+  shadeEll(0, 560, 105, 140, '#fff6e0', '#f0d9b0', 10, O);
+  // unibrow
+  P([...qc([-74, 512], [0, 470], [74, 512]), ...qc([74, 534], [0, 500], [-74, 534])]); ink('#2b1f1c', 0);
+  // eyes (tall ovals) + smirk
+  ell(-36, 572, 16, 28, O, 0); ell(36, 572, 16, 28, O, 0); eyeShine(-36, 572, 18); eyeShine(36, 572, 18);
+  line(qc([-30, 640], [10, 660], [46, 628]), 9, O); ell(-58, 618, 16, 10, 'rgba(232,90,69,.35)', 0); ell(62, 618, 16, 10, 'rgba(232,90,69,.35)', 0);
+  // scarf wrap
+  P([...qc([-84, 712], [0, 750], [84, 712]), ...qc([90, 760], [0, 800], [-90, 760])]); ink('#d8402f', 9, O);
+  line(qc([-70, 740], [0, 768], [70, 740]), 5, '#b02a1e');
+  g.restore(); label(0, 'BEAN', 'Egg head, unibrow, red scarf'); }
+
+// ---------- 2. PIP: floppy pointed hood, big nose, tiny legs ----------
+{ const X = SLOT + 300, O = '#3a2340'; g.save(); g.translate(X, 0);
+  limb([[-30, 990], [-34, 1150]], 24, '#5a3b5a', O, 8); limb([[30, 990], [36, 1150]], 24, '#5a3b5a', O, 8);
+  P([[-44, 1140], [-110, 1150], [-130, 1124], [-96, 1172], [-22, 1172]]); ink('#c0553a', 8, O); P([[48, 1140], [116, 1150], [136, 1124], [102, 1172], [26, 1172]]); ink('#c0553a', 8, O);
+  // tunic (bell)
+  const tun = [[-70, 760], ...qc([-70, 760], [-130, 900], [-120, 1000]), [120, 1000], ...qc([120, 1000], [130, 900], [70, 760])]; shade(tun, 0, 880, 140, '#3fc1a8', '#1f8a78'); P(tun); ink(null, 9, O);
+  P([[-104, 890], [104, 890], [108, 922], [-108, 922]]); ink('#6b3c2a', 7, O); P([[-22, 884], [22, 884], [22, 928], [-22, 928]]); ink('#f4c430', 6, O);
+  // arms: hands on hips
+  limb([[-72, 790], [-140, 850], [-112, 900]], 20, '#3fc1a8', O, 8); ell(-108, 904, 20, 20, '#ffd9b8', 7, O);
+  limb([[72, 790], [140, 850], [112, 900]], 20, '#3fc1a8', O, 8); ell(108, 904, 20, 20, '#ffd9b8', 7, O);
+  // hood back + floppy point
+  P([[-130, 640], ...qc([-130, 640], [-150, 420], [20, 330]), ...qc([20, 330], [150, 250], [240, 330]), [232, 360], ...qc([232, 360], [170, 320], [110, 380]), ...qc([110, 380], [160, 520], [130, 690]), ...qc([130, 690], [0, 760], [-130, 640])]); ink('#2f6b4f', 10, O);
+  ell(244, 350, 24, 24, '#f4d35e', 8, O);
+  // face
+  shadeEll(0, 590, 98, 104, '#ffe2c6', '#f2b896', 9, O);
+  ell(-36, 560, 11, 13, O, 0); ell(36, 560, 11, 13, O, 0); eyeShine(-36, 560, 12); eyeShine(36, 560, 12);
+  line(qc([-56, 528], [-36, 516], [-16, 528]), 7, O); line(qc([16, 528], [36, 516], [56, 528]), 7, O);
+  ell(0, 610, 34, 30, '#f08a7a', 8, O); ell(-10, 600, 9, 7, 'rgba(255,255,255,.6)', 0);
+  P([...qc([-40, 652], [0, 700], [40, 652]), ...qc([40, 652], [0, 668], [-40, 652])]); ink('#5a1e2a', 6, O);
+  ell(-66, 620, 16, 10, 'rgba(240,120,110,.45)', 0); ell(66, 620, 16, 10, 'rgba(240,120,110,.45)', 0);
+  // hood rim
+  P([...qc([-120, 640], [-140, 470], [0, 470]), ...qc([0, 470], [140, 470], [120, 640]), ...qc([120, 640], [100, 520], [0, 500]), ...qc([0, 500], [-100, 520], [-120, 640])]); ink('#3e8a63', 8, O);
+  g.restore(); label(1, 'PIP', 'Floppy hood, big nose, pointy shoes'); }
+
+// ---------- 3. GUS: rounded-square head, flat-top, gold tooth, overalls ----------
+{ const X = 2 * SLOT + 300, O = '#24180f'; g.save(); g.translate(X, 0);
+  limb([[-44, 990], [-50, 1140]], 30, '#3d5a80', O, 8); limb([[44, 990], [52, 1140]], 30, '#3d5a80', O, 8);
+  P([[-92, 1132], [-10, 1132], [-6, 1174], [-100, 1174]]); ink('#3b2a20', 8, O); P([[10, 1132], [96, 1132], [104, 1174], [12, 1174]]); ink('#3b2a20', 8, O);
+  // wide torso: red shirt + overalls
+  const tor = [[-120, 760], [120, 760], ...qc([120, 760], [140, 900], [96, 1000]), [-96, 1000], ...qc([-96, 1000], [-140, 900], [-120, 760])]; shade(tor, 0, 870, 150, '#e0574a', '#a8322a'); P(tor); ink(null, 10, O);
+  P([[-84, 850], [84, 850], ...qc([84, 850], [100, 940], [90, 1000]), [-90, 1000], ...qc([-90, 1000], [-100, 940], [-84, 850])]); ink('#4a6fa5', 9, O);
+  line([[-70, 850], [-90, 770]], 14, '#4a6fa5'); line([[70, 850], [90, 770]], 14, '#4a6fa5'); ell(-70, 862, 9, 9, '#f4c430', 5, O); ell(70, 862, 9, 9, '#f4c430', 5, O);
+  P([[-26, 900], [26, 900], [26, 940], [-26, 940]]); ink('#3d5a80', 6, O);
+  // arms: crossed-ish, thumbs up
+  limb([[-120, 790], [-176, 880], [-150, 960]], 28, '#e0574a', O, 8); ell(-146, 968, 26, 24, '#f2c7a0', 8, O);
+  limb([[120, 790], [196, 830], [226, 760]], 28, '#e0574a', O, 8); ell(230, 744, 26, 24, '#f2c7a0', 8, O); P([[222, 724], [226, 680], [244, 678], [246, 724]]); ink('#f2c7a0', 7, O);
+  // head: rounded square
+  const r = 50, hx = -125, hy = 430, hw = 250, hh = 250; g.beginPath(); g.roundRect(hx, hy, hw, hh, r); const gr = g.createRadialGradient(-40, 520, 20, 0, 560, 190); gr.addColorStop(0, '#f8d4b0'); gr.addColorStop(1, '#dda57c'); g.fillStyle = gr; g.fill(); g.lineWidth = 10; g.strokeStyle = O; g.stroke();
+  // flat-top
+  g.beginPath(); g.roundRect(-118, 360, 236, 100, [18, 18, 4, 4]); ink('#1e1714', 9, O); for (let k = -100; k <= 100; k += 22) line([[k, 372], [k, 446]], 3, '#3a2c24');
+  // stubble
+  g.fillStyle = 'rgba(60,40,30,.45)'; for (let k = 0; k < 60; k++) { const a = k * 2.4, rr = 70 + (k % 5) * 10; const x = Math.cos(a) * rr * 0.9, y = 610 + Math.abs(Math.sin(a)) * 40; if (y > 590) { g.beginPath(); g.arc(x, y, 3, 0, 7); g.fill(); } }
+  // brows, eyes, grin with gold tooth
+  P([[-86, 508], [-24, 500], [-24, 520], [-86, 526]]); ink(O, 0); P([[86, 508], [24, 500], [24, 520], [86, 526]]); ink(O, 0);
+  ell(-52, 552, 13, 15, O, 0); ell(52, 552, 13, 15, O, 0); eyeShine(-52, 552, 14); eyeShine(52, 552, 14);
+  P([[-66, 604], [66, 604], ...qc([66, 604], [0, 680], [-66, 604])]); ink('#4a1414', 8, O);
+  P([[-50, 606], [50, 606], [46, 624], [-46, 624]]); ink('#ffffff', 0); P([[6, 606], [30, 606], [28, 626], [8, 626]]); ink('#f4c430', 4, O);
+  ell(0, 586, 20, 12, '#e8a888', 6, O);
+  g.restore(); label(2, 'GUS', 'Box head, flat-top, gold tooth'); }
+
+// ---------- 4. MOXIE: big ears, mismatched eyes, paper crown, red cape ----------
+{ const X = 3 * SLOT + 300, O = '#2a1f3d'; g.save(); g.translate(X, 0);
+  // cape behind
+  P([[-70, 760], ...qc([-70, 760], [-170, 960], [-150, 1110]), ...qc([-150, 1110], [-60, 1080], [0, 1120]), ...qc([0, 1120], [70, 1080], [150, 1110]), ...qc([150, 1110], [170, 960], [70, 760])]); ink('#c62f36', 10, O);
+  limb([[-30, 980], [-38, 1150]], 22, '#2a1f3d', O, 7); limb([[30, 980], [40, 1150]], 22, '#2a1f3d', O, 7);
+  ell(-50, 1160, 44, 22, '#f4d35e', 8, O); ell(54, 1160, 44, 22, '#f4d35e', 8, O);
+  // striped shirt
+  const tor = [[-74, 760], [74, 760], ...qc([74, 760], [96, 880], [70, 990]), [-70, 990], ...qc([-70, 990], [-96, 880], [-74, 760])]; P(tor); g.save(); g.clip(); g.fillStyle = '#ffffff'; g.fillRect(-120, 740, 240, 260); g.fillStyle = '#2a5fae'; for (let y = 760; y < 1000; y += 44) g.fillRect(-120, y, 240, 22); g.restore(); P(tor); ink(null, 9, O);
+  // arms: one fist raised, one pointing
+  limb([[-74, 790], [-150, 720], [-176, 620]], 20, '#ffffff', O, 8); ell(-180, 604, 24, 24, '#e6dcff', 7, O);
+  limb([[74, 790], [160, 820], [236, 800]], 20, '#ffffff', O, 8); ell(244, 798, 22, 20, '#e6dcff', 7, O); line([[262, 796], [296, 790]], 14, O); line([[262, 796], [294, 790]], 7, '#e6dcff');
+  // ears
+  ell(-118, 560, 46, 60, '#e6dcff', 9, O); ell(-118, 560, 22, 32, '#c9b8f5', 0); ell(118, 560, 46, 60, '#e6dcff', 9, O); ell(118, 560, 22, 32, '#c9b8f5', 0);
+  // head
+  shadeEll(0, 570, 118, 116, '#f1ebff', '#cbbcf2', 10, O);
+  // mismatched eyes: big ring + small dot
+  ell(-42, 556, 34, 36, '#ffffff', 8, O); ell(-36, 560, 15, 16, O, 0); eyeShine(-36, 560, 16); ell(46, 560, 10, 12, O, 0);
+  line(qc([-80, 506], [-46, 488], [-12, 506]), 8, O); line([[24, 530], [70, 540]], 8, O);
+  // grin with one tooth
+  P([...qc([-40, 616], [10, 660], [56, 610]), ...qc([56, 610], [10, 632], [-40, 616])]); ink('#5a1e2a', 7, O); P([[2, 628], [20, 628], [18, 644], [4, 644]]); ink('#ffffff', 4, O);
+  // paper crown, tilted, taped
+  g.save(); g.translate(10, 452); g.rotate(-0.16); P([[-90, 20], [-96, -60], [-56, -22], [-30, -78], [0, -26], [30, -82], [58, -24], [94, -62], [90, 20]]); ink('#f4d35e', 9, O);
+  for (const [x, y] of [[-96, -60], [-30, -78], [30, -82], [94, -62]]) ell(x, y, 9, 9, '#c62f36', 5, O);
+  g.fillStyle = 'rgba(255,255,255,.7)'; g.fillRect(-70, -4, 34, 14); g.restore();
+  g.restore(); label(3, 'MOXIE', 'Big ears, odd eyes, paper crown'); }
+
+// ---------- 5. DOT: orange ball head, thin true-stickman body, big sneakers, bandana ----------
+{ const X = 4 * SLOT + 300, O = '#14121c'; g.save(); g.translate(X, 0);
+  // thin stick body (black) with a little lean, mid-run
+  line([[0, 690], [-8, 930]], 14, O);
+  line([[-8, 930], [-60, 1030], [-34, 1130]], 14, O); line([[-8, 930], [60, 1010], [110, 1080]], 14, O);
+  line([[-2, 760], [-90, 820], [-150, 760]], 14, O); line([[-2, 760], [90, 720], [130, 640]], 14, O);
+  ell(-156, 752, 18, 18, '#ffffff', 7, O); ell(134, 628, 18, 18, '#ffffff', 7, O);
+  // big sneakers
+  P([[-70, 1124], [10, 1120], [30, 1150], [26, 1166], [-74, 1166]]); ink('#e23b3b', 8, O); P([[-74, 1152], [28, 1152], [26, 1166], [-74, 1166]]); ink('#ffffff', 5, O); line([[-40, 1132], [-20, 1136]], 4, '#ffffff');
+  g.save(); g.translate(112, 1080); g.rotate(-0.5); P([[-30, -16], [50, -20], [70, 10], [66, 26], [-34, 26]]); ink('#e23b3b', 8, O); P([[-34, 12], [68, 12], [66, 26], [-34, 26]]); ink('#ffffff', 5, O); g.restore();
+  // head
+  shadeEll(0, 560, 132, 132, '#ffa45c', '#e8631f', 10, O);
+  // bandana + knot tails
+  P([...qc([-130, 520], [0, 440], [130, 520]), ...qc([130, 556], [0, 476], [-130, 556])]); ink('#2a5fae', 8, O); for (let k = -90; k <= 90; k += 36) ell(k, 504 + Math.abs(k) * 0.12, 6, 6, '#ffffff', 0);
+  P([[124, 530], [196, 488], [210, 520], [140, 552]]); ink('#2a5fae', 8, O); P([[128, 546], [200, 580], [186, 606], [126, 566]]); ink('#2a5fae', 8, O);
+  // wide-set eyes looking sideways, tiny mouth
+  ell(-56, 586, 34, 38, '#ffffff', 8, O); ell(56, 586, 34, 38, '#ffffff', 8, O); ell(-44, 592, 15, 17, O, 0); ell(68, 592, 15, 17, O, 0); eyeShine(-44, 592, 16); eyeShine(68, 592, 16);
+  line(qc([-14, 650], [4, 660], [22, 648]), 7, O);
+  g.restore(); label(4, 'DOT', 'Orange ball head, true stickman, sneakers'); }
+window.done = true;
+</script>
