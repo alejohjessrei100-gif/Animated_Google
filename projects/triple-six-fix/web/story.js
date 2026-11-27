@@ -109,13 +109,13 @@ window.STORY = (() => {
     // 8 Nick knows one thing; light balls fly, heavy balls stay
     { t: 18.7, set: 'workshop', pos: [-19.7, 1.6, 0.85], look: [-20.25, 1.4, -1.3], fov: 38, drift: [-0.2, 0.02, -0.35], roll: 1.5 },
     { t: 20.1, set: 'workshop', pos: [-17.65, 1.52, -1.35], look: [-18.0, 1.5, -2.3], fov: 40, drift: [0.12, 0.05, 0.1] },
-    { t: 21.3, set: 'workshop', pos: [-19.45, 1.62, 0.55], look: [-20.15, 1.25, -1.9], fov: 42, drift: [0.15, 0.0, 0.1], roll: -2 },
+    { t: 21.3, set: 'workshop', pos: [-19.75, 1.65, 0.95], look: [-20.15, 1.3, -1.9], fov: 48, drift: [0.15, 0.0, 0.1], roll: -2 },
     // 9 baby powder, sugar, Vaseline (dolly along the bench)
     { t: 22.6, set: 'workshop', pos: [-21.55, 1.7, 0.95], look: [-22.05, 1.2, -2.0], fov: 40, drift: [0.25, 0, 0] },
     { t: 23.85, set: 'workshop', pos: [-20.95, 1.7, 0.95], look: [-21.45, 1.2, -2.0], fov: 40, drift: [0.25, 0, 0], roll: 1.5 },
     { t: 24.6, set: 'workshop', pos: [-20.35, 1.7, 0.95], look: [-20.85, 1.2, -2.0], fov: 40, drift: [0.25, 0.05, 0.1], roll: -1.5 },
     // 10 Joe laughs
-    { t: 25.8, set: 'workshop', pos: [-19.2, 1.65, 1.9], look: [-19.6, 1.35, -1.4], fov: 44, drift: [-0.3, 0, -0.3] },
+    { t: 25.8, set: 'workshop', pos: [-19.55, 1.7, 2.3], look: [-19.65, 1.3, -1.4], fov: 52, drift: [-0.3, 0, -0.3] },
     { t: 27.2, set: 'workshop', pos: [-18.5, 1.62, 0.8], look: [-19.0, 1.45, -1.25], fov: 40, drift: [0.12, 0.02, -0.15], roll: 2 },
     { t: 28.6, set: 'workshop', pos: [-19.8, 1.6, 0.8], look: [-20.25, 1.42, -1.35], fov: 40, drift: [-0.12, 0.02, -0.15], roll: -2 },
     // 11 latex paint, one needle, a drop in every ball, except the fours and sixes
@@ -125,14 +125,14 @@ window.STORY = (() => {
     { t: 34.5, set: 'workshop', pos: [-19.1, 1.45, -1.2], look: [-19.14, 1.22, -1.95], fov: 40, drift: [0.02, 0.02, 0.12], roll: -1.5 },
     // 12 couldn't float in a hurricane
     { t: 36.3, set: 'studio', pos: [0.5, 1.95, -1.65], look: [0, 1.85, -3.0], fov: 40, drift: [-0.2, 0.05, 0.1], roll: 3 },
-    { t: 37.5, set: 'studio', pos: [-0.3, 1.9, 0.5], look: [-0.9, 1.7, -2.4], fov: 42, drift: [0.3, 0.02, -0.3], roll: -3 },
+    { t: 37.5, set: 'studio', pos: [-0.4, 1.9, 0.7], look: [-0.95, 1.7, -2.4], fov: 46, drift: [0.3, 0.02, -0.3], roll: -3 },
     // 13 April 24th, friends buy every combo, 14,000 tickets
     { t: 38.95, set: 'street', pos: [25.85, 1.95, -2.75], look: [25.4, 1.9, -3.72], fov: 38, drift: [0.4, 0.1, 0.7] },
     { t: 40.2, set: 'street', pos: [29.6, 1.85, 2.6], look: [26.8, 1.4, -2.6], fov: 44, drift: [-0.6, 0, -0.3], roll: 1.5 },
-    { t: 41.7, set: 'street', pos: [28.7, 1.95, 1.1], look: [27.2, 1.6, -2.6], fov: 44, drift: [-0.15, 0.02, -0.12], roll: -1.5 },
+    { t: 41.7, set: 'street', pos: [28.6, 2.0, 1.6], look: [26.95, 1.55, -2.4], fov: 50, drift: [-0.15, 0.02, -0.12], roll: -1.5 },
     { t: 43.4, set: 'street', pos: [32.6, 1.1, 1.4], look: [30.8, 1.1, -1.6], fov: 46, drift: [0.2, 0.2, 0.3], dlook: [0, 1.4, 0] },
     // 14 the air kicks on: six, six, six
-    { t: 45.1, set: 'studio', pos: [3.45, 1.85, -2.05], look: [3.0, 1.6, -2.75], fov: 40, drift: [0.08, 0.05, 0.05] },
+    { t: 45.1, set: 'studio', pos: [2.45, 1.9, -1.75], look: [3.05, 1.55, -2.75], fov: 42, drift: [0.08, 0.05, 0.05] },
     { t: 46.25, set: 'studio', pos: [-1.3, 3.4, -2.0], look: [-1.73, 3.68, -3.0], fov: 42, ein: 0.22, drift: [0.1, 0.02, -0.12], roll: -2 },
     { t: 46.86, set: 'studio', pos: [0.8, 3.4, -2.0], look: [0.37, 3.68, -3.0], fov: 42, ein: 0.22, drift: [0.1, 0.02, -0.12], roll: 2 },
     { t: 47.62, set: 'studio', pos: [2.9, 3.4, -2.0], look: [2.47, 3.68, -3.0], fov: 42, ein: 0.22, drift: [0.1, 0.02, -0.12] },
@@ -143,14 +143,14 @@ window.STORY = (() => {
     // 16 like a kid who scores 100 without opening the book
     { t: 51.2, set: 'classroom', pos: [-42.4, 2.3, 3.8], look: [-45, 1.0, 0.0], fov: 46, drift: [-0.5, -0.1, -0.5] },
     { t: 52.35, set: 'classroom', pos: [-44.6, 1.95, 2.3], look: [-45.1, 0.95, 0.2], fov: 42, drift: [0.12, -0.1, -0.1], roll: 2 },
-    { t: 54.2, set: 'classroom', pos: [-44.15, 1.45, 1.25], look: [-44.72, 0.93, 0.32], fov: 40, drift: [-0.1, 0.03, -0.15], roll: -2 },
+    { t: 54.2, set: 'classroom', pos: [-44.15, 1.5, 1.5], look: [-44.72, 0.98, 0.3], fov: 46, drift: [-0.1, 0.03, -0.15], roll: -2 },
     // 17 winning isn't suspicious; winning perfectly is
-    { t: 55.7, set: 'classroom', pos: [-43.7, 1.6, 2.9], look: [-44.6, 1.15, 0.3], fov: 44, drift: [-0.2, 0, -0.3] },
+    { t: 55.7, set: 'classroom', pos: [-43.7, 1.65, 3.1], look: [-44.6, 1.25, 0.3], fov: 46, drift: [-0.2, 0, -0.3] },
     { t: 57.05, set: 'classroom', pos: [-43.3, 1.75, 2.95], look: [-44.25, 1.45, 0.6], fov: 42, drift: [-0.1, 0.02, -0.25], roll: 2 },
     // 18 bookies notice, stop paying
-    { t: 58.6, set: 'bookie', pos: [80.9, 1.85, 1.5], look: [80.3, 1.65, -2.8], fov: 44, drift: [-0.3, 0, -0.4] },
+    { t: 58.6, set: 'bookie', pos: [80.9, 1.85, 1.5], look: [80.35, 1.65, -2.8], fov: 44, drift: [-0.1, 0, -0.4] },
     { t: 59.95, set: 'bookie', pos: [79.7, 1.6, -1.45], look: [79.4, 1.5, -2.88], fov: 40, drift: [0.4, -0.05, 0.05], roll: 1.5 },
-    { t: 61.35, set: 'bookie', pos: [81.6, 1.8, 2.7], look: [81.4, 1.35, -1.5], fov: 46, drift: [-0.3, 0.05, -0.3], roll: -2 },
+    { t: 61.35, set: 'bookie', pos: [81.9, 1.85, 3.0], look: [81.75, 1.35, -1.5], fov: 52, drift: [-0.05, 0.05, -0.3], dlook: [-0.05, 0, 0], roll: -2 },
     // 19 the judge hands Nick seven years
     { t: 62.6, set: 'court', pos: [108.2, 2.3, 3.9], look: [105.9, 1.45, -1.2], fov: 48, drift: [-0.6, -0.1, -0.5] },
     { t: 63.7, set: 'court', pos: [105.45, 1.95, -0.75], look: [105.0, 1.85, -3.0], fov: 42, drift: [0.05, 0.1, 0.2], roll: 1.5 },
@@ -279,13 +279,13 @@ window.STORY = (() => {
     const L = [];
     if (set === 'workshop') {
       // Nick at the bench; moves along the bench with each attempt
-      let nx = -20.15, nz = -1.35, expr = 'sly', Rp = [[0, 'holdUp']], Lp = [[0, 'hold']];
+      let nx = -20.15, nz = -1.35, expr = 'sly', Rp = [[0, 'holdUp']], Lp = [[0, 'hold']], nWalk = null;
       if (t < 2.3) { expr = [[0, 'smirk'], [1.3, 'sly'], [1.7, 'grin']]; Rp = [[0, 'holdUp']]; nx = -20.05; nz = -1.6; }
-      else if (t < 22.6) { expr = [[18.7, 'think'], [19.34, 'sly'], [20.3, 'grin'], [21.62, 'shock'], [21.9, 'smugsmile']]; Rp = [[18.7, 'chin'], [19.3, 'up'], [20.2, 'point'], [21.3, 'hip']]; Lp = [[18.7, 'hang'], [20.2, 'hip']]; nx = t >= 21.3 ? -20.55 : -20.25; if (t >= 21.3) Rp = [[21.3, 'holdUp'], [21.42, 'point']]; }
-      else if (t < 25.8) { const k = t < 23.85 ? 0 : t < 24.6 ? 1 : 2; nx = [-21.7, -21.1, -20.5][k]; nz = -1.55; expr = [[22.6, 'think'], [23.2, 'shock'], [23.9, 'think'], [24.2, 'nervous'], [24.75, 'stern'], [25.0, 'shock']]; Rp = [[22.6, 'hold'], [23.1, 'up'], [23.9, 'point'], [24.7, 'hold'], [24.95, 'up']]; Lp = [[22.6, 'hip'], [23.1, 'mouth'], [23.6, 'hip']]; }
+      else if (t < 22.6) { expr = [[18.7, 'think'], [19.34, 'sly'], [20.3, 'grin'], [21.62, 'shock'], [21.9, 'smugsmile']]; Rp = [[18.7, 'chin'], [19.3, 'up'], [20.2, 'point'], [21.3, 'hip']]; Lp = [[18.7, 'hang'], [20.2, 'hip']]; nx = t >= 21.3 ? -20.3 : -20.25; if (t >= 21.3) Rp = [[21.3, 'holdUp'], [21.42, 'point']]; }
+      else if (t < 25.8) { const P3 = [-21.82, -21.22, -20.62], u1 = ramp(t, 23.85, 24.3), u2 = ramp(t, 24.6, 25.05); nx = P3[0] + (P3[1] - P3[0]) * ease(u1) + (P3[2] - P3[1]) * ease(u2); nz = -1.55; if ((u1 > 0 && u1 < 1) || (u2 > 0 && u2 < 1)) nWalk = t * 1.6; expr = [[22.6, 'think'], [23.2, 'shock'], [23.9, 'think'], [24.2, 'nervous'], [24.75, 'stern'], [25.0, 'shock']]; Rp = [[22.6, 'hold'], [23.1, 'up'], [23.9, 'point'], [24.7, 'hold'], [24.95, 'up']]; Lp = [[22.6, 'hip'], [23.1, 'mouth'], [23.6, 'hip']]; }
       else if (t < 30.1) { nx = -20.25; expr = [[25.8, 'nervous'], [26.5, 'angry'], [28.6, 'stern']]; Rp = [[25.8, 'hip']]; Lp = [[25.8, 'cross']]; }
       else { nx = t < 32.85 ? -21.0 : -19.85; expr = [[30.1, 'sly'], [30.85, 'smirk'], [32.1, 'smugsmile'], [33.0, 'sly'], [35.0, 'beam']]; Rp = [[30.1, 'hold'], [32.0, 'holdUp'], [35.0, 'up']]; Lp = [[30.1, 'hip']]; if (t > 32.85) { nx = -20.75; nz = -1.5; } }
-      L.push(A('nick', t, nx, 0, nz, { expr, R: Rp, L: Lp }));
+      L.push(A('nick', t, nx, 0, nz, { expr, R: Rp, L: Lp, walk: nWalk }));
       if (t >= 25.8 && t < 30.1) { const w = walkTo(t, 25.8, 26.5, [-17.4, 0, -1.1], [-19.05, 0, -1.2]); L.push(A('joe', t, w.p[0], 0, w.p[2], { walk: w.walk, expr: [[25.8, 'grin'], [26.48, 'laugh'], [27.3, 'grin'], [28.3, 'laugh']], R: [[25.8, 'hang'], [26.5, 'point'], [27.6, 'wave'], [28.6, 'point']], L: [[25.8, 'hang'], [26.5, 'hip']], talk: [[27.26, 29.6]], hop: pulse(t, 26.5, 0.3) * 0.05 + pulse(t, 28.4, 0.3) * 0.04, flip: true })); }
     }
     if (set === 'studio') {
@@ -300,35 +300,35 @@ window.STORY = (() => {
       L.push(A('marv', t, mx, 0.22, -2.05, { expr: t < 5.1 ? [[2.24, 'shock']] : t >= 36.3 && t < 38.95 ? [[36.3, 'shock'], [37.2, 'nervous']] : t >= 45 ? [[45, 'nervous'], [47.2, 'shock'], [49, 'nervous']] : [[0, 'neutral'], [16.0, 'think'], [17.5, 'grin']], L: [[0, 'hold']], propL: 'clipboard', R: t >= 36.3 && t < 38.95 ? 'up' : [[0, 'hang'], [15.1, 'point'], [16.5, 'hang']], roll: t >= 36.3 && t < 38.95 ? Math.sin(t * 9) * 0.06 : 0, tilt: t >= 36.3 && t < 38.95 ? -8 : undefined }));
       // crew behind the TV cameras (reactors)
       L.push(A('crew1', t, -3.15, 0, 3.35, { expr: t < 5.1 ? [[2.24, 'shock'], [3.0, 'beam']] : t >= 48 && t < 51 ? 'shock' : 'bored', R: t < 5.1 ? 'up' : 'hold', L: 'hold', hop: t < 5.1 ? Math.abs(Math.sin(t * 7)) * 0.05 : 0 }));
-      L.push(A('crew2', t, 2.75, 0, 4.15, { expr: t < 5.1 ? 'laugh' : t >= 48 && t < 51 ? 'shock' : [[0, 'neutral'], [12, 'smile'], [30, 'bored']], R: t < 5.1 ? 'wave' : 'hold', L: 'hip', flip: true }));
-      if (t >= 8.8 && t < 11.3) { const w = walkTo(t, 9.0, 11.2, [-6.5, 0, -0.3], [-1.6, 0, 0.1]); L.push(A('joe', t, w.p[0], 0, w.p[2], { walk: w.walk, expr: 'smile', R: 'holdUp', propR: 'wrench', L: 'hang' })); }
+      L.push(A('crew2', t, 3.05, 0, 4.75, { expr: t < 5.1 ? 'laugh' : t >= 48 && t < 51 ? 'shock' : [[0, 'neutral'], [12, 'smile'], [30, 'bored']], R: t < 5.1 ? 'wave' : 'hold', L: 'hip', flip: true }));
+      if (t >= 8.8 && t < 11.3) { const w = walkTo(t, 9.0, 11.2, [-4.6, 0, -0.5], [-1.6, 0, 0.1]); L.push(A('joe', t, w.p[0], 0, w.p[2], { walk: w.walk, expr: 'smile', R: 'holdUp', propR: 'wrench', L: 'hang' })); }
     }
     if (set === 'living') {
       const ex = [[13.24, 'neutral'], [13.6, 'grin']];
-      L.push(A('dad', t, 53.85, 0.32, -0.25, { pose: 'sit', expr: [[13.24, 'smile'], [14.1, 'beam']], R: [[13.24, 'hold'], [14.0, 'point']], L: 'hang', look: 0.8 }));
-      L.push(A('mom', t, 53.85, 0.32, 0.45, { pose: 'sit', expr: [[13.24, 'smile'], [14.3, 'grin']], R: 'mouth', L: 'hang', look: 0.7, propL: null }));
-      L.push(A('kidA', t, 53.9, 0.32, 1.05, { pose: 'sit', expr: [[13.24, 'grin'], [14.2, 'laugh']], R: 'up', L: 'up', hop: Math.abs(Math.sin(t * 6)) * 0.05 }));
-      L.push(A('gran', t, 53.6, 0, 2.0, { expr: [[13.24, 'sleepy'], [14.4, 'shock']], R: 'hold', L: 'hang', propR: 'coffee' }));
+      L.push(A('dad', t, 53.95, 0.53, -0.25, { pose: 'sit', expr: [[13.24, 'smile'], [14.1, 'beam']], R: [[13.24, 'hold'], [14.0, 'point']], L: 'hang', look: 0.8 }));
+      L.push(A('mom', t, 53.95, 0.53, 0.45, { pose: 'sit', expr: [[13.24, 'smile'], [14.3, 'grin']], R: 'mouth', L: 'hang', look: 0.7, propL: null }));
+      L.push(A('kidA', t, 54.0, 0.53, 1.05, { pose: 'sit', expr: [[13.24, 'grin'], [14.2, 'laugh']], R: 'up', L: 'up', hop: Math.abs(Math.sin(t * 6)) * 0.05 }));
+      L.push(A('gran', t, 53.05, 0, 0.95, { expr: [[13.24, 'sleepy'], [14.4, 'shock']], R: 'hold', L: 'hang', propR: 'coffee' }));
     }
     if (set === 'street') {
       const sneak = (id, i) => { const w = walkTo(t, 40.0 + i * 0.25, 41.4 + i * 0.2, [24.3 - i * 0.9, 0.18, -1.6 + i * 0.3], [26.3 + i * 0.6, 0.18, -2.2 + i * 0.35]); return A(id, t, w.p[0], 0.18, w.p[2], { walk: w.walk, expr: t < 41.4 ? 'sly' : t < 43.4 ? [[41.4, 'smirk'], [42.4, 'sly']] : [[43.4, 'grin'], [43.9, 'beam']], R: t < 41.2 ? 'hang' : [[41.2, 'holdUp'], [43.6, 'up']], propR: t >= 41.2 ? 'tickets' : null, L: i === 0 ? [[40, 'mouth'], [41.2, 'hang']] : 'hang', look: t < 41.4 ? Math.sin(t * 4 + i) : undefined, hop: t > 43.6 ? Math.abs(Math.sin(t * 6 + i)) * 0.05 : 0 }); };
       if (t >= 40.0) { L.push(sneak('pal1', 0)); L.push(sneak('pal2', 1)); L.push(sneak('pal3', 2)); }
-      L.push(A('clerk', t, 27.0, 0.18, -3.75, { expr: t < 41.6 ? 'bored' : [[41.6, 'grin'], [43.6, 'shock']], R: [[38.9, 'hang'], [41.14, 'holdUp']], propR: 'tickets', L: 'hip' }));
+      L.push(A('clerk', t, 27.0, 0.18, -3.64, { expr: t < 41.6 ? 'bored' : [[41.6, 'grin'], [43.6, 'shock']], R: [[38.9, 'hang'], [41.14, 'holdUp']], propR: 'tickets', L: 'hip' }));
     }
     if (set === 'classroom') {
       const deskPos = (c, r_) => [-45 - 2.4 + c * 2.4, 0.46, -1.4 + r_ * 1.8 - 0.55];
       const kids = [['kid1', 0, 0], ['kid2', 2, 0], ['kid3', 0, 1], ['kid4', 2, 1], ['kid1', 0, 2], ['kid3', 2, 2]];
       kids.forEach(([id, c, r_], i) => { const p = deskPos(c, r_); L.push(A(id, t + i, p[0], p[1], p[2], { pose: 'sit', expr: t < 55.7 ? (i % 2 ? 'bored' : 'think') : [[55.7, 'shock'], [56.6 + i * 0.1, 'sly']], R: t > 55.7 && i % 2 ? 'mouth' : 'hang', L: 'hang', look: -0.6 })); });
       const hp = deskPos(1, 1); L.push(A('hero', t, hp[0], hp[1], hp[2], { pose: 'sit', expr: t < 55.7 ? [[51.2, 'smugsmile'], [52.6, 'beam'], [54.3, 'smirk']] : [[55.7, 'nervous'], [57.2, 'shock']], R: t < 55.7 ? [[51.2, 'hold'], [52.6, 'up'], [53.6, 'thumb']] : 'mouth', propR: t < 55.7 ? 'test' : null, L: 'hang', hop: t >= 52.6 && t < 54 ? Math.abs(Math.sin(t * 6)) * 0.04 : 0 }));
-      const w = walkTo(t, 55.6, 56.4, [-42.6, 0, -0.6], [-44.25, 0, 0.75]); const tw = t < 55.6 ? [-46.5, 0, -3.3] : w.p;
-      L.push(A('teach', t, tw[0], 0, tw[2], { walk: w.walk, expr: t < 55.7 ? [[51.2, 'smile'], [53.5, 'neutral']] : [[55.7, 'stern'], [56.6, 'smirk'], [57.14, 'angry']], R: t < 55.7 ? 'point' : 'holdUp', propR: t >= 55.7 ? 'magnifier' : null, L: 'hip', tilt: t > 56.5 ? 10 : undefined, flip: t >= 55.7 }));
+      const w = walkTo(t, 55.6, 56.4, [-42.6, 0, -0.6], [-44.25, 0, 0.75]); const tw = t < 55.6 ? [-47.6, 0, -3.4] : w.p;
+      if (!(t >= 52.3 && t < 55.6)) L.push(A('teach', t, tw[0], 0, tw[2], { walk: w.walk, expr: t < 55.7 ? [[51.2, 'smile'], [53.5, 'neutral']] : [[55.7, 'stern'], [56.6, 'smirk'], [57.14, 'angry']], R: t < 55.7 ? 'point' : 'holdUp', propR: t >= 55.7 ? 'magnifier' : null, L: 'hip', tilt: t > 56.5 ? 10 : undefined, flip: t >= 55.7 }));
     }
     if (set === 'bookie') {
       L.push(A('sal', t, 80.85, 0, -2.05, { expr: [[58.6, 'neutral'], [58.92, 'think'], [59.6, 'stern'], [60.44, 'angry'], [61.4, 'smirk'], [61.82, 'stern']], R: [[58.6, 'hold'], [59.2, 'point'], [61.4, 'hang'], [61.7, 'up']], propR: t < 59.2 ? 'notepad' : null, L: [[58.6, 'hip']], propL: 'cigar', flip: true }));
-      if (t >= 61.0) { const w = walkTo(t, 61.0, 61.7, [83.2, 0, -2.4], [82.1, 0, -1.9]); L.push(A('pal1', t, w.p[0], 0, w.p[2], { walk: w.walk, expr: t < 61.82 ? 'grin' : 'shock', R: 'holdUp', propR: 'tickets', L: 'hang' })); L.push(A('pal2', t, w.p[0] + 0.7, 0, w.p[2] + 0.25, { walk: w.walk, expr: t < 61.82 ? 'smile' : 'angry', R: 'hold', L: t < 61.82 ? 'hang' : 'up' })); }
+      if (t >= 61.0) { const w = walkTo(t, 61.0, 61.7, [82.5, 0, -1.9], [81.95, 0, -1.55]); L.push(A('pal1', t, w.p[0], 0, w.p[2], { walk: w.walk, expr: t < 61.82 ? 'grin' : 'shock', R: 'holdUp', propR: 'tickets', L: 'hang' })); L.push(A('pal2', t, w.p[0] + 0.45, 0, w.p[2] + 0.1, { walk: w.walk, expr: t < 61.82 ? 'smile' : 'angry', R: 'hold', L: t < 61.82 ? 'hang' : 'up' })); }
     }
     if (set === 'court') {
-      L.push(A('judge', t, 105.0, 0.5, -3.05, { expr: [[62.6, 'stern'], [64.0, 'angry'], [64.6, 'stern'], [66.4, 'laugh']], R: [[62.6, 'hold'], [64.0, 'up'], [64.25, 'holdUp']], propR: 'gavel', L: 'hang', talk: [[63.6, 64.9]] }));
+      L.push(A('judge', t, 105.0, 0.5, -3.38, { expr: [[62.6, 'stern'], [64.0, 'angry'], [64.6, 'stern'], [66.4, 'laugh']], R: [[62.6, 'hold'], [64.0, 'up'], [64.25, 'holdUp']], propR: 'gavel', L: 'hang', talk: [[63.6, 64.9]] }));
       const hit = t >= 66.36; L.push(A('nick', t, 106.8, 0, 0.0, { expr: t < 64.28 ? [[62.6, 'nervous'], [63.4, 'smirk']] : t < 66.36 ? [[64.28, 'shock'], [65.2, 'nervous'], [65.7, 'shock']] : 'shock', R: t < 64.28 ? 'hip' : hit ? 'up' : 'mouth', L: hit ? 'up' : 'hang', sq: hit ? Math.max(0, Math.sin((t - 66.36) * 12) * 0.12 * Math.exp(-(t - 66.36) * 4)) : 0 }));
       [['jur1', -3.4, -1.2], ['jur2', -2.6, -1.0], ['jur3', -3.4, -0.2], ['jur4', -2.6, 0.0]].forEach(([id, dx, dz], i) => L.push(A(id, t, 105 + dx, 0, dz, { expr: t < 64.28 ? 'think' : t < 66.36 ? 'shock' : 'laugh', R: t >= 66.36 ? 'up' : 'hang', L: t >= 64.28 && t < 66.36 ? 'mouth' : 'hang' })));
     }

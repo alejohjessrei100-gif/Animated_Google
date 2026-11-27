@@ -63,7 +63,7 @@
   const WS = Wd.workshop;
   shelf(WS, 3.0, 0, -2.75, 1.6, 4, 0, '#6a4a32');
   { const v = group(-2.45, 0.95, -2.2, WS); add(box(0.2, 0.12, 0.16), '#2a5fae', 0, 0.06, 0, v); add(box(0.06, 0.1, 0.2), '#2a5fae', -0.08, 0.15, 0, v); add(cyl(0.012, 0.012, 0.3, 6), '#b6bec7', 0.05, 0.15, 0, v).rotation.x = Math.PI / 2; }
-  { const tb = group(-1.4, 0, -1.2, WS); add(tbox(0.6, 0.3, 0.3), '#c62f36', 0, 0.15, 0, tb); add(box(0.62, 0.04, 0.32), '#a8242c', 0, 0.32, 0, tb); add(new THREE.TorusGeometry(0.12, 0.015, 6, 16, Math.PI), '#2b2f38', 0, 0.34, 0, tb); add(box(0.25, 0.03, 0.06), '#b6bec7', 0.15, 0.33, 0.1, tb).rotation.y = 0.4; }
+  { const tb = group(1.9, 0, 1.9, WS); add(tbox(0.6, 0.3, 0.3), '#c62f36', 0, 0.15, 0, tb); add(box(0.62, 0.04, 0.32), '#a8242c', 0, 0.32, 0, tb); add(new THREE.TorusGeometry(0.12, 0.015, 6, 16, Math.PI), '#2b2f38', 0, 0.34, 0, tb); add(box(0.25, 0.03, 0.06), '#b6bec7', 0.15, 0.33, 0.1, tb).rotation.y = 0.4; }
   ladder(WS, 3.7, -1.2, 2.6, -Math.PI / 2, 0.22);
   { const b = group(-3.5, 0, 1.0, WS); add(cyl(0.015, 0.015, 1.3, 6), '#b07a45', 0, 0.75, 0, b).rotation.z = 0.25; const br = add(box(0.3, 0.14, 0.06), '#f2cc8f', -0.16, 0.06, 0, b); }
   for (const [x, z] of [[-1.8, -1.6], [-0.9, -0.9], [1.2, 0.2], [0.2, 1.4]]) { const d = add(cyl(0.05 + R() * 0.06, 0.05 + R() * 0.06, 0.004, 14), '#fbfaf4', x, 0.003, z, WS, { cast: false }); d.scale.z = 0.7; }

@@ -127,6 +127,8 @@ window.ENGINE = (() => {
     list.forEach((a, i) => {
       const c = getCard(i); c.draw(a.key, a.draw);
       c.mesh.visible = true; c.mesh.position.set(a.x, a.y, a.z);
+      // a card closer than 0.75 m to the lens would be sliced by the near plane: never draw a half character
+      if (Math.hypot(camera.position.x - a.x, camera.position.z - a.z) < 0.75) { c.mesh.visible = false; return; }
       const s = a.s || 1; c.mesh.scale.set(s * (a.flip ? -1 : 1), s * (1 - (a.sq || 0)), s);
       c.mesh.rotation.set(0, Math.atan2(camera.position.x - a.x, camera.position.z - a.z) + (a.yaw || 0), a.roll || 0);
       c.mat.opacity = a.alpha ?? 1; c.mesh.renderOrder = a.order || 2;
@@ -241,6 +243,8 @@ window.ENGINE = (() => {
     });
   };
 
+  E.placeCamera = (C) => { camera.position.set(...C.pos); camera.up.set(0, 1, 0); camera.lookAt(...C.look); camera.rotateZ(rx(C.roll || 0)); camera.fov = C.fov; camera.updateProjectionMatrix(); camera.updateMatrixWorld(); };
+  E.cards = () => cards;
   const tmpV = new THREE.Vector3();
   // F = { cam:{pos,look,fov,roll}, light:{...}, dof:{focus,cinf}, flash, whip:[x,y], actors:[] }
   E.render = (F) => {
@@ -251,8 +255,7 @@ window.ENGINE = (() => {
     scene.fog.color.set(L.fog); scene.fog.near = L.fogNear ?? 25; scene.fog.far = L.fogFar ?? 90;
     r.setClearColor(L.bg || L.fog, 1);
     inkU.sat.value = L.sat ?? 1.1; inkU.gain.value.set(L.gain || '#ffffff'); inkU.lift.value.set(L.lift || '#000000'); inkU.vig.value = L.vig ?? 0.18;
-    camera.position.set(...C.pos); camera.up.set(0, 1, 0); camera.lookAt(...C.look); camera.rotateZ(rx(C.roll || 0));
-    camera.fov = C.fov; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+    E.placeCamera(C);
     const focus = new THREE.Vector3(...C.look);
     const az = rx(L.az), el = rx(L.el); tmpV.set(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az));
     sun.position.copy(focus).addScaledVector(tmpV, 30); sun.target.position.copy(focus);

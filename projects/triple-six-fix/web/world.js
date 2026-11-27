@@ -200,7 +200,7 @@ window.WORLD = (() => {
   Wd.sign14k = sign(SR, [{ t: '14,000', c: '#c62f36' }, 'TICKETS'], 0.8, 0, -1.6, 0.9, 0.6, { bg: '#fbfaf4' });
   Wd.flyTickets = Wd.paperBits(SR, 40, ['#f6e27a', '#f6c4d6', '#a8dcf0'], [0.18, 0.1]);
   for (const x of [-11, -5.6, 4.6, 10]) { add(cyl(0.05, 0.07, 3.6, 10), '#2b2f38', x, 1.8, -1.2, SR); lamp(SR, x + 0.3, 3.5, -1.2, '#2b2f38'); }
-  add(cyl(0.12, 0.14, 0.6, 12), '#d42a32', 3.6, 0.48, -1.3, SR); add(cyl(0.22, 0.2, 0.7, 14), '#7f8896', -6.6, 0.53, -1.4, SR);
+  add(cyl(0.12, 0.14, 0.6, 12), '#d42a32', 3.6, 0.48, -1.3, SR); add(cyl(0.22, 0.2, 0.7, 14), '#7f8896', -7.7, 0.53, -1.4, SR);
   { const car = group(5.4, 0, 1.4, SR); add(tbox(3.2, 0.7, 1.5), '#3fa39a', 0, 0.6, 0, car); add(tbox(1.8, 0.55, 1.4), '#3fa39a', -0.2, 1.2, 0, car); add(box(1.7, 0.45, 1.42), '#bfe0f6', -0.2, 1.2, 0, car, { noink: false }); for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const w = add(cyl(0.3, 0.3, 0.2, 18), '#2b2f38', sx * 1.0, 0.3, sz * 0.75, car); w.rotation.x = Math.PI / 2; } add(box(0.1, 0.2, 1.2), '#f4d35e', 1.62, 0.65, 0, car); }
   for (const x of [-13, 12.5]) tree(SR, x, -2.4, 2.6);
   Wd.pigeons = [pigeon(SR, -1.8, -1.6), pigeon(SR, -0.9, -2.0), pigeon(SR, 1.4, -1.5)];
