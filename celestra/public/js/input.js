@@ -98,7 +98,7 @@ export function setupTouch(root) {
   const recompute = () => { let v = 0; for (const bit of active.values()) v |= bit; touch.bits = v; };
   // buttons
   root.querySelectorAll("[data-bit]").forEach((el) => {
-    const bit = B[el.dataset.bit];
+    const bit = el.dataset.bit === "HEAT" ? (B.EX | B.P) : B[el.dataset.bit]; // HEAT = EX + PARRY together
     const on = (e) => { e.preventDefault(); for (const t of e.changedTouches || [e]) active.set((t.identifier ?? "m") + el.dataset.bit, bit); el.classList.add("on"); recompute(); touch.latch |= bit; if (navigator.vibrate && touch.haptic) navigator.vibrate(6); };
     const off = (e) => { e.preventDefault(); for (const t of e.changedTouches || [e]) active.delete((t.identifier ?? "m") + el.dataset.bit); el.classList.remove("on"); recompute(); };
     el.addEventListener("touchstart", on, { passive: false });

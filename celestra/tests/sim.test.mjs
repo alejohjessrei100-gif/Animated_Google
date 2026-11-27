@@ -14,20 +14,25 @@ const randIn = (prev) => { if (r() < 0.85) return prev; let v = 0; BITS.forEach(
 let kos = 0; const seen = {};
 for (const a of ROSTER) for (const b of ROSTER) {
   const ins = []; let i0 = 0, i1 = 0;
-  for (let f = 0; f < 5000; f++) { i0 = randIn(i0); i1 = randIn(i1); ins.push([i0, i1]); }
-  const opts = { chars: [a, b], seed: 99, stage: (ROSTER.indexOf(a) + ROSTER.indexOf(b)) % 3, tag: ROSTER.indexOf(a) % 4 === 0 ? [[a, b], [b, a]] : null, evo: [ROSTER.indexOf(b) % 2 === 0, false] };
+  for (let f = 0; f < 6000; f++) { i0 = randIn(i0); i1 = randIn(i1); ins.push([i0, i1]); }
+  const ia = ROSTER.indexOf(a), ib = ROSTER.indexOf(b), kind = (ia * 16 + ib) % 6;
+  const opts = { chars: kind === 4 ? [a, b, ROSTER[(ib + 3) % ROSTER.length]] : [a, b], seed: 99, stage: (ia + ib) % 3,
+    tag: kind === 0 ? [[a, b], [b, a]] : null, evo: [ib % 2 === 0, ia % 3 === 0], raid: kind === 4, boss: kind === 5 ? 1 : -1 };
   const run = () => { const S = newMatch(opts); const ev = []; for (const x of ins) { step(S, x, ev); if (S.phase === "end") break; } return [S, ev]; };
   const [S1, ev1] = run(), [S2] = run();
   assert.equal(hashState(S1), hashState(S2), `nondeterministic ${a} v ${b}`);
   for (const f of S1.p) assert.ok(Number.isFinite(f.x) && Number.isFinite(f.y), "NaN position");
   const S3 = newMatch(opts); let snap = null;
-  for (let k = 0; k < ins.length; k++) { if (k === 1200) snap = clone(S3); step(S3, ins[k], null); if (S3.phase === "end") break; }
-  for (let k = 1200; k < ins.length; k++) { step(snap, ins[k], null); if (snap.phase === "end") break; }
-  assert.equal(hashState(S3), hashState(snap), `clone mismatch ${a} v ${b}`);
+  for (let k = 0; k < ins.length; k++) { if (k === 1200 && S3.phase !== "end") snap = clone(S3); step(S3, ins[k], null); if (S3.phase === "end") break; }
+  if (snap) { // (short boss matches may end before the snapshot point)
+    for (let k = 1200; k < ins.length; k++) { step(snap, ins[k], null); if (snap.phase === "end") break; }
+    assert.equal(hashState(S3), hashState(snap), `clone mismatch ${a} v ${b}`);
+  }
   kos += ev1.filter((e) => e.type === "ko").length;
   for (const e of ev1) seen[e.type] = (seen[e.type] || 0) + 1;
 }
-const must = ["ex", "breaker", "throw", "tech", "rage", "first", "guardbreak", "techroll", "tauntAct", "desk", "smashthrough", "jackpot", "tag", "tagko"];
+const must = ["ex", "breaker", "throw", "tech", "rage", "first", "guardbreak", "techroll", "tauntAct", "desk", "smashthrough", "jackpot", "tag", "tagko",
+  "evoUlt", "clash", "clashEnd", "heat", "dodge", "chargeRelease", "itemGet", "weaponHit", "slip", "assist", "phase", "quakeWarn"];
 const missing = must.filter((k) => !seen[k]);
 console.log("events seen:", must.map((k) => `${k}=${seen[k] || 0}`).join(" "));
 if (missing.length) console.log("WARN never triggered:", missing.join(", "));

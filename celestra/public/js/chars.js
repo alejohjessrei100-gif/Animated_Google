@@ -349,8 +349,18 @@ export const COMMON = {
   throw: D({ name: "Throw", kind: "throw", startup: 4, active: 3, recovery: 26, hook: "throw", anim: "push", sfx: "slam" }),
   throwHit: D({ name: "Throw", dmg: 82, hs: 30, kb: [6, -4.5], kd: true, unblock: true, stop: 12, sfx: "slam", heavy: true }),
   breaker: D({ name: "Combo Breaker", dmg: 0, hs: 30, kb: [7, -2], stop: 10, unblock: true, sfx: "parry" }),
+  charge: D({ name: "Charged Strike", startup: 6, active: 4, recovery: 18, dmg: 50, hs: 26, bs: 16, kb: [5, -1], box: [6, -62, 38, 28], stop: 8, anim: "hook", sfx: "heavy", heavy: true }),
+  clashHit: D({ name: "Clash Breakthrough", dmg: 90, hs: 34, kb: [7, -5.5], launch: true, unblock: true, stop: 14, sfx: "heavy", heavy: true }),
+  bossShock: D({ name: "Quake", dmg: 85, hs: 30, kb: [4, -4], kd: true, lvl: "L", stop: 10, sfx: "slam", heavy: true }),
+  assist: D({ name: "Assist", kind: "proj", proj: [{ at: 0, kind: "assist", vx: 7, y: -50, w: 20, h: 20, life: 90, dmg: 55, hs: 24, kb: [4, -2], lvl: "M", stop: 6, unblock: true }] }),
+  slip: D({ name: "Banana Slip", dmg: 30, hs: 30, kb: [1, -3.5], kd: true, unblock: true, stop: 8, sfx: "slam" }),
 };
 // each fighter's themed throw name and taunt line
+// evolved fighters' super-ultimates (their Skill 3 while evolved: cinematic + 50% more damage)
+export const EVO_ULTS = { jiross: "Javatar Overdrive", lian: "Infinite Dash Catch", dumdum: "Crimson Hemorrhage", gayle: "Grand Slam",
+  dapsay: "DAPSAY Supernova", william: "Event Horizon", tanoy: "Chain Inferno", acar: "Thousand Sole Frenzy", apsay: "Phantom Storm",
+  dap: "Bulldozer Apocalypse", jog: "Final Exam", jaguilar: "Blue Screen of Death", paulite: "Tsunami MAX", johan: "Avalanche of Doom",
+  arbe: "Full Auto", ged: "No Leave Pass FOREVER" };
 export const THROWS = { jiross: "Coffee Toss", lian: "Disc Flip", dumdum: "Gash & Drop", gayle: "Batter Toss", dapsay: "DAPSAY Suplex", william: "Gravity Fling",
   tanoy: "Ashtray Slam", acar: "Sole Stomp", apsay: "Blink Throw", dap: "Belly Suplex", jog: "Detention Drop", jaguilar: "Ctrl+Alt+Throw",
   paulite: "Belly Flop", johan: "Roll Over", arbe: "Rifle Sweep", ged: "Hall Pass Toss" };

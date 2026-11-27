@@ -22,6 +22,7 @@ function serveAsset(req, url) {
 const ALPHA = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const newCode = () => Array.from(crypto.getRandomValues(new Uint8Array(5)), (b) => ALPHA[b % ALPHA.length]).join("");
 const CODE_RE = /^[A-Z0-9]{4,8}$/;
+const ROSTER_IDS = ["jiross", "lian", "dumdum", "gayle", "dapsay", "william", "tanoy", "acar", "apsay", "dap", "jog", "jaguilar", "paulite", "johan", "arbe", "ged"];
 const json = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { "content-type": "application/json", "cache-control": "no-store" } });
 
 export default {
@@ -30,7 +31,7 @@ export default {
     const p = url.pathname;
     if (p === "/api/new") return json({ code: newCode() });
     // hub: profiles, leaderboard, replays, feedback, open rooms
-    if (/^\/api\/(profile|leaderboard|rooms|replay|feedback|use|tourney)(\/|$)/.test(p)) {
+    if (/^\/api\/(profile|leaderboard|rooms|replay|feedback|use|tourney|survival)(\/|$)/.test(p)) {
       const hub = env.HUB.get(env.HUB.idFromName("hub"));
       const u = new URL(req.url); u.pathname = p.replace("/api", "");
       if (p.startsWith("/api/feedback") && req.method === "GET" && u.searchParams.get("key") !== env.ADMIN_KEY) return json({ error: "forbidden" }, 403);
@@ -108,33 +109,44 @@ export class Room extends DurableObject {
     let prev = null, keepChar = null;
     for (const w of socks) if (w && pid && w.deserializeAttachment().pid === pid) prev = w;
     let slot;
+    for (const w of this.spectators()) if (!prev && pid && w.deserializeAttachment().pid === pid) prev = w;
+    const meta0 = await this.meta();
+    let q = 0;
     if (prev) {
       const pa = prev.deserializeAttachment();
-      slot = pa.slot; pa.gone = true; prev.serializeAttachment(pa);
+      slot = pa.slot; q = pa.q || 0; pa.gone = true; prev.serializeAttachment(pa);
       try { prev.close(4001, "replaced"); } catch {}
       socks = this.sockets();
       keepChar = pa.char;
     } else slot = socks[0] ? (socks[1] ? -1 : 1) : 0;
-    if (slot < 0) {
+    // King of the Hill: extra players join the queue as spectators (max 8 in the room)
+    if (slot < 0 && !prev && meta0.mode === "koth" && this.ctx.getWebSockets().length < 8) { meta0.qn = (meta0.qn || 0) + 1; q = meta0.qn; slot = -1; }
+    else if (slot < 0 && !prev) slot = -2;
+    if (slot === -2) {
       s.accept(); s.send(JSON.stringify({ t: "full" })); s.close(4000, "room full");
       return new Response(null, { status: 101, webSocket: c });
     }
     this.ctx.acceptWebSocket(s);
-    s.serializeAttachment({ slot, name, pid, uid, title, char: keepChar, ready: false });
+    s.serializeAttachment({ slot, name, pid, uid, title, q, char: keepChar, ready: false });
     const meta = await this.meta();
     meta.code = code;
     if (slot === 0 && !prev) meta.pub = pub;
-    if (meta.phase !== "select") { meta.phase = "select"; meta.rematch = [false, false]; }
+    if (slot >= 0 && meta.phase !== "select") { meta.phase = "select"; meta.rematch = [false, false]; } // spectators don't interrupt a match
     await this.save();
-    s.send(JSON.stringify({ t: "welcome", slot, code }));
+    s.send(JSON.stringify({ t: "welcome", slot, code, mode: meta.mode || "vs" }));
     this.broadcastRoom();
     this.ctx.waitUntil(this.listing());
     return new Response(null, { status: 101, webSocket: c });
   }
+  spectators(except) {
+    return this.ctx.getWebSockets().filter((w) => { if (w === except) return false; const a = w.deserializeAttachment(); return a && !a.gone && a.slot === -1; })
+      .sort((x, y) => x.deserializeAttachment().q - y.deserializeAttachment().q);
+  }
   roomState(except) {
     const socks = this.sockets(except);
     const players = socks.map((ws) => (ws ? (({ name, char, ready, evo, alt, title }) => ({ name, char, ready, evo: !!evo, alt: !!alt, title: title || "", here: true }))(ws.deserializeAttachment()) : null));
-    return { t: "room", players, stage: this._meta?.stage || 0, phase: this._meta?.phase || "select" };
+    const queue = this.spectators(except).map((w) => w.deserializeAttachment().name);
+    return { t: "room", players, stage: this._meta?.stage || 0, phase: this._meta?.phase || "select", mode: this._meta?.mode || "vs", queue, king: this._meta?.king || null };
   }
   broadcast(o, except) {
     const msg = typeof o === "string" ? o : JSON.stringify(o);
@@ -146,7 +158,13 @@ export class Room extends DurableObject {
     if (typeof raw !== "string") return;
     // hot path: relay netcode packets untouched to the other player
     if (raw.startsWith('{"t":"in"') || raw.startsWith('{"t":"chk"') || raw.startsWith('{"t":"pp"') || raw.startsWith('{"t":"pq"') || raw.startsWith('{"t":"emote"') || raw.startsWith('{"t":"rtc"')) {
-      this.broadcast(raw, ws); return;
+      const specs = this.spectators();
+      if (!specs.length) { this.broadcast(raw, ws); return; }
+      const sa = ws.deserializeAttachment();
+      if (!sa || sa.slot < 0) return; // spectators only watch
+      for (const w of this.sockets()) if (w && w !== ws) { try { w.send(raw); } catch {} }
+      if (raw.startsWith('{"t":"in"')) { const wrapped = `{"t":"sin","s":${sa.slot},"d":${raw}}`; for (const w of specs) { try { w.send(wrapped); } catch {} } }
+      return;
     }
     let m; try { m = JSON.parse(raw); } catch { return; }
     if (m.t === "ping") { ws.send(JSON.stringify({ t: "pong", ts: m.ts })); return; }
@@ -170,6 +188,9 @@ export class Room extends DurableObject {
         else this.broadcastRoom();
         break;
       }
+      case "mode":
+        if (a.slot !== 0 || meta.phase !== "select") return;
+        meta.mode = ["vs", "raid", "koth"].includes(m.mode) ? m.mode : "vs"; await this.save(); this.broadcastRoom(); break;
       case "stage":
         if (a.slot !== 0 || meta.phase !== "select") return;
         meta.stage = Math.max(0, Math.min(2, m.stage | 0)); await this.save(); this.broadcastRoom(); break;
@@ -191,7 +212,8 @@ export class Room extends DurableObject {
         if (r0 && r1 && r0.n === meta.round && r1.n === meta.round && r0.w === r1.w) {
           meta.results.done = meta.round;
           const ps = this.sockets().map((w) => w && w.deserializeAttachment());
-          if (ps[0] && ps[1]) this.ctx.waitUntil(this.env.HUB.get(this.env.HUB.idFromName("hub")).fetch("https://hub/result", { method: "POST", body: JSON.stringify({ code: meta.code, uids: [ps[0].uid, ps[1].uid], names: [ps[0].name, ps[1].name], chars: [ps[0].char, ps[1].char], winner: r0.w }) }).catch(() => {}));
+          if (meta.mode === "koth") this.ctx.waitUntil(this.rotate(r0.w));
+          if (ps[0] && ps[1] && meta.mode !== "raid") this.ctx.waitUntil(this.env.HUB.get(this.env.HUB.idFromName("hub")).fetch("https://hub/result", { method: "POST", body: JSON.stringify({ code: meta.code, uids: [ps[0].uid, ps[1].uid], names: [ps[0].name, ps[1].name], chars: [ps[0].char, ps[1].char], winner: r0.w }) }).catch(() => {}));
         }
         await this.save();
         break;
@@ -212,12 +234,33 @@ export class Room extends DurableObject {
       await this.env.HUB.get(this.env.HUB.idFromName("hub")).fetch("https://hub/rooms", { method: "POST", body: JSON.stringify({ code: meta.code, n: socks.length, pub: !!meta.pub, host: host ? host.name : "", char: host ? host.char : null, phase: meta.phase }) });
     } catch {}
   }
+  // King of the Hill: the loser goes to the back of the queue, the next challenger steps up
+  async rotate(w) {
+    const meta = await this.meta();
+    const socks = this.sockets(), specs = this.spectators();
+    if (w < 0 || !socks[0] || !socks[1]) return;
+    const win = socks[w], lose = socks[1 - w], wa = win.deserializeAttachment(), la = lose.deserializeAttachment();
+    meta.king = { name: wa.name, streak: meta.king && meta.king.name === wa.name ? meta.king.streak + 1 : 1 };
+    await new Promise((r) => setTimeout(r, 4500)); // let everyone see the K.O. first
+    if (specs.length) {
+      const next = specs[0], na = next.deserializeAttachment();
+      meta.qn = (meta.qn || 0) + 1;
+      la.slot = -1; la.q = meta.qn; la.ready = false; lose.serializeAttachment(la);
+      na.slot = 1 - w; na.ready = false; na.char = null; next.serializeAttachment(na);
+      try { lose.send(JSON.stringify({ t: "seat", slot: -1 })); next.send(JSON.stringify({ t: "seat", slot: 1 - w })); } catch {}
+      this.broadcast({ t: "rotate", king: meta.king, loser: la.name, next: na.name });
+    } else { la.ready = false; lose.serializeAttachment(la); this.broadcast({ t: "rotate", king: meta.king, loser: la.name, next: la.name }); }
+    wa.ready = !!wa.char; win.serializeAttachment(wa); // the king keeps their fighter and is ready
+    meta.phase = "select"; meta.rematch = [false, false]; await this.save();
+    this.broadcastRoom();
+  }
   async start(ps) {
     const meta = await this.meta();
     meta.phase = "match"; meta.rematch = [false, false]; meta.round++; meta.results = {};
     const seed = crypto.getRandomValues(new Uint32Array(1))[0] | 0;
     await this.save();
-    this.broadcast({ t: "start", seed, stage: meta.stage, chars: [ps[0].char, ps[1].char], names: [ps[0].name, ps[1].name], evo: [!!ps[0].evo, !!ps[1].evo], alt: [!!ps[0].alt, !!ps[1].alt], titles: [ps[0].title || "", ps[1].title || ""], delay: 2, n: meta.round });
+    const boss = ROSTER_IDS[crypto.getRandomValues(new Uint8Array(1))[0] % ROSTER_IDS.length];
+    this.broadcast({ t: "start", mode: meta.mode || "vs", boss, seed, stage: meta.stage, chars: [ps[0].char, ps[1].char], names: [ps[0].name, ps[1].name], evo: [!!ps[0].evo, !!ps[1].evo], alt: [!!ps[0].alt, !!ps[1].alt], titles: [ps[0].title || "", ps[1].title || ""], delay: 2, n: meta.round });
   }
   async webSocketClose(ws, code, reason) {
     const a = ws.deserializeAttachment();
@@ -225,7 +268,10 @@ export class Room extends DurableObject {
     if (!a || a.gone) return; // replaced by a reconnect — nothing changed for the rival
     a.gone = true; try { ws.serializeAttachment(a); } catch {}
     const socks = this.sockets(ws);
+    if (a.slot < 0) { this.broadcast(this.roomState(ws), ws); return; } // a spectator left
     if (socks[a.slot]) { this.broadcast(this.roomState(ws), ws); return; } // seat already re-taken
+    const specs = this.spectators(ws);
+    if (specs.length) { const nx = specs[0], na = nx.deserializeAttachment(); na.slot = a.slot; na.ready = false; na.char = null; nx.serializeAttachment(na); try { nx.send(JSON.stringify({ t: "seat", slot: a.slot })); } catch {} }
     const meta = await this.meta();
     meta.phase = "select"; meta.rematch = [false, false]; await this.save();
     for (const w of socks) if (w) { const at = w.deserializeAttachment(); at.ready = false; w.serializeAttachment(at); }
@@ -253,6 +299,7 @@ export class Hub extends DurableObject {
     try { this.sql.exec("ALTER TABLE players ADD COLUMN champs INTEGER DEFAULT 0"); } catch {}
     this.sql.exec(`CREATE TABLE IF NOT EXISTS tournaments (id TEXT PRIMARY KEY, name TEXT, size INTEGER, status TEXT, host TEXT, hostName TEXT, created INTEGER, champion TEXT, championName TEXT);
       CREATE TABLE IF NOT EXISTS tplayers (tid TEXT, uid TEXT, name TEXT, PRIMARY KEY (tid, uid));
+      CREATE TABLE IF NOT EXISTS survival (uid TEXT PRIMARY KEY, name TEXT, ch TEXT, streak INTEGER, at INTEGER);
       CREATE TABLE IF NOT EXISTS tmatches (tid TEXT, round INTEGER, slot INTEGER, a TEXT, b TEXT, an TEXT, bn TEXT, code TEXT, winner TEXT, PRIMARY KEY (tid, round, slot));`);
   }
   q(sql, ...b) { return this.sql.exec(sql, ...b).toArray(); }
@@ -322,6 +369,15 @@ export class Hub extends DurableObject {
       this.q("DELETE FROM feedback WHERE id IN (SELECT id FROM feedback ORDER BY id DESC LIMIT -1 OFFSET 3000)");
       return json({ ok: true });
     }
+    // ---- survival high scores ----
+    if (p === "/survival" && req.method === "POST") {
+      const uid = clean(body.uid, 40), name = clean(body.name, 14).toUpperCase(), ch = clean(body.ch, 12), streak = Math.max(0, Math.min(999, body.streak | 0));
+      if (!uid) return json({ ok: false });
+      const cur = this.q("SELECT streak FROM survival WHERE uid = ?", uid)[0];
+      if (!cur || streak > cur.streak) this.q("INSERT OR REPLACE INTO survival (uid, name, ch, streak, at) VALUES (?, ?, ?, ?, ?)", uid, name, ch, streak, now);
+      return json({ ok: true, best: Math.max(streak, cur ? cur.streak : 0) });
+    }
+    if (p === "/survival") return json(this.q("SELECT name, ch, streak FROM survival ORDER BY streak DESC, at ASC LIMIT 15"));
     // ---- weekly tournaments ----
     if (p === "/tourney" && req.method === "GET") {
       const rows = this.q("SELECT t.id, t.name, t.size, t.status, t.hostName, t.championName, t.created, (SELECT COUNT(*) FROM tplayers WHERE tid = t.id) AS n FROM tournaments t WHERE t.created > ? ORDER BY t.created DESC LIMIT 20", now - 8 * 86400000);

@@ -2,6 +2,8 @@
 import { VIEW_W, VIEW_H, STAGE_W } from "./sim.js";
 import { CHARS, getMove, STANCES } from "./chars.js";
 import { drawFighter, drawGhost, disc, capsule, poseFor } from "./sprites.js";
+const bossCanvas = document.createElement("canvas"); bossCanvas.width = 140; bossCanvas.height = 130;
+const bossCtx = bossCanvas.getContext("2d"); bossCtx.imageSmoothingEnabled = false;
 import { buildStage, drawStage, drawStageFront, FLOOR_Y } from "./stage.js";
 
 // ---------- 3x5 bitmap font ----------
@@ -122,6 +124,20 @@ export class Renderer {
       case "implode": fx.ring(e.x, oy - 30, 40, 2, "#9b8cff", 14, 2); fx.burst(e.x, oy - 30, 20, ["#ffffff", "#9b8cff", "#3a2aff"], 3, 18, 0); break;
       case "stomp": fx.burst(e.x, oy - 1, 18, ["#c8bfa8", "#8a8070", "#5cff7a"], 3, 22, 0.06, 1, "smoke"); fx.ring(e.x, oy - 2, 4, 44, "#5cff7a", 14, 1); break;
       case "taunt": break;
+      case "evoUlt": { const f = P(e.who); this.cine = { name: e.name, t: 70, side: e.who, col: CHARS[f.ch].color, ch: f.ch }; this.flash = 6; break; }
+      case "clash": fx.ring(e.x, oy - 44, 4, 60, "#ffffff", 16, 3); this.flash = 4; break;
+      case "clashEnd": fx.text(e.winner < 0 ? 240 + this.cam : P(e.winner).x, oy - 120, e.winner < 0 ? "DRAW!" : "BREAKTHROUGH!", "#ffe14d", 70, 2, -0.3); break;
+      case "heat": fx.ring(e.x, oy + e.y, 4, 70, "#ff7a29", 20, 3); fx.ring(e.x, oy + e.y, 2, 44, "#ffe14d", 14, 2); fx.text(e.x, oy - 120, "HEAT!", "#ff7a29", 70, 3, -0.3); this.flash = Math.max(this.flash, 4); break;
+      case "dodge": { const f = P(e.who); fx.burst(f.x, oy - 2, 6, ["#c8bfa8"], 1.4, 12, 0, 1, "smoke"); break; }
+      case "chargeRelease": { const f = P(e.who); fx.ring(f.x, oy - 40, 4, 20 + e.power * 40, e.power >= 0.9 ? "#ffe14d" : "#ffffff", 14, 2); if (e.power >= 0.9) fx.text(f.x, oy - 100, "MAX CHARGE!", "#ffe14d", 50, 1, -0.3); break; }
+      case "itemDrop": fx.text(240 + this.cam, oy - 150, "ITEM DROP!", "#5cff7a", 50, 1, -0.2); break;
+      case "itemGet": { const f = P(e.who); fx.text(f.x, oy - 96, { pan: "FRYING PAN!", chair: "CHAIR!", drink: "ENERGY DRINK!" }[e.kind] || "ITEM!", "#5cff7a", 50, 1, -0.4); break; }
+      case "weaponHit": fx.burst(e.x, oy + e.y, 8, ["#ffffff", "#c0c0d0"], 2.5, 12, 0.05); break;
+      case "weaponBreak": { const f = P(e.who); fx.text(f.x, oy - 90, "BROKE!", "#c0c0d0", 40, 1, -0.4); fx.burst(f.x + f.face * 10, oy - 50, 10, ["#8a8a96", "#c0c0d0"], 2.5, 20, 0.15, 2); break; }
+      case "slip": fx.text(e.x, oy - 70, "SLIP!", "#ffe14d", 50, 2, -0.4); break;
+      case "assist": fx.text(240 + this.cam, oy - 140, CHARS[e.ch].name + " ASSIST!", CHARS[e.ch].color, 60, 1, -0.2); break;
+      case "phase": { const f = P(e.who); fx.text(f.x, oy - 150, e.phase === 3 ? "FINAL PHASE!" : "PHASE 2: ENRAGED!", "#ff2a3c", 90, 2, -0.2); fx.ring(f.x, oy - 50, 6, 90, "#ff2a3c", 24, 3); this.flash = 8; break; }
+      case "quakeWarn": break;
       case "ex": { const f = P(e.who); fx.text(f.x, oy - 112, "EX " + e.name, "#ffffff", 60, 1, -0.3); fx.ring(f.x, oy - 40, 4, 44, "#ffffff", 14, 2); this.flash = Math.max(this.flash, 2); break; }
       case "exArm": { const f = P(e.who); fx.ring(f.x, oy - 40, 30, 4, "#ffffff", 10, 1); break; }
       case "breaker": fx.ring(e.x, oy + e.y, 4, 90, "#7fd3ff", 22, 3); fx.ring(e.x, oy + e.y, 2, 60, "#ffffff", 16, 2); fx.text(e.x, oy + e.y - 50, "COMBO BREAKER!", "#7fd3ff", 70, 2, -0.3); this.flash = Math.max(this.flash, 6); break;
@@ -209,14 +225,26 @@ export class Renderer {
       f._discOut = f.ch === "lian" && S.projs.some((p) => p.owner === f.side && (p.kind === "disc" || p.kind === "boomer"));
       // afterimage trail for dashes / dash skills
       const m = f.act ? getMove(f.act.ref) : null;
-      const fast = f.st === "dash" || (m && m.vel && f.act.t > m.startup && f.act.t <= m.startup + m.active);
+      const fast = f.st === "dash" || f.st === "dodge" || (m && m.vel && f.act.t > m.startup && f.act.t <= m.startup + m.active);
       if (fast && (this.time & 1)) fx.ghosts.push({ f: structuredClone(f), x: f.x, t: 0, life: 8, col: CHARS[f.ch].color + "" });
       const hidden = f.sx.smoke > 0 && (this.time >> 2) & 1;
       if (hidden) { ctx.globalAlpha = 0.45; }
       const tele = f.act && m && m.hook === "teleport" && f.act.t > m.tpAt - 5 && f.act.t < m.tpAt + 2;
       const alt = (S.p[0].ch === S.p[1].ch && f.side === 1) || !!(S.alt && S.alt[f.side]);
       if (f.rage || f.sx.power > 0 || f.exArm > 0) this.aura(ctx, f, ox, oy, f.exArm > 0 ? "#ffffff" : f.sx.power > 0 ? "#ffd23f" : "#ff2a3c");
-      if (!tele) anchors[f.side] = drawFighter(ctx, f, ox, oy, { flash: f.flash > 2 || (S.hitstop > 0 && f.flash > 0), S, alt });
+      if (f.heat > 0) this.heatAura(ctx, f, ox, oy);
+      if (f.st === "charge") this.chargeGlow(ctx, f, ox, oy);
+      if (f.boss && !tele) {
+        // bosses: draw at normal size off-screen, then blow up 1.5x for chunky giant pixels
+        bossCtx.clearRect(0, 0, 140, 130);
+        const bf = { ...f, x: 70, y: 0 };
+        const an = drawFighter(bossCtx, bf, 0, 124, { flash: f.flash > 2, S, alt });
+        const K = 1.5, dx = Math.round(ox + f.x - 70 * K), dy = Math.round(oy + f.y - 124 * K);
+        ctx.drawImage(bossCanvas, dx, dy, 140 * K, 130 * K);
+        const map = (pt) => [dx + pt[0] * K, dy + pt[1] * K];
+        anchors[f.side] = { hand: map(an.hand), foot: map(an.foot), head: map(an.head), chest: map(an.chest) };
+      } else if (!tele) anchors[f.side] = drawFighter(ctx, f, ox, oy, { flash: f.flash > 2 || (S.hitstop > 0 && f.flash > 0), S, alt });
+      if (f.weapon && anchors[f.side]) this.drawItem(ctx, f.weapon.kind, anchors[f.side].hand[0], anchors[f.side].hand[1] - 4, f.face);
       else anchors[f.side] = { hand: [ox + f.x, oy - 50], foot: [ox + f.x, oy], head: [ox + f.x, oy - 70], chest: [ox + f.x, oy - 40] };
       ctx.globalAlpha = 1;
       this.trail(ctx, f, anchors[f.side], m);
@@ -275,6 +303,12 @@ export class Renderer {
     drawStageFront(ctx, area1 ? this.street : this.stage, cam, this.time);
     ctx.restore();
 
+    // items on the floor
+    for (const it of S.items || []) this.drawItem(ctx, it.kind, Math.round(-this.cam + it.x), Math.round(FLOOR_Y + it.y - 6), 1, it);
+    // clash mash-off overlay
+    if (S.clash) this.drawClash(ctx, S);
+    // evolved ultimate cinematic
+    if (this.cine && this.cine.t > 0) this.drawCine(ctx);
     // KO slow-mo vignette / flash
     if (S.phase === "ko" && S.slow > 0) {
       ctx.fillStyle = "rgba(10,0,20,0.25)";
@@ -317,6 +351,52 @@ export class Renderer {
     }
   }
 
+  heatAura(ctx, f, ox, oy) {
+    const t = this.time;
+    for (let i = 0; i < 14; i++) {
+      const px = ox + f.x + Math.sin(i * 1.7 + t * 0.2) * 14, py = oy + f.y - ((t * 2 + i * 11) % 80);
+      ctx.fillStyle = i % 3 ? "#ff7a29" : "#ffe14d"; ctx.fillRect(Math.round(px), Math.round(py), 2, 3);
+    }
+  }
+  chargeGlow(ctx, f, ox, oy) {
+    const k = Math.min(1, f.t / 60), t = this.time, r = 8 + k * 22;
+    ctx.fillStyle = k >= 0.95 ? ((t >> 1) & 1 ? "#ffe14d" : "#ffffff") : "#ffffff";
+    const n = 12 + Math.floor(k * 12);
+    for (let i = 0; i < n; i++) { const an = i / n * Math.PI * 2 + t * 0.3; ctx.fillRect(Math.round(ox + f.x + Math.cos(an) * r), Math.round(oy + f.y - 40 + Math.sin(an) * r), 1, 1); }
+  }
+  drawItem(ctx, kind, x, y, face, it) {
+    x = Math.round(x); y = Math.round(y);
+    if (it && it.kind === "banana" && it.armed) y += 4;
+    if (kind === "pan") { disc(ctx, x, y, 5, "#120e18"); disc(ctx, x, y, 4, "#3a3a44"); ctx.fillStyle = "#5a5a66"; ctx.fillRect(x - 2, y - 2, 2, 1); ctx.fillStyle = "#5a3a26"; ctx.fillRect(x + face * 5, y - 1, face * 6, 2); }
+    else if (kind === "chair") { ctx.fillStyle = "#120e18"; ctx.fillRect(x - 5, y - 7, 11, 14); ctx.fillStyle = "#9aa6b8"; ctx.fillRect(x - 4, y - 6, 2, 12); ctx.fillRect(x + 2, y - 6, 2, 12); ctx.fillStyle = "#5b6a82"; ctx.fillRect(x - 4, y - 1, 8, 2); ctx.fillRect(x - 4, y - 6, 8, 2); }
+    else if (kind === "drink") { ctx.fillStyle = "#120e18"; ctx.fillRect(x - 3, y - 6, 7, 11); ctx.fillStyle = "#3cf2ff"; ctx.fillRect(x - 2, y - 5, 5, 9); ctx.fillStyle = "#ffe14d"; ctx.fillRect(x - 2, y - 2, 5, 2); }
+    else if (kind === "banana") { ctx.fillStyle = "#120e18"; ctx.fillRect(x - 6, y - 3, 12, 5); ctx.fillStyle = "#ffe14d"; ctx.fillRect(x - 5, y - 2, 10, 3); ctx.fillStyle = "#8a6a10"; ctx.fillRect(x + 4, y - 2, 1, 1); }
+    if (it && !(it.kind === "banana" && it.armed) && (this.time >> 4) & 1) { ctx.fillStyle = "#ffffff"; ctx.fillRect(x, y - 12, 1, 3); }
+  }
+  drawClash(ctx, S) {
+    const C = S.clash, t = this.time, cx = 240;
+    ctx.fillStyle = "rgba(10,6,20,0.35)"; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    pixText(ctx, "CLASH! MASH ATTACK!", cx - textW("CLASH! MASH ATTACK!", 2) / 2, 92, (t >> 2) & 1 ? "#ffffff" : "#ffe14d", 2);
+    const tot = Math.max(1, C.mash[0] + C.mash[1]), split = Math.round((C.mash[0] / tot) * 200);
+    ctx.fillStyle = "#120e18"; ctx.fillRect(cx - 102, 112, 204, 10);
+    ctx.fillStyle = "#ff3355"; ctx.fillRect(cx - 100, 114, split, 6);
+    ctx.fillStyle = "#2f6bff"; ctx.fillRect(cx - 100 + split, 114, 200 - split, 6);
+    pixText(ctx, String(C.mash[0]), cx - 120, 113, "#ff3355", 1); pixText(ctx, String(C.mash[1]), cx + 108, 113, "#2f6bff", 1);
+    const mx = Math.round(-this.cam + (S.p[0].x + S.p[1].x) / 2), my = FLOOR_Y - 48;
+    for (let i = 0; i < 6; i++) { const an = Math.random() * Math.PI * 2, l = 4 + Math.random() * 10; ctx.fillStyle = i % 2 ? "#ffffff" : "#ffe14d"; for (let k = 0; k < l; k++) ctx.fillRect(Math.round(mx + Math.cos(an) * k), Math.round(my + Math.sin(an) * k), 1, 1); }
+  }
+  drawCine(ctx) {
+    const c = this.cine; c.t--;
+    const k = Math.min(1, (70 - c.t) / 8), out = c.t < 10 ? c.t / 10 : 1;
+    ctx.fillStyle = `rgba(0,0,0,${0.55 * out})`; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    const bandY = 96, bw = Math.round(VIEW_W * k);
+    ctx.fillStyle = c.col; ctx.globalAlpha = 0.85 * out;
+    ctx.beginPath(); ctx.moveTo(c.side === 0 ? 0 : VIEW_W, bandY); ctx.lineTo(c.side === 0 ? bw : VIEW_W - bw, bandY - 8); ctx.lineTo(c.side === 0 ? bw : VIEW_W - bw, bandY + 50); ctx.lineTo(c.side === 0 ? 0 : VIEW_W, bandY + 58); ctx.fill();
+    ctx.globalAlpha = out;
+    pixText(ctx, "★ EVOLVED ULTIMATE ★".replace(/★/g, "+"), 240 - textW("+ EVOLVED ULTIMATE +", 1) / 2, bandY + 4, "#120e18", 1, null);
+    pixText(ctx, c.name.toUpperCase(), 240 - textW(c.name, 3) / 2, bandY + 18, "#ffffff", 3);
+    ctx.globalAlpha = 1;
+  }
   aura(ctx, f, ox, oy, col) {
     const t = this.time;
     ctx.fillStyle = col;
@@ -370,6 +450,9 @@ export class Renderer {
       ctx.fillStyle = "#120e18"; ctx.fillRect(x - 7, y - 3, 14, 6);
       ctx.fillStyle = "#ffffff"; ctx.fillRect(x - 6, y - 2, 12, 2); ctx.fillRect(x - 6 + (d > 0 ? 0 : 6), y, 6, 2);
       ctx.fillStyle = "#c83a3a"; ctx.fillRect(x + d * 2, y - 2, 2, 1);
+    } else if (p.kind === "assist") {
+      ctx.globalAlpha = 0.8; drawGhost(ctx, { ch: p.ch || "jiross", x: p.x, y: 0, face: Math.sign(p.vx) || 1, st: "act", anim: 0, act: { ref: (p.ch || "jiross") + ":b3", t: 12, hits: 0 }, sx: {} }, ox, oy, CHARS[p.ch || "jiross"].color); ctx.globalAlpha = 1;
+      if (t % 2 === 0) this.fx.add({ x: p.x - Math.sign(p.vx) * 12, y: FLOOR_Y - 40 + (Math.random() - 0.5) * 30, col: CHARS[p.ch || "jiross"].color, life: 10 });
     } else if (p.kind === "bsod") {
       ctx.fillStyle = "#120e18"; ctx.fillRect(x - 8, y - 7, 16, 13);
       ctx.fillStyle = "#1f4fd8"; ctx.fillRect(x - 7, y - 6, 14, 11);
@@ -396,6 +479,12 @@ export class Renderer {
       ctx.fillRect(x - w, oy - 2, z.w, 2);
       for (let i = 0; i < 16; i++) { const px = x - w + ((i * 37 + t) % z.w), py = oy - ((t * 1.2 + i * 23) % 130); ctx.fillStyle = i % 3 ? "#9b8cff" : "#ffffff"; ctx.fillRect(Math.round(px), Math.round(py), 1, 2); }
       for (let i = 0; i < 3; i++) { const yy = oy - ((t * 0.7 + i * 40) % 120); ctx.fillStyle = "#5a5aff"; for (let j = -w; j < w; j += 3) ctx.fillRect(x + j, Math.round(yy + Math.sin(j * 0.1) * 2), 2, 1); }
+    } else if (z.kind === "quake" && !front) {
+      const w = z.w / 2, k3 = z.t / z.life;
+      ctx.fillStyle = (t >> 2) & 1 ? "rgba(255,42,60,0.55)" : "rgba(255,200,60,0.4)";
+      ctx.fillRect(x - w, oy - 3, z.w, 3);
+      for (let i = 0; i < 6; i++) ctx.fillRect(Math.round(x - w + (i / 5) * z.w), oy - 3 - Math.round(k3 * 14), 2, Math.round(k3 * 14));
+      if (k3 > 0.5) pixText(ctx, "!", x - 1, oy - 30, "#ff2a3c", 2);
     } else if (z.kind === "paper" && !front) {
       const w = z.w / 2;
       ctx.fillStyle = "rgba(255,255,255,0.06)"; ctx.fillRect(x - w, oy - 150, z.w, 150);

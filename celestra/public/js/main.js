@@ -1,6 +1,6 @@
 // Celestra Chronicles — app shell: screens, select, HUD, game loop, online flow.
 import { newMatch, step, B, VIEW_W, currentSkillRef, METER_MAX, EX_COST } from "./sim.js";
-import { CHARS, ROSTER, STAGES, getMove, PARRY, STANCES, THROWS } from "./chars.js";
+import { CHARS, ROSTER, STAGES, getMove, PARRY, STANCES, THROWS, TAUNTS } from "./chars.js";
 import { Renderer } from "./render.js";
 import { drawPortrait, drawFull } from "./sprites.js";
 import { readInputs, keyPressed, clearPressed, setupTouch, touch, BINDS, setBind, resetBinds, keyLabel, captureKey } from "./input.js";
@@ -9,7 +9,8 @@ import { NetClient, RollbackSession } from "./net.js";
 import { initAudio, sfx, voice, music, setVolume, setMuted, audioSettings, preloadVoices } from "./audio.js";
 
 const $ = (s, r = document) => r.querySelector(s);
-function twoP() { return app.mode === "local" || (app.mode === "tag" && app.tagRival === "local"); }
+function twoP() { return app.mode === "local" || ((app.mode === "tag" || app.mode === "raid") && app.tagRival === "local"); }
+const SOLO_PICK = () => app.mode === "arcade" || app.mode === "survival"; // only P1 picks
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const store = {
   get(k, d) { try { const v = localStorage.getItem("celestra:" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
@@ -124,25 +125,30 @@ const NCELL = ROSTER.length + 1, RANDOM = ROSTER.length, COLS = 6;
 }
 const cellId = (i) => (i < ROSTER.length ? ROSTER[i] : null);
 function activePicker() {
-  if (app.mode === "online") return app.locked[app.slot] ? -1 : app.slot;
+  if (app.mode === "online") return app.slot < 0 || app.locked[app.slot] ? -1 : app.slot;
+  if (SOLO_PICK()) return app.locked[0] ? -1 : 0;
   if (twoP()) return !app.locked[0] ? 0 : !app.locked[1] ? 1 : -1;
   return !app.locked[0] ? 0 : !app.locked[1] ? 1 : -1;
 }
 function openSelect() {
   app.locked = [false, false]; app.team = [[], []];
   if (app.mode !== "online") { app.picks = [null, null]; }
-  if (app.mode === "tag" && !app.tagRival) app.tagRival = "cpu";
-  $("#tagRival").classList.toggle("hidden", app.mode !== "tag");
-  $("#tagRival").textContent = "RIVAL: " + (app.tagRival === "local" ? "PLAYER 2" : "CPU");
+  if ((app.mode === "tag" || app.mode === "raid") && !app.tagRival) app.tagRival = "cpu";
+  $("#tagRival").classList.toggle("hidden", app.mode !== "tag" && app.mode !== "raid");
+  $("#tagRival").textContent = (app.mode === "raid" ? "PARTNER: " : "RIVAL: ") + (app.tagRival === "local" ? "PLAYER 2" : "CPU");
+  $("#modeBtn").classList.toggle("hidden", app.mode !== "online");
+  $("#queueBox").classList.toggle("hidden", app.mode !== "online");
   $("#hzBtn").classList.toggle("hidden", app.mode === "online");
   $("#hzBtn").textContent = "HAZARDS: " + (store.get("hazards", true) ? "ON" : "OFF");
   app.cursor = [app.cursor[0] || 0, app.cursor[1] ?? 4];
   $("#select .s1 .who").textContent = app.mode === "online" ? (app.slot === 0 ? "YOU" : "RIVAL") : "P1";
-  $("#select .s2 .who").textContent = app.mode === "online" ? (app.slot === 1 ? "YOU" : "RIVAL") : twoP() ? "P2" : app.mode === "training" ? "DUMMY" : "CPU";
+  $("#select .s2 .who").textContent = app.mode === "online" ? (app.slot === 1 ? "YOU" : "RIVAL") : app.mode === "raid" ? (twoP() ? "P2 PARTNER" : "PARTNER") : SOLO_PICK() ? "RIVALS" : twoP() ? "P2" : app.mode === "training" ? "DUMMY" : "CPU";
   const hints = {
     cpu: "P1: A/D W/S move, F pick (then pick CPU) &bull; G / ESC back", training: "Pick your fighter, then the dummy", tutorial: "Pick the fighter you want to learn, then a dummy", local: "P1: WASD + F &bull; P2: ARROWS + NUM1 / K",
     online: "Pick your fighter &bull; F / ENTER to lock in &bull; host picks the stage",
     tag: "Pick TWO fighters for each team &bull; in battle, STANCE (V) tags your partner in",
+    arcade: "Pick your fighter for the 6-fight Arcade ladder", survival: "Pick your fighter: how many fights can you survive?",
+    raid: "Pick your fighter, then your partner &bull; tag with STANCE, partner assist with ATTACK",
   };
   $(".sel-hint").innerHTML = hints[app.mode];
   $("#btnReady").textContent = app.mode === "online" ? "READY" : "FIGHT!";
@@ -219,7 +225,8 @@ function confirmPick(p) {
   } else {
     app.locked[p] = true;
     if (!twoP() && p === 0) app.cursor[1] = app.cursor[1] ?? 4;
-    if (app.locked[0] && app.locked[1]) setTimeout(() => { if (app.screen === "select" && app.locked[0] && app.locked[1]) beginOffline(); }, 650);
+    if (SOLO_PICK() && p === 0) { setTimeout(() => { if (app.screen === "select") (app.mode === "arcade" ? startArcade : startSurvival)(id); }, 500); }
+    else if (app.locked[0] && app.locked[1]) setTimeout(() => { if (app.screen === "select" && app.locked[0] && app.locked[1]) beginOffline(); }, 650);
   }
   renderSelect();
 }
@@ -262,6 +269,13 @@ function selectInput() {
 // ================= match =================
 function beginOffline() {
   const seed = (Math.random() * 2 ** 31) | 0;
+  if (app.mode === "raid") {
+    const pool = ROSTER.filter((c) => !app.picks.includes(c)), boss = pool[Math.floor(Math.random() * pool.length)];
+    app.names = [twoP() ? "P1" : myName(), twoP() ? "P2" : "PARTNER"];
+    startMatch([app.picks[0], boss, app.picks[1]], app.stage, seed, [false, false], { raid: true, hazards: store.get("hazards", true) });
+    app.ai = null; app.dummy = null; $("#btnTrainDummy").classList.add("hidden");
+    return;
+  }
   app.names = twoP() ? ["P1", "P2"] : app.mode === "training" || app.mode === "tutorial" ? [myName(), "DUMMY"] : [myName(), "CPU"];
   const evo = app.mode === "tag" ? [false, false] : [canEvolve(app.picks[0]) && app.evo[0], twoP() && canEvolve(app.picks[1]) && app.evo[1]];
   const alt = [hasAlt(app.picks[0]) && app.alt[0], twoP() && hasAlt(app.picks[1]) && app.alt[1]];
@@ -274,8 +288,9 @@ function beginOffline() {
 function startMatch(chars, stage, seed, evo = [false, false], extra = {}) {
   const simMode = app.mode === "replay" ? app.replay.mode : app.mode === "training" || app.mode === "tutorial" ? "training" : "vs";
   const hazards = extra.hazards ?? true, tag = extra.tag || null, alt = extra.alt || null;
-  app.S = newMatch({ chars, seed, mode: simMode, stage, evo, hazards, tag, alt });
-  app.rec = []; app.recMeta = { v: 1, chars: chars.slice(), seed, stage, mode: simMode, names: (app.names || []).slice(), at: Date.now(), evo: evo.slice(), hazards, tag, alt };
+  const boss = extra.boss ?? -1, raid = !!extra.raid, rounds = extra.rounds || 2, hp0 = extra.hp0 || null;
+  app.S = newMatch({ chars, seed, mode: simMode, stage, evo, hazards, tag, alt, boss, raid, rounds, hp0 });
+  app.rec = []; app.recMeta = { v: 1, chars: chars.slice(), seed, stage, mode: simMode, names: (app.names || []).slice(), at: Date.now(), evo: evo.slice(), hazards, tag, alt, boss, raid, rounds, hp0 };
   app.replaySaved = null;
   $("#tut").classList.toggle("hidden", app.mode !== "tutorial");
   $("#replayBar").classList.toggle("hidden", app.mode !== "replay");
@@ -358,7 +373,7 @@ function updateHud() {
     if (app.touchOn && i === mySide()) { const eb = $("#touch .exb"); eb.style.setProperty("--m", (f.meter / METER_MAX) * 100 + "%"); eb.classList.toggle("full", f.meter >= EX_COST); }
     // tag partner
     const pEl = $(`.pl${side} .partner`);
-    if (S.tag && S.bench) {
+    if (S.tag && S.bench && S.bench[i]) {
       const bn = S.bench[i];
       pEl.classList.remove("hidden");
       if (app.hudCache["pch" + i] !== bn.ch) { app.hudCache["pch" + i] = bn.ch; drawPortrait($("canvas", pEl), bn.ch, i === 1); }
@@ -497,7 +512,7 @@ function handleEvents(evs, S) {
       }
       case "matchEnd": {
         countUses(S);
-        if (app.mode === "online" && app.net) app.net.send({ t: "result", winner: e.winner });
+        if (app.mode === "online" && app.net && app.slot >= 0) app.net.send({ t: "result", winner: e.winner });
         clearTimeout(app.resultsT);
         app.resultsT = setTimeout(() => showResults(e.winner), 1900);
         const w = e.winner;
@@ -514,15 +529,22 @@ function handleEvents(evs, S) {
 }
 function showResults(w) {
   const S = app.S;
+  if (app.mode === "arcade") return arcadeAfter(w);
+  if (app.mode === "survival") return survivalAfter(w);
   const me = app.mode === "online" ? app.slot : 0;
   let title = "DRAW GAME";
   if (w >= 0) title = twoP() ? `P${w + 1} WINS!` : w === me ? "YOU WIN!" : "YOU LOSE";
+  if (S.raid) title = w === 0 ? "RAID CLEARED!" : "WIPED OUT…";
+  if (app.mode === "online" && app.slot < 0 && w >= 0) title = `${app.names[w] || "P" + (w + 1)} WINS!`;
   $(".res-win").textContent = title;
   $(".res-sub").textContent = w >= 0 ? `${CHARS[S.p[w].ch].name} — ${S.wins[0]} : ${S.wins[1]}` : `${S.wins[0]} : ${S.wins[1]}`;
   if (w >= 0) drawFull($(".res-spr"), S.p[w].ch, 0, false); else $(".res-spr").getContext("2d").clearRect(0, 0, 160, 192);
   $(".res-msg").textContent = "";
   $("#btnRematch").disabled = false;
   $("#btnRematch").textContent = app.mode === "replay" ? "WATCH AGAIN" : "REMATCH";
+  const koth = app.mode === "online" && app.room && app.room.mode === "koth";
+  $("#btnRematch").classList.toggle("hidden", koth || (app.mode === "online" && app.slot < 0));
+  if (koth) setTimeout(() => { $(".res-msg").textContent = "KING OF THE HILL: NEXT CHALLENGER COMING UP…"; }, 50);
   $("#btnChange").classList.toggle("hidden", app.mode === "replay");
   $("#btnReplay").classList.toggle("hidden", app.mode === "replay" || app.mode === "tutorial");
   $("#btnReplay").disabled = false; $("#btnReplay").textContent = "SAVE & SHARE REPLAY";
@@ -616,7 +638,8 @@ async function joinRoom(code, quick = false, reconnect = false) {
     if (quick) quickMatch(code); else { app.reconnectCode = null; show("online"); lobbyMsg("ROOM IS FULL", true); }
   });
   net.on("room", (m) => {
-    const had = app.room?.players?.[1 - app.slot];
+    const had = app.slot >= 0 ? app.room?.players?.[1 - app.slot] : true;
+    renderModeBox(m);
     // both players present -> host opens a direct peer-to-peer link
     if (!had && m.players[1 - app.slot] && app.slot === 0) setTimeout(() => net === app.net && net.startP2P(true), 300);
     if (had && !m.players[1 - app.slot]) net.stopP2P();
@@ -633,13 +656,28 @@ async function joinRoom(code, quick = false, reconnect = false) {
     app.names = m.names;
     app.picks = m.chars.slice();
     app.titles = m.titles || ["", ""];
-    startMatch(m.chars, m.stage, m.seed, m.evo || [false, false], { alt: m.alt, hazards: true });
+    app.spec = null;
+    if (m.mode === "raid") startMatch([m.chars[0], m.boss, m.chars[1]], m.stage, m.seed, [false, false], { raid: true, hazards: true });
+    else startMatch(m.chars, m.stage, m.seed, m.evo || [false, false], { alt: m.alt, hazards: true });
+    if (app.slot < 0) { app.session = null; app.spec = { frame: 0, inp: [new Map(), new Map()] }; $("#net span").textContent = "WATCHING LIVE"; return; } // King of the Hill spectator
     // adaptive input delay: hide part of the one-way latency, roll back the rest (max 12f)
     const oneWay = (net.peerRtt || 60) / 2 / 16.67;
     const delay = Math.max(m.delay || 2, Math.min(5, Math.ceil(oneWay) - 7));
     app.session = new RollbackSession(app.S, app.slot, net, { delay });
   });
   net.on("in", (m) => app.session && app.session.onInput(m));
+  net.on("sin", (m) => { // spectators receive both players' inputs
+    if (!app.spec || !m.d) return;
+    let f = m.d.s; const map = app.spec.inp[m.s];
+    for (const [bits, n] of m.d.b) for (let k = 0; k < n; k++, f++) if (f >= app.spec.frame && !map.has(f)) map.set(f, bits);
+  });
+  net.on("seat", (m) => { app.slot = m.slot; app.locked = [false, false]; if (app.screen === "select" || app.screen === "results") openSelect(); });
+  net.on("rotate", (m) => {
+    app.session = null; app.spec = null;
+    net.stopP2P(); if (app.room) app.room = { ...app.room, players: [null, null] }; // new pairing -> fresh direct link
+    banner(`KING: ${m.king.name} ×${m.king.streak}`, `NEXT CHALLENGER: ${m.next}`, "", 2600);
+    setTimeout(() => { if (app.mode === "online") { app.S = null; openSelect(); } }, 600);
+  });
   net.on("chk", (m) => app.session && app.session.onCheck(m));
   net.on("emote", (m) => { if ("away" in m && (app.screen === "fight" || app.screen === "select")) banner(m.away ? "RIVAL TABBED OUT" : "RIVAL IS BACK", m.away ? "THE MATCH KEEPS RUNNING" : "", "", 1800); });
   net.on("rematchReq", (m) => { if (m.slot !== app.slot && app.screen === "results") $(".res-msg").textContent = "OPPONENT WANTS A REMATCH!"; });
@@ -657,7 +695,7 @@ async function joinRoom(code, quick = false, reconnect = false) {
       setTimeout(() => net === app.net && !net.direct && net.startP2P(true), 2500 * app.p2pTries);
   });
   net.on("peerRtt", (r) => {
-    const el = $("#net"); $("span", el).textContent = Math.round(r) + " ms " + (net.direct ? "· DIRECT" : "· RELAY");
+    const el = $("#net"); $("span", el).textContent = app.slot < 0 ? "WATCHING LIVE" : Math.round(r) + " ms " + (net.direct ? "· DIRECT" : "· RELAY");
     el.classList.toggle("mid", r > 90 && r <= 160); el.classList.toggle("bad", r > 160);
   });
   net.on("close", (e) => {
@@ -720,6 +758,16 @@ function tick() {
   }
   if (app.screen === "fight" && keyPressed("Escape")) { togglePause(); return; }
   if (app.screen !== "fight") menuKeys();
+  if (app.mode === "online" && app.spec) {
+    const sp = app.spec; let n = 0;
+    const behind = Math.min(sp.inp[0].size, sp.inp[1].size), cap = behind > 12 ? 6 : behind > 4 ? 2 : 1;
+    while (n < cap && sp.inp[0].has(sp.frame) && sp.inp[1].has(sp.frame)) {
+      const ev = []; step(app.S, [sp.inp[0].get(sp.frame), sp.inp[1].get(sp.frame)], ev);
+      sp.inp[0].delete(sp.frame); sp.inp[1].delete(sp.frame); sp.frame++; n++;
+      handleEvents(ev, app.S);
+    }
+    return;
+  }
   if (app.mode === "online") {
     if (!app.session) return;
     const bits = app.screen === "fight" ? readInputs("solo")[0] : 0;
@@ -750,6 +798,7 @@ function tick() {
     if (app.ai) inputs[1] = app.ai.think(app.S);
     if (app.dummy) inputs[1] = app.dummy.think(app.S);
     if (app.mode === "tutorial") tutTick(inputs);
+    if (app.mode === "raid" && !twoP()) inputs[1] = inputs[0]; // solo raid: you control both teammates
     const ev = [];
     if (app.S.phase !== "end") app.rec.push([inputs[0], inputs[1]]);
     step(app.S, inputs, ev);
@@ -976,7 +1025,7 @@ async function playReplayId(id) {
 function startReplay(rp) {
   app.replay = rp; app.mode = "replay"; app.rpFrame = 0; app.rpSpeed = 1; $("#rpSpeed").textContent = "1x";
   app.names = rp.names || ["P1", "P2"]; app.ai = null; app.dummy = null;
-  startMatch(rp.chars, rp.stage, rp.seed, rp.evo || [false, false], { hazards: rp.hazards ?? true, tag: rp.tag || null, alt: rp.alt || null });
+  startMatch(rp.chars, rp.stage, rp.seed, rp.evo || [false, false], { hazards: rp.hazards ?? true, tag: rp.tag || null, alt: rp.alt || null, boss: rp.boss ?? -1, raid: !!rp.raid, rounds: rp.rounds || 2, hp0: rp.hp0 || null });
 }
 $("#rpSpeed").addEventListener("click", () => { app.rpSpeed = app.rpSpeed === 1 ? 2 : app.rpSpeed === 2 ? 4 : 1; $("#rpSpeed").textContent = app.rpSpeed + "x"; });
 $("#rpExit").addEventListener("click", () => { app.S = null; app.mode = "cpu"; $("#replayBar").classList.add("hidden"); show("menu"); });
@@ -1027,11 +1076,13 @@ function usesOf(ch) { return usesAll()[ch] || 0; }
 function isAdmin() { return myName() === "ADMIN"; }
 function canEvolve(ch) { return !!ch && (isAdmin() || usesOf(ch) >= EVOLVE_AT); }
 function countUses(S) {
-  if (!["cpu", "local", "online", "tag"].includes(app.mode)) return;
+  if (!["cpu", "local", "online", "tag", "arcade", "survival", "raid"].includes(app.mode)) return;
+  if (app.mode === "online" && app.slot < 0) return; // spectators
   const mine = twoP() ? [0, 1] : [mySide()];
   const u = usesAll();
   for (const side of mine) {
-    for (const ch of S.tag ? S.tag[side] : [S.p[side].ch]) {
+    const list = S.raid ? [app.picks[side]].filter(Boolean) : (S.tag && S.tag[side]) || [S.p[side].ch];
+    for (const ch of list) {
     const before = u[ch] || 0;
     u[ch] = before + 1;
     if (before < EVOLVE_AT && u[ch] >= EVOLVE_AT) setTimeout(() => { banner(`${CHARS[ch].name} CAN EVOLVE!`, "TOGGLE ★ EVOLVED FORM ON THE SELECT SCREEN", "fight", 3200); say("evolve"); sfx("ult"); }, 2400);
@@ -1277,4 +1328,130 @@ async function viewTourney(id) {
   $("#tLeave")?.addEventListener("click", async () => { await fetch("/api/tourney/leave", { method: "POST", body: JSON.stringify({ tid: id, uid: me }) }); sfx("select"); loadTourneys(); });
   $("#tShare")?.addEventListener("click", async () => { try { await navigator.clipboard.writeText(`${location.origin}/?tourney=${id}`); $("#tShare").textContent = "LINK COPIED!"; } catch {} });
   $("#tPlay")?.addEventListener("click", () => { clearTimeout(tourT); app.noList = true; show("online"); joinRoom(mine.code); });
+}
+
+
+// =====================================================================
+// Online room modes: Versus / Boss Raid / King of the Hill
+// =====================================================================
+const MODE_NAMES = { vs: "VERSUS", raid: "BOSS RAID (CO-OP)", koth: "KING OF THE HILL" };
+$("#modeBtn").addEventListener("click", () => {
+  if (app.mode !== "online" || app.slot !== 0 || !app.net) return;
+  const order = ["vs", "raid", "koth"], cur = app.room?.mode || "vs";
+  app.net.send({ t: "mode", mode: order[(order.indexOf(cur) + 1) % 3] }); sfx("select");
+});
+function renderModeBox(m) {
+  const mode = m.mode || "vs";
+  if (app.net) app.net.mirror = mode === "koth";
+  $("#modeBtn").textContent = "MODE: " + MODE_NAMES[mode];
+  $("#modeBtn").disabled = app.slot !== 0;
+  const q = m.queue || [];
+  let html = mode === "raid" ? "Both players team up against a random giant BOSS. Tag with STANCE, assist with ATTACK while benched." : "";
+  if (mode === "koth") {
+    html = (m.king ? `KING: <b>${escHTML(m.king.name)}</b> (${m.king.streak} win${m.king.streak > 1 ? "s" : ""})<br>` : "Winner stays on, loser goes to the back of the queue. Up to 8 in a room.<br>") +
+      (q.length ? `QUEUE: ${q.map((n, i) => `${i + 1}. ${escHTML(n)}`).join(" · ")}` : "QUEUE: empty — share the room code!");
+    if (app.slot < 0) html += `<br><b>YOU'RE IN THE QUEUE — WATCHING LIVE</b>`;
+  }
+  $("#queueBox").innerHTML = html;
+}
+
+// =====================================================================
+// ARCADE: 6-fight story ladder ending with a giant evolved boss
+// =====================================================================
+const ENDINGS = {
+  jiross: "Jirox holds the Celestra Crown high and talks trash to the whole school. Nobody can argue — he stole every move and won with them.",
+  lian: "Lian Aero tosses the crown like a frisbee. It comes right back. 'Clean catch,' he grins.",
+  dumdum: "Dumblade carves his name into the trophy case. The crown looks better with a little red on it.",
+  gayle: "Gale Slugger knocks the crown out of the park. Then jogs the bases. Then gets it back. Home run.",
+  dapsay: "DAP or APSAY? Dap-Sai wears the crown in both stances — and dares anyone to choose.",
+  william: "Gravilliam lets the crown float above his head forever. 'Wait class,' he says. Class waits.",
+  tanoy: "TanoHaze lights up in victory. Through the smoke, the crown glows. Nobody saw him take it.",
+  acar: "Sole-Car kicks the crown into the air and catches it on one bare foot. The crowd goes wild (and holds its nose).",
+  apsay: "Apsurge teleports onto the throne before anyone notices the final bell rang.",
+  dap: "Dap-Krush body-slams the throne into a more comfortable shape and sits down. Champion.",
+  jog: "Joggernaut folds the crown, the chair, and the competition. Detention for everyone.",
+  jaguilar: "Jaguaro uploads the crown to the cloud. Task completed successfully.",
+  paulite: "Polite tells one final joke at the ceremony. It's terrible. Everyone laughs anyway. He's the champ.",
+  johan: "Jobacur rolls away with the crown. The smell lingers for weeks. It was worth it.",
+  arbe: "ARB-E never needed the bullet. The scarf stays up, the crown stays on. Lights out.",
+  ged: "GED revokes everyone's hall pass. The crown stays in his classroom. No leave pass. Ever.",
+};
+const ARC_DIFF = ["easy", "easy", "normal", "normal", "hard"];
+function startArcade(ch) {
+  const pool = ROSTER.filter((c) => c !== ch).sort(() => Math.random() - 0.5);
+  app.arc = { ch, opps: pool.slice(0, 5), boss: pool[5] || pool[0], idx: 0, lost: false };
+  storyCard();
+}
+function arcOpp() { return app.arc.idx >= 5 ? app.arc.boss : app.arc.opps[app.arc.idx]; }
+function storyCard(kind = "next") {
+  const a = app.arc, me = a.ch, opp = arcOpp(), boss = a.idx >= 5;
+  show("story");
+  drawFull($("#stMe"), me, 0, false, false); drawFull($("#stOpp"), kind === "ending" ? me : opp, 0, true, boss && kind !== "ending");
+  $("#stStage").textContent = kind === "ending" ? "THE END" : `STAGE ${a.idx + 1} / 6`;
+  $("#stDiff").textContent = kind === "ending" ? "" : boss ? "BOSS" : ARC_DIFF[a.idx].toUpperCase();
+  $("#stBoard").textContent = "";
+  const n = CHARS[me].name, on = CHARS[opp].name;
+  let title = "", text = "";
+  if (kind === "ending") { title = `${n}: CHAMPION OF CELESTRA`; text = ENDINGS[me] || "The crown is yours."; }
+  else if (kind === "lost") { title = "DEFEATED…"; text = `${on} stands over you. Continue? (continues used: ${a.cont || 0})`; }
+  else if (a.idx === 0) { title = `${n}'S STORY`; text = `Legend says whoever beats every fighter in Batch 30 earns the CELESTRA CROWN. ${n} wants it. First up: ${on}.`; }
+  else if (boss) { title = "FINAL BOSS"; text = `The last challenger has EVOLVED into a giant — ${on}! Phases, quakes and rage. Beat the boss to claim the crown.`; }
+  else { title = `VS ${on}`; text = `"${TAUNTS[opp] || "Come on!"}" — ${on} blocks the way.`; }
+  $("#stTitle").textContent = title; $("#stText").textContent = text;
+  $("#stGo").textContent = kind === "ending" ? "MAIN MENU" : kind === "lost" ? "CONTINUE" : "FIGHT!";
+  $("#stGo").onclick = () => { sfx("confirm"); if (kind === "ending") { app.arc = null; show("menu"); } else { if (kind === "lost") a.cont = (a.cont || 0) + 1; arcadeFight(); } };
+  $("#stQuit").onclick = () => { sfx("select"); app.arc = null; show("menu"); };
+  if (kind === "ending") { say(me + "_win"); banner("CONGRATULATIONS!", "", "fight", 2500); }
+}
+function arcadeFight() {
+  const a = app.arc, opp = arcOpp(), boss = a.idx >= 5;
+  app.mode = "arcade"; app.picks = [a.ch, opp]; app.names = [myName(), boss ? "BOSS" : "CPU"];
+  startMatch([a.ch, opp], Math.floor(Math.random() * 3), (Math.random() * 2 ** 31) | 0, [canEvolve(a.ch) && app.evo[0], false], { boss: boss ? 1 : -1, hazards: store.get("hazards", true) });
+  app.ai = boss ? null : new AI(ARC_DIFF[a.idx], 1); app.dummy = null;
+}
+function arcadeAfter(w) {
+  const a = app.arc; if (!a) return show("menu");
+  if (w === 0) { a.idx++; if (a.idx > 5) { bumpStat("arcadeClears"); return storyCard("ending"); } return storyCard("next"); }
+  return storyCard("lost");
+}
+
+// =====================================================================
+// SURVIVAL: endless fights on one health bar (+20% heal between fights)
+// =====================================================================
+function startSurvival(ch) { app.surv = { ch, streak: 0, hp: null }; survivalCard("start"); }
+function survOpp() { const pool = ROSTER.filter((c) => c !== app.surv.ch); app.surv.opp = pool[Math.floor(Math.random() * pool.length)]; return app.surv.opp; }
+function survivalCard(kind) {
+  const v = app.surv; show("story");
+  if (kind !== "over") survOpp();
+  const boss = kind !== "over" && v.streak > 0 && (v.streak + 1) % 5 === 0;
+  v.boss = boss;
+  drawFull($("#stMe"), v.ch, 0, false, false); drawFull($("#stOpp"), kind === "over" ? v.ch : v.opp, 0, true, boss);
+  $("#stStage").textContent = `STREAK: ${v.streak}`;
+  $("#stDiff").textContent = kind === "over" ? "" : boss ? "BOSS" : v.streak < 3 ? "EASY" : v.streak < 7 ? "NORMAL" : "HARD";
+  const maxHp = CHARS[v.ch].hp;
+  if (kind === "over") {
+    $("#stTitle").textContent = "GAME OVER"; $("#stText").textContent = `${CHARS[v.ch].name} survived ${v.streak} fight${v.streak === 1 ? "" : "s"}.`;
+    $("#stGo").textContent = "TRY AGAIN"; $("#stGo").onclick = () => { sfx("confirm"); startSurvival(v.ch); };
+    $("#stBoard").textContent = "Loading high scores…";
+    fetch("/api/survival", { method: "POST", body: JSON.stringify({ uid: uidOf(), name: myName(), ch: v.ch, streak: v.streak }) })
+      .then(() => fetch("/api/survival")).then((r) => r.json())
+      .then((b) => { $("#stBoard").textContent = "BEST STREAKS: " + (b.slice(0, 5).map((r, i) => `${i + 1}. ${r.name} ${r.streak} (${CHARS[r.ch]?.name || "?"})`).join("  ·  ") || "be the first!"); })
+      .catch(() => { $("#stBoard").textContent = ""; });
+  } else {
+    $("#stTitle").textContent = boss ? `BOSS: ${CHARS[v.opp].name}` : `NEXT: ${CHARS[v.opp].name}`;
+    $("#stText").textContent = kind === "start" ? "One health bar. Each win heals 20%. Every 5th fight is a giant boss. How far can you go?" : `HP carried over: ${Math.round(v.hp)} / ${maxHp}.`;
+    $("#stGo").textContent = "FIGHT!"; $("#stGo").onclick = () => { sfx("confirm"); survivalFight(); };
+  }
+  $("#stQuit").onclick = () => { sfx("select"); app.surv = null; show("menu"); };
+}
+function survivalFight() {
+  const v = app.surv;
+  app.mode = "survival"; app.picks = [v.ch, v.opp]; app.names = [myName(), "CPU"];
+  startMatch([v.ch, v.opp], Math.floor(Math.random() * 3), (Math.random() * 2 ** 31) | 0, [canEvolve(v.ch) && app.evo[0], false], { rounds: 1, hp0: [v.hp, null], boss: v.boss ? 1 : -1, hazards: store.get("hazards", true) });
+  app.ai = v.boss ? null : new AI(v.streak < 3 ? "easy" : v.streak < 7 ? "normal" : "hard", 1); app.dummy = null;
+}
+function survivalAfter(w) {
+  const v = app.surv; if (!v) return show("menu");
+  if (w === 0) { v.streak++; const f = app.S.p[0]; v.hp = Math.min(f.maxHp, f.hp + f.maxHp * 0.2); bumpStat("survivalBest", 0); return survivalCard("next"); }
+  return survivalCard("over");
 }

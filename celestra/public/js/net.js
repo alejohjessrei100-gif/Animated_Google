@@ -81,7 +81,8 @@ export class NetClient {
   }
   sendWs(o) { if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(o)); }
   send(o) {
-    if (this.direct && FAST.has(o.t)) { try { this.dc.send(JSON.stringify(o)); return; } catch { this.dcDown(this.pc); } }
+    // King of the Hill: inputs are also mirrored through the server so queued spectators can watch live
+    if (this.direct && FAST.has(o.t)) { try { this.dc.send(JSON.stringify(o)); if (this.mirror && o.t === "in") this.sendWs(o); return; } catch { this.dcDown(this.pc); } }
     this.sendWs(o);
   }
   close() { this.stopP2P(); this.byUs = true; try { this.ws && this.ws.close(1000, "leave"); } catch {} this.open = false; clearInterval(this._ping); }

@@ -1,7 +1,7 @@
 // Celestra Chronicles — deterministic fighting simulation.
 // Pure state + inputs -> next state. No Math.sin/random/Date here so that both
 // online peers compute bit-identical results (required for rollback netcode).
-import { CHARS, getMove, PARRY, SMACK_TALK, PAULITE_JOKES, COMMON, STANCES, THROWS, TAUNTS } from "./chars.js";
+import { CHARS, getMove, PARRY, SMACK_TALK, PAULITE_JOKES, COMMON, STANCES, THROWS, TAUNTS, EVO_ULTS } from "./chars.js";
 
 export const VIEW_W = 480, VIEW_H = 270, STAGE_W = 768;
 export const B = { L: 1, R: 2, U: 4, D: 8, A: 16, P: 32, S1: 64, S2: 128, S3: 256, DASH: 512, ST: 1024, EX: 2048, TAUNT: 4096 };
@@ -22,24 +22,26 @@ export function rnd(S) {
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
 
-function newFighter(ch, side, evo = false) {
+function newFighter(ch, side, evo = false, boss = false) {
   const c = CHARS[ch];
-  const hp = evo ? Math.round(c.hp * 1.08) : c.hp; // evolved form: +8% HP
+  const hp = boss ? 3200 : evo ? Math.round(c.hp * 1.08) : c.hp; // evolved form: +8% HP; bosses are huge
   return {
+    boss: !!boss, bossPhase: 1, brain: boss ? { hold: 0, cool: 30, tap: 0, special: 240 } : null,
+    heat: 0, heatUsed: false, aHold: 0, weapon: null,
     evo: !!evo,
     ch, side, x: STAGE_W / 2 + (side === 0 ? -70 : 70), y: 0, vx: 0, vy: 0, face: side === 0 ? 1 : -1,
     hp, maxHp: hp, st: "intro", t: 0, act: null, stun: 0,
     cd: [0, 0, 0], buf: { A: 0, P: 0, S1: 0, S2: 0, S3: 0, DASH: 0, U: 0, ST: 0, EX: 0, TAUNT: 0 }, pst: 0, dj: false, slamUsed: false,
     meter: 0, exArm: 0, guardG: 0, rage: false, prev: 0,
     tapDir: 0, tapT: 0, chainNext: false, combo: 0, juggle: 0, inv: 0, kd: false,
-    sx: { bleed: 0, bleedT: 0, burn: 0, burnT: 0, blind: 0, confuse: 0, slow: 0, rattled: 0, floaty: 0, momentum: 0, counter: 0, smoke: 0, silence: 0, sad: 0, poison: 0, poisonT: 0, dark: 0, darkT: 0, shirtless: 0, power: 0 },
+    sx: { bleed: 0, bleedT: 0, burn: 0, burnT: 0, blind: 0, confuse: 0, slow: 0, rattled: 0, floaty: 0, momentum: 0, counter: 0, smoke: 0, silence: 0, sad: 0, poison: 0, poisonT: 0, dark: 0, darkT: 0, shirtless: 0, power: 0, drink: 0 },
     dizzy: 0, lastSkill: null, stance: "dap", passiveT: ch === "william" ? 240 : ch === "paulite" ? 720 : 600,
     armor: 0, flash: 0, sinceHit: 999, wallBounced: false, crouch: false, guard: false, anim: 0,
     stolen: null, talk: null, talkT: 0, wins: 0,
   };
 }
 
-export function newMatch({ chars, seed = 1, mode = "vs", stage = 0, rounds = 2, evo = [false, false], hazards = true, tag = null, alt = null }) {
+export function newMatch({ chars, seed = 1, mode = "vs", stage = 0, rounds = 2, evo = [false, false], hazards = true, tag = null, alt = null, boss = -1, raid = false, hp0 = null }) {
   const S = {
     frame: 0, rng: seed | 0, mode, stage, roundsToWin: rounds,
     phase: "intro", phaseT: 0, round: 1, timer: ROUND_TIME, hitstop: 0, slow: 0,
@@ -47,10 +49,18 @@ export function newMatch({ chars, seed = 1, mode = "vs", stage = 0, rounds = 2, 
     p: [newFighter(chars[0], 0, evo[0]), newFighter(chars[1], 1, evo[1])],
     projs: [], zones: [], nextId: 1,
     evo: [!!evo[0], !!evo[1]], ultUsed: [false, false], // ultUsed: once-per-match ultimates (ARB-E's bullet)
-    hazOn: !!hazards, hz: null, first: false, alt: alt ? [!!alt[0], !!alt[1]] : null, // alt: render-only palette swap
+    hazOn: !!hazards, hz: null, first: false, clash: null, items: [], itemT: 1200,
+    bossSide: raid ? 1 : boss, raid: !!raid, raidCur: 0, raidPrev: 0, assistCd: 0, alt: alt ? [!!alt[0], !!alt[1]] : null, // alt: render-only palette swap
     tag: tag ? tag.map((t) => t.slice(0, 2)) : null, bench: null, tagCd: [0, 0],
   };
   if (S.tag) { S.p = [newFighter(S.tag[0][0], 0), newFighter(S.tag[1][0], 1)]; S.bench = [benchFighter(S.tag[0][1], 0), benchFighter(S.tag[1][1], 1)]; }
+  if (S.raid) { // boss raid: a 2-fighter team (one per player) vs a boss
+    S.tag = [chars[0] && chars[2] ? [chars[0], chars[2]] : [chars[0], chars[0]], [chars[1], chars[1]]];
+    S.p = [newFighter(S.tag[0][0], 0), newFighter(chars[1], 1, true, true)];
+    S.bench = [benchFighter(S.tag[0][1], 0), null];
+    S.roundsToWin = 1;
+  } else if (S.bossSide >= 0) { S.p[S.bossSide] = newFighter(chars[S.bossSide], S.bossSide, true, true); S.roundsToWin = 1; }
+  if (hp0) for (let i = 0; i < 2; i++) if (hp0[i]) S.p[i].hp = Math.max(1, Math.min(S.p[i].maxHp, hp0[i]));
   S.hz = newHazards(S);
   return S;
 }
@@ -66,7 +76,7 @@ function resetRound(S) {
   else S.p = [newFighter(chars[0], 0, S.evo[0]), newFighter(chars[1], 1, S.evo[1])];
   S.p[0].pst = pst[0]; S.p[1].pst = pst[1];
   S.p[0].meter = meter[0]; S.p[1].meter = meter[1]; // super meter carries over between rounds
-  S.hz = newHazards(S); S.first = false;
+  S.hz = newHazards(S); S.first = false; S.items = []; S.itemT = 1200; S.clash = null;
   S.projs = []; S.zones = [];
   S.phase = "intro"; S.phaseT = 0; S.timer = ROUND_TIME; S.hitstop = 0; S.slow = 0; S.winner = -1; S.koBy = -1;
 }
@@ -78,6 +88,7 @@ const grounded = (f) => f.y >= 0;
 
 function hurtbox(f) {
   const c = CHARS[f.ch];
+  if (f.boss) return [f.x - 22, f.y - c.hurtH * 1.45, 44, c.hurtH * 1.45];
   if (f.st === "air") return [f.x - 16, f.y - 46, 32, 50];
   const h = f.crouch ? 44 : c.hurtH;
   return [f.x - 11, f.y - h, 22, h];
@@ -118,6 +129,10 @@ function startMove(S, f, op, ref, opts = {}) {
     if (CHARS[f.ch].moves["s" + m.skill] === m) f.lastSkill = ref;
   }
   if (m.stance && f.ch === "dapsay") f.stance = m.stance;
+  if (f.evo && m.ult && m.skill === 3 && !opts.free && !f.boss) { // evolved super-ultimate
+    f.act.evoUlt = true; S.hitstop = Math.max(S.hitstop, 36); S.flashT = 6;
+    emit(S, { type: "evoUlt", who: f.side, name: EVO_ULTS[f.ch] || m.name });
+  }
   if (m.skill && f.exArm > 0 && f.meter >= EX_COST && !opts.free) { // EX: spend half a bar for a powered-up skill
     f.meter -= EX_COST; f.exArm = 0; f.act.ex = true;
     emit(S, { type: "ex", who: f.side, name: m.name });
@@ -212,7 +227,7 @@ const HOOKS = {
     frame(S, f, op) {
       const a = f.act;
       if (a.t < 4 || a.t > 6 || a.done) return;
-      if (Math.abs(op.x - f.x) > 42 || op.y < -8 || op.inv > 0 || ["air", "down", "wake", "ko", "bench"].includes(op.st)) return;
+      if (Math.abs(op.x - f.x) > 42 || op.y < -8 || op.inv > 0 || op.boss || ["air", "down", "wake", "ko", "bench", "dodge"].includes(op.st)) return;
       a.done = true;
       // throw tech: the defender was also throwing, or pressed parry at the same moment
       const opThrow = op.st === "act" && op.act && op.act.ref.endsWith(":throw") && op.act.t <= 6;
@@ -362,7 +377,7 @@ function applyHit(S, a, d, m, opt = {}) {
     if (blocks) {
       d.st = "block"; d.stun = m.bs || 10; d.crouch = crouching; d.act = null;
       d.meter = Math.min(METER_MAX, d.meter + 15); a.meter = Math.min(METER_MAX, a.meter + 10);
-      d.guardG += (m.dmg || 20) * 0.35 + 6; // guard gauge: too much blocking breaks it
+      if (d.heat <= 0) d.guardG += (m.dmg || 20) * 0.35 + 6; // guard gauge: too much blocking breaks it
       if (d.guardG >= 100) { d.guardG = 0; emit(S, { type: "guardbreak", who: d.side, x: hx, y: hy }); applyStun(S, d, 70); S.hitstop = Math.max(S.hitstop, 10); return "block"; }
       d.vx = sgn(d.x - a.x) * (Math.abs(m.kb[0]) * 0.6 + 1.2);
       if ((m.skill || opt.proj) && d.pst !== 2) { const chip = Math.round(m.dmg * 0.1); d.hp = Math.max(1, d.hp - chip); }
@@ -391,6 +406,19 @@ function applyHit(S, a, d, m, opt = {}) {
   if (a.sx.power > 0) mult *= 1.15;              // arcade jackpot power-up
   const ex = (!opt.proj && !opt.zone && a.act && a.act.ex) || opt.ex;
   if (ex) mult *= 1.35;                          // EX skill
+  const evoUlt = (!opt.proj && !opt.zone && a.act && a.act.evoUlt) || opt.evoUlt;
+  if (evoUlt) mult *= 1.5;                       // evolved super-ultimate
+  if (a.heat > 0) mult *= 1.15;                  // heat mode
+  if (a.boss) mult *= 1.2;
+  if (d.boss) mult *= 0.85;
+  const power = !opt.proj && !opt.zone && a.act && a.act.power ? a.act.power : 0;
+  if (power) base *= 1 + 1.2 * power;            // charged strike
+  const basicHit = !opt.proj && !opt.zone && !opt.isThrow && a.act && !m.skill;
+  if (basicHit && a.weapon) {                    // weapon pickup: frying pan / chair
+    base += 25; a.weapon.uses--;
+    emit(S, { type: "weaponHit", who: a.side, kind: a.weapon.kind, x: hx, y: hy });
+    if (a.weapon.uses <= 0) { emit(S, { type: "weaponBreak", who: a.side, kind: a.weapon.kind }); a.weapon = null; }
+  }
   let first = false;
   if (!S.first && S.phase === "fight") { S.first = true; first = true; mult *= 1.1; } // first attack of the round
   let dmg = Math.max(1, Math.round(base * mult));
@@ -405,12 +433,15 @@ function applyHit(S, a, d, m, opt = {}) {
 
   const dirX = opt.proj ? sgn(opt.vx) || a.face : sgn(d.x - a.x) || a.face;
   const isLast = a.act && m.maxHits && a.act.hits + 1 >= m.maxHits;
-  const kb = isLast && m.finalKb ? m.finalKb : m.kb;
+  let kb = isLast && m.finalKb ? m.finalKb : m.kb;
+  if (power >= 0.9) { kb = [7, -6]; d.wb = true; }
+  if (d.boss) kb = [kb[0] * 0.35, Math.max(kb[1] * 0.3, -1.5)]; // bosses barely budge
   const airborne = !grounded(d) || d.st === "air";
   const wasDizzy = d.st === "dizzy";
   d.dizzy = 0;
 
-  if (m.launch || airborne || kb[1] < -3 || (isLast && m.finalKb && m.finalKb[1] < -3)) {
+  if (d.boss) { d.st = "hit"; d.stun = Math.round((m.hs || 16) * 0.45); d.vx = dirX * kb[0]; }
+  else if (m.launch || power >= 0.9 || airborne || kb[1] < -3 || (isLast && m.finalKb && m.finalKb[1] < -3)) {
     d.st = "air"; d.juggle += 1;
     d.vx = dirX * kb[0] * 0.8;
     d.vy = airborne ? Math.min(kb[1] * 0.7, -3.4 + d.juggle * 0.3) : kb[1];
@@ -421,12 +452,12 @@ function applyHit(S, a, d, m, opt = {}) {
   } else {
     d.st = "hit"; d.stun = m.hs; d.vx = dirX * kb[0]; d.crouch = false;
   }
-  d.wallBounced = false; d.wb = !!m.wallBounce;
-  if (m.stun && d.hp > 0) applyStun(S, d, ex ? Math.round(m.stun * 1.4) : m.stun);
+  d.wallBounced = false; d.wb = !!m.wallBounce || power >= 0.9;
+  if (m.stun && d.hp > 0) applyStun(S, d, Math.round((ex ? m.stun * 1.4 : m.stun) * (d.boss ? 0.4 : 1)));
 
   S.hitstop = Math.max(S.hitstop, m.stop || 4);
   if (m.heavy) S.shake = Math.max(S.shake, 6);
-  emit(S, { type: "hit", who: d.side, by: a.side, x: hx, y: hy, dmg, sfx: m.sfx, heavy: !!m.heavy || ex, counter, combo: d.combo, proj: !!opt.proj, wasDizzy, ex: !!ex, isThrow: !!opt.isThrow });
+  emit(S, { type: "hit", who: d.side, by: a.side, x: hx, y: hy, dmg, sfx: m.sfx, heavy: !!m.heavy || ex || evoUlt || power >= 0.6, counter, combo: d.combo, proj: !!opt.proj, wasDizzy, ex: !!ex, isThrow: !!opt.isThrow, power });
   if (counter) emit(S, { type: "counter", who: a.side });
 
   if (!opt.proj && !opt.zone && a.act) {
@@ -458,6 +489,7 @@ function swapIn(S, side, forced) {
   inn.meter = out.meter; inn.pst = 0;
   out.st = forced ? "bench" : "bench"; out.act = null; out.sx.shirtless = 0;
   S.p[side] = inn; S.bench[side] = out; S.tagCd[side] = 300;
+  if (S.raid && side === 0) S.raidCur ^= 1; // the other player now controls the active fighter
   emit(S, { type: forced ? "tagko" : "tag", who: side, ch: inn.ch, out: out.ch });
 }
 
@@ -489,6 +521,8 @@ function stepFighter(S, f, op, raw) {
   f.armor = 0;
 
   if (f.exArm > 0) f.exArm--;
+  f.aHold = raw & B.A ? f.aHold + 1 : 0;
+  if (f.heat > 0) f.heat--;
   // combo breaker: a full bar escapes a combo
   if (live && f.buf.EX && f.meter >= METER_MAX && (f.st === "hit" || f.st === "air" || f.st === "dizzy") && f.hp > 0) {
     f.buf.EX = 0; f.meter = 0; f.dizzy = 0; f.combo = 0; f.juggle = 0; f.inv = 24;
@@ -531,6 +565,17 @@ function stepFighter(S, f, op, raw) {
     case "roll":
       f.t++; f.vx *= 0.94; if (f.t >= 18) { f.st = "idle"; f.vx = 0; f.combo = 0; f.juggle = 0; }
       break;
+    case "dodge": // invincible roll that passes through the opponent
+      f.t++; f.vx = f.face * (f.t < 14 ? 4.2 : 1.2);
+      if (f.t >= 20) { f.st = "idle"; f.vx = 0; }
+      break;
+    case "charge": // holding attack: power builds until release
+      f.vx = 0;
+      if (raw & B.A && f.t < 90) f.t++;
+      else { const pw = Math.min(1, Math.max(0.15, (f.t - 10) / 50)); startMove(S, f, op, f.ch + ":charge"); f.act.power = pw; emit(S, { type: "chargeRelease", who: f.side, power: pw }); }
+      break;
+    case "clash": case "bench":
+      f.vx = 0; break;
     case "taunt":
       f.t++; f.vx = 0;
       if (f.t >= 50) { f.st = "idle"; f.meter = Math.min(METER_MAX, f.meter + 150); emit(S, { type: "tauntDone", who: f.side }); }
@@ -587,6 +632,14 @@ function neutral(S, f, op, raw, fwdBit, backBit, dashReq, cancel) {
   }
   if (f.buf.A) { f.buf.A = 0; if (grounded(f)) startMove(S, f, op, basicRef(f, 0)); return; }
   if (cancel) return;
+  // HEAT: EX + PARRY together, once per round
+  if (f.buf.EX && f.buf.P && !f.heatUsed && grounded(f)) {
+    f.buf.EX = 0; f.buf.P = 0; f.heatUsed = true; f.heat = 480; f.inv = 12;
+    emit(S, { type: "heat", who: f.side, x: f.x, y: f.y - 40 });
+    if (Math.abs(op.x - f.x) < 80 && !["down", "air", "bench"].includes(op.st) && !op.boss) { op.act = null; op.st = "stagger"; op.stun = 28; op.vx = sgn(op.x - f.x) * 5; }
+    S.hitstop = Math.max(S.hitstop, 16); S.shake = Math.max(S.shake, 8);
+    return;
+  }
   if (f.buf.EX && f.meter >= EX_COST) { f.buf.EX = 0; f.exArm = 40; emit(S, { type: "exArm", who: f.side }); }
   if (f.buf.ST && grounded(f)) {
     f.buf.ST = 0;
@@ -601,6 +654,10 @@ function neutral(S, f, op, raw, fwdBit, backBit, dashReq, cancel) {
     f.buf.P = 0; f.st = "parry"; f.act = { ref: f.ch + ":b1", t: 0, parried: false }; f.vx = 0;
     emit(S, { type: "parryStart", who: f.side }); return;
   }
+  if (f.buf.DASH && (raw & B.D) && grounded(f)) { // DODGE: dash + down
+    f.buf.DASH = 0; f.st = "dodge"; f.t = 0; f.inv = 14; f.vx = f.face * 4.2;
+    emit(S, { type: "dodge", who: f.side }); return;
+  }
   if (dashReq && grounded(f)) {
     const dm = c.dashMul || 1;
     if (dashReq === fwdBit) { f.st = "dash"; f.vx = f.face * 4.4 * dm; } else { f.st = "bdash"; f.vx = -f.face * 3.8 * dm; }
@@ -614,7 +671,7 @@ function neutral(S, f, op, raw, fwdBit, backBit, dashReq, cancel) {
   }
   if (raw & B.D) { f.st = "crouch"; f.crouch = true; f.vx = 0; return; }
   f.crouch = false;
-  const slow = (f.sx.slow > 0 ? 0.5 : 1) * (f.sx.sad > 0 ? 0.75 : 1) * STANCES[f.pst].walk;
+  const slow = (f.sx.slow > 0 ? 0.5 : 1) * (f.sx.sad > 0 ? 0.75 : 1) * STANCES[f.pst].walk * (f.heat > 0 ? 1.2 : 1) * (f.sx.drink > 0 ? 1.2 : 1);
   const smoke = f.sx.smoke > 0 ? 1.15 : 1;
   if (raw & fwdBit) { f.st = "walk"; f.vx = f.face * c.walk * slow * smoke; }
   else if (raw & backBit) { f.st = "walk"; f.vx = -f.face * c.back * slow * smoke; }
@@ -635,7 +692,7 @@ function stepAct(S, f, op, raw) {
   if (m.proj) for (let i = 0; i < m.proj.length; i++) {
     const p = m.proj[i];
     if (a.t === p.at) {
-      S.projs.push({ id: S.nextId++, owner: f.side, ref: a.ref, pi: i, kind: p.kind, ex: !!a.ex, x: f.x + f.face * 16, y: f.y + p.y, vx: p.vx * f.face, vy: p.vy || 0, w: p.w, h: p.h, life: p.life, t: 0, ret: p.ret || 0, back: false, bounced: false, hit: false });
+      S.projs.push({ id: S.nextId++, owner: f.side, ref: a.ref, pi: i, kind: p.kind, ex: !!a.ex, evoUlt: !!a.evoUlt, x: f.x + f.face * 16, y: f.y + p.y, vx: p.vx * f.face, vy: p.vy || 0, w: p.w, h: p.h, life: p.life, t: 0, ret: p.ret || 0, back: false, bounced: false, hit: false });
       emit(S, { type: "proj", who: f.side, kind: p.kind });
     }
   }
@@ -666,6 +723,7 @@ function stepAct(S, f, op, raw) {
     f.act = null;
     f.st = grounded(f) ? "idle" : "jump";
     if (grounded(f)) f.vx = 0;
+    if (grounded(f) && a.ref === basicRef(f, 0) && f.aHold >= 14 && S.phase === "fight") { f.st = "charge"; f.t = 0; emit(S, { type: "chargeStart", who: f.side }); }
   }
 }
 
@@ -742,7 +800,7 @@ function separate(S, a, b) {
     const over = Math.abs(dx) - MAX_SEP, s = sgn(dx);
     a.x += s * over / 2; b.x -= s * over / 2;
   }
-  const pass = (f) => f.act && getMove(f.act.ref).passThrough && f.st === "act";
+  const pass = (f) => f.st === "dodge" || f.boss || (f.act && getMove(f.act.ref).passThrough && f.st === "act");
   if (pass(a) || pass(b)) return;
   if (a.st === "down" || b.st === "down") return;
   const ha = hurtbox(a), hb = hurtbox(b);
@@ -760,6 +818,83 @@ function separate(S, a, b) {
       else { const hi = a.x > b.x ? a : b, lo = hi === a ? b : a; lo.x = hi.x - minD; }
     }
   }
+}
+
+// CLASH mash-off: both players mash ATTACK for 1.5s; the winner breaks through
+function stepClash(S, inputs) {
+  const C = S.clash;
+  C.t++;
+  for (let i = 0; i < 2; i++) {
+    let inp = inputs[i];
+    if (S.bossSide === i) inp = 0;
+    const pressed = inp & ~C.prev[i]; C.prev[i] = inp;
+    if (pressed & (B.A | B.P | B.S1 | B.S2 | B.S3)) C.mash[i]++;
+  }
+  if (C.t % 10 === 0) emit(S, { type: "clashTick", mash: C.mash.slice() });
+  if (C.t < 90) return;
+  S.clash = null;
+  for (const f of S.p) { f.st = "idle"; f.prev = inputs[f.side]; }
+  const w = C.mash[0] > C.mash[1] ? 0 : C.mash[1] > C.mash[0] ? 1 : -1;
+  emit(S, { type: "clashEnd", winner: w, mash: C.mash.slice() });
+  if (w < 0) { for (const f of S.p) { f.st = "stagger"; f.stun = 20; f.vx = (f.x < S.p[1 - f.side].x ? -1 : 1) * 4; } return; }
+  const W = S.p[w], L = S.p[1 - w];
+  applyHit(S, W, L, COMMON.clashHit, { zone: true, x: L.x, y: L.y - 40 });
+}
+
+// mid-fight items: frying pan / chair (weapon for 3 basic hits), energy drink, banana peel (trap)
+function stepItems(S) {
+  if (!S.hazOn || S.phase !== "fight" || S.mode === "training") return;
+  if (--S.itemT <= 0) {
+    S.itemT = 1200;
+    if (S.items.length < 2) {
+      const kind = ["pan", "chair", "drink", "banana"][Math.floor(rnd(S) * 4)];
+      S.items.push({ id: S.nextId++, kind, x: 120 + Math.floor(rnd(S) * 528), y: -150, t: 0, armed: false });
+      emit(S, { type: "itemDrop", kind });
+    }
+  }
+  for (const it of S.items) {
+    it.t++;
+    if (it.y < 0) { it.y = Math.min(0, it.y + 3); if (it.y === 0 && it.kind === "banana") it.armed = true; }
+    if (it.y < 0) continue;
+    for (const f of S.p) {
+      if (f.hp <= 0 || !grounded(f) || Math.abs(f.x - it.x) > 14 || it.gone) continue;
+      if (it.kind === "banana") {
+        if (it.armed && ["walk", "dash", "bdash", "idle"].includes(f.st) && Math.abs(f.vx) > 0.5) { it.gone = true; emit(S, { type: "slip", who: f.side, x: it.x }); applyHit(S, S.p[1 - f.side], f, COMMON.slip, { zone: true, x: f.x, y: f.y - 20 }); }
+        continue;
+      }
+      if (!["idle", "walk", "dash", "crouch"].includes(f.st)) continue;
+      it.gone = true;
+      if (it.kind === "drink") { f.sx.drink = 360; f.meter = Math.min(METER_MAX, f.meter + 150); }
+      else f.weapon = { kind: it.kind, uses: 3 };
+      emit(S, { type: "itemGet", who: f.side, kind: it.kind, x: it.x });
+    }
+  }
+  S.items = S.items.filter((it) => !it.gone && it.t < 1200);
+}
+
+// deterministic boss brain (uses the sim's seeded RNG so online raids stay in sync)
+function bossBrain(S, f, op) {
+  const b = f.brain, fwd = f.face === 1 ? B.R : B.L;
+  const dist = Math.abs(op.x - f.x);
+  // phases at 66% and 33% HP: faster and angrier
+  const ph = f.hp < f.maxHp * 0.33 ? 3 : f.hp < f.maxHp * 0.66 ? 2 : 1;
+  if (ph !== f.bossPhase) { f.bossPhase = ph; f.sx.power = 99999; emit(S, { type: "phase", who: f.side, phase: ph }); f.inv = 40; }
+  // special: telegraphed quake under the target
+  if (--b.special <= 0 && S.phase === "fight") {
+    b.special = ph === 3 ? 170 : ph === 2 ? 230 : 300;
+    S.zones.push({ id: S.nextId++, kind: "quake", owner: f.side, x: op.x, y: 0, w: 70, t: 0, life: 50 });
+    emit(S, { type: "quakeWarn", x: op.x });
+  }
+  if (b.tap) { const t = b.tap; b.tap = 0; return b.hold; } // release frame so the next press is an edge
+  if (b.cool-- > 0) return b.hold;
+  const r = rnd(S);
+  if (["hit", "air", "down", "dizzy", "stagger"].includes(f.st)) return 0;
+  if (dist > 60) { b.hold = fwd; b.cool = 8; return fwd; }
+  b.cool = ph === 3 ? 6 : ph === 2 ? 9 : 12; b.hold = 0;
+  for (let i = 3; i >= 1; i--) if (f.cd[i - 1] <= 0 && r < 0.25 + i * 0.05) { b.tap = 1; return B["S" + i]; }
+  if (r < 0.65) { b.tap = 1; return B.A; }
+  if (r < 0.75) { b.tap = 1; return fwd | B.P; }
+  return 0;
 }
 
 // arcade jackpot: a power-up drops every ~15s; first fighter to grab it wins it
@@ -802,6 +937,9 @@ function stepZones(S) {
       }
     } else if (z.kind === "antigrav") {
       if (inside) { tgt.sx.floaty = 2; tgt.sx.slow = 2; if (z.t % 30 === 0) dot(S, tgt, 7, "gravity"); }
+    } else if (z.kind === "quake") {
+      if (z.t === z.life && Math.abs(tgt.x - z.x) < z.w / 2 && tgt.y > -24) applyHit(S, owner, tgt, COMMON.bossShock, { zone: true, x: tgt.x, y: -20 });
+      if (z.t === z.life) { S.shake = Math.max(S.shake, 10); emit(S, { type: "stomp", who: z.owner, x: z.x, y: 0 }); }
     } else if (z.kind === "paper") {
       if (owner.hp > 0) z.x = owner.x; // the storm follows GED
       if (z.t % 240 === 0 && S.phase === "fight") {
@@ -851,7 +989,7 @@ function stepProjs(S) {
     const pb = [p.x - p.w / 2, p.y - p.h / 2, p.w, p.h];
     if (overlap(pb, hurtbox(tgt))) {
       const def = getMove(p.ref).proj[p.pi];
-      const r = applyHit(S, S.p[p.owner], tgt, def, { proj: true, vx: p.vx, x: p.x, y: p.y, ex: p.ex });
+      const r = applyHit(S, S.p[p.owner], tgt, def, { proj: true, vx: p.vx, x: p.x, y: p.y, ex: p.ex, evoUlt: p.evoUlt });
       if (r === "parry") { p.owner = 1 - p.owner; p.vx = -p.vx * 1.1; p.ret = 0; p.t = 0; p.life = 80; }
       else if (r) { if (p.ret) p.hit = true; else p.life = 0; }
     }
@@ -869,6 +1007,8 @@ function stepStatus(S, f, op) {
   } else s.poisonT = 0;
   for (let i = 0; i < 3; i++) if (f.cd[i] > 0) f.cd[i]--;
   if (s.power > 0) s.power--;
+  if (s.drink > 0) s.drink--;
+  if (f.heat > 0) for (let i = 0; i < 3; i++) if (f.cd[i] > 0) f.cd[i]--; // heat: cooldowns tick twice as fast
   if (f.st !== "block" && f.guardG > 0) f.guardG = Math.max(0, f.guardG - 0.4);
   const rage = f.hp > 0 && f.hp < f.maxHp * 0.25;
   if (rage && !f.rage && S.phase === "fight") emit(S, { type: "rage", who: f.side });
@@ -955,7 +1095,8 @@ export function step(S, inputs, events) {
       S.timer--;
       if (S.timer <= 0) {
         S.timer = 0; S.phase = "timeup"; S.phaseT = 0;
-        const r0 = S.p[0].hp / S.p[0].maxHp, r1 = S.p[1].hp / S.p[1].maxHp;
+        let r0 = S.p[0].hp / S.p[0].maxHp, r1 = S.p[1].hp / S.p[1].maxHp;
+        if (S.bossSide >= 0) { r0 = S.bossSide === 0 ? 1 : 0; r1 = 1 - r0; } // bosses win on time
         S.winner = r0 > r1 ? 0 : r1 > r0 ? 1 : -1;
         emit(S, { type: "timeup" });
       }
@@ -977,10 +1118,24 @@ export function step(S, inputs, events) {
     }
   }
 
+  if (S.clash) { stepClash(S, inputs); S._ev = null; return; }
   const [p0, p1] = S.p;
   const live = S.phase === "fight";
-  const inA = live ? inputs[0] : 0;
-  const inB = live ? inputs[1] : 0;
+  let inA = live ? inputs[0] : 0;
+  let inB = live ? inputs[1] : 0;
+  if (S.raid) { // boss raid: the active fighter follows its owner; the other player can tag or call an assist
+    const own = S.raidCur, benchIn = live ? inputs[1 - own] : 0, pressed = benchIn & ~S.raidPrev;
+    S.raidPrev = benchIn; inA = live ? inputs[own] : 0;
+    if (S.assistCd > 0) S.assistCd--;
+    if (live && pressed & B.ST && S.tagCd[0] <= 0 && S.bench[0] && S.bench[0].hp > 0 && ["idle", "walk", "crouch"].includes(p0.st)) swapIn(S, 0, false);
+    else if (live && pressed & B.A && S.assistCd <= 0 && S.bench[0] && S.bench[0].hp > 0) {
+      S.assistCd = 480;
+      const a0 = S.p[0], face = sgn(S.p[1].x - a0.x) || 1;
+      S.projs.push({ id: S.nextId++, owner: 0, ref: S.bench[0].ch + ":assist", pi: 0, kind: "assist", ch: S.bench[0].ch, x: face > 0 ? Math.max(10, a0.x - 120) : Math.min(STAGE_W - 10, a0.x + 120), y: -50, vx: 7 * face, vy: 0, w: 20, h: 20, life: 90, t: 0, ret: 0, back: false, bounced: false, hit: false });
+      emit(S, { type: "assist", who: 0, ch: S.bench[0].ch });
+    }
+  }
+  if (S.bossSide >= 0 && live) { const bs = S.bossSide; const bIn = bossBrain(S, S.p[bs], S.p[1 - bs]); if (bs === 0) inA = bIn; else inB = bIn; }
   stepFighter(S, p0, p1, inA);
   stepFighter(S, S.p[1], S.p[0], inB); // re-read: a tag swap may have replaced a fighter
 
@@ -988,7 +1143,24 @@ export function step(S, inputs, events) {
   separate(S, S.p[0], S.p[1]);
   stepZones(S);
   stepHazards(S);
+  stepItems(S);
 
+  // CLASH: two skills/heavies meet head-on -> mash-off
+  if (S.phase === "fight" && !S.raid && S.bossSide < 0) {
+    const b0 = activeBox(S.p[0]), b1 = activeBox(S.p[1]);
+    if (b0 && b1 && overlap(b0, b1)) {
+      const m0 = getMove(S.p[0].act.ref), m1 = getMove(S.p[1].act.ref);
+      if ((m0.skill || m0.heavy) && (m1.skill || m1.heavy)) {
+        S.clash = { t: 0, mash: [0, 0], prev: [inputs[0], inputs[1]] };
+        for (const f of S.p) { f.act = null; f.st = "clash"; f.vx = 0; }
+        const mid = (S.p[0].x + S.p[1].x) / 2;
+        S.p[0].x = mid - (S.p[0].x < S.p[1].x ? 18 : -18); S.p[1].x = mid + (S.p[0].x < S.p[1].x ? 18 : -18);
+        S.shake = 10; S.hitstop = 10;
+        emit(S, { type: "clash", x: mid });
+        S._ev = null; return;
+      }
+    }
+  }
   // melee hit detection (simultaneous)
   const pending = [];
   for (const f of S.p) {
@@ -1015,7 +1187,7 @@ export function hashState(S) {
   const mix = (v) => { h ^= (v * 1000) | 0; h = Math.imul(h, 16777619) >>> 0; };
   mix(S.frame); mix(S.timer); mix(S.rng);
   for (const f of S.p) { mix(f.x); mix(f.y); mix(f.hp); mix(f.vx); mix(f.vy); mix(f.cd[0]); mix(f.cd[1]); mix(f.cd[2]); mix(f.pst); mix(f.dj ? 1 : 0); mix(f.meter); }
-  mix(S.projs.length);
+  mix(S.projs.length); mix(S.items.length); mix(S.clash ? S.clash.t : 0);
   return h >>> 0;
 }
 

@@ -63,12 +63,15 @@
     </section>
 
     <!-- ===== MODE MENU ===== -->
-    <section id="menu" class="scr">
+    <section id="menu" class="scr scroll">
       <h2 class="sh">SELECT MODE</h2>
       <div id="hello" class="hello"></div>
       <div class="menu-list">
         <button class="mi" data-mode="online"><b>ONLINE PVP</b><i>Rooms, open lobbies, quick match</i></button>
-        <button class="mi" data-mode="cpu"><b>VS CPU</b><i>Arcade fight vs AI</i></button>
+        <button class="mi" data-mode="cpu"><b>VS CPU</b><i>Quick fight vs AI</i></button>
+        <button class="mi" data-mode="arcade"><b>ARCADE</b><i>6-fight story ladder + boss</i></button>
+        <button class="mi" data-mode="survival"><b>SURVIVAL</b><i>Endless fights, one health bar</i></button>
+        <button class="mi" data-mode="raid"><b>BOSS RAID</b><i>Co-op vs a giant boss</i></button>
         <button class="mi" data-mode="local"><b>LOCAL 2P</b><i>Shared keyboard / 2 gamepads</i></button>
         <button class="mi" data-mode="tag"><b>TAG TEAM</b><i>2v2: pick two, swap mid-fight</i></button>
         <button class="mi" data-mode="tourney"><b>TOURNAMENTS</b><i>Weekly brackets with friends</i></button>
@@ -124,7 +127,8 @@
         <div class="mid">
           <div class="grid"></div>
           <div class="stagepick"><button class="sp-prev">◀</button><span id="stageName">STAGE</span><button class="sp-next">▶</button></div>
-          <div class="selopts"><button id="hzBtn">HAZARDS: ON</button><button id="tagRival" class="hidden">RIVAL: CPU</button></div>
+          <div class="selopts"><button id="hzBtn">HAZARDS: ON</button><button id="tagRival" class="hidden">RIVAL: CPU</button><button id="modeBtn" class="hidden">MODE: VERSUS</button></div>
+          <div id="queueBox" class="hidden"></div>
 <div id="selRoom" class="hidden"><span>ROOM CODE</span><b id="selCode">-----</b><button id="selCopy">COPY INVITE LINK</button></div>
           <button id="btnReady" class="big">FIGHT!</button>
           <div class="hint sel-hint"></div>
@@ -193,6 +197,18 @@
       <button class="back">BACK</button>
     </section>
 
+    <!-- ===== STORY CARD (arcade / survival / raid) ===== -->
+    <section id="story" class="scr">
+      <div class="storycard">
+        <div class="st-head"><span id="stStage">STAGE 1 / 6</span><span id="stDiff"></span></div>
+        <div class="st-vs"><canvas id="stMe" width="160" height="192"></canvas><b>VS</b><canvas id="stOpp" width="160" height="192"></canvas></div>
+        <h3 id="stTitle"></h3>
+        <p id="stText"></p>
+        <div class="res-btns row"><button id="stGo" class="big">FIGHT!</button><button id="stQuit">QUIT</button></div>
+        <div id="stBoard" class="msg"></div>
+      </div>
+    </section>
+
     <!-- ===== CHALLENGES / TITLES ===== -->
     <section id="challenges" class="scr scroll">
       <h2 class="sh">CHALLENGES</h2>
@@ -253,6 +269,9 @@
           <tr><td>EX / COMBO BREAKER</td><td>E</td><td>;</td><td>NUM7 / [</td><td>RT</td></tr>
           <tr><td>TAUNT</td><td>B</td><td>'</td><td>NUM8 / ]</td><td>LT</td></tr>
           <tr><td>THROW</td><td colspan="4">Toward the foe + PARRY up close (beats blocking)</td></tr>
+          <tr><td>HEAT (once per round)</td><td colspan="4">EX + PARRY together (phone: HEAT button)</td></tr>
+          <tr><td>DODGE</td><td colspan="4">DASH while holding DOWN — invincible roll through attacks</td></tr>
+          <tr><td>CHARGED STRIKE</td><td colspan="4">Keep holding ATTACK after the first jab, release to strike</td></tr>
           <tr><td>DOUBLE JUMP</td><td colspan="4">Press jump again in the air</td></tr>
           <tr><td>AIR SLAM</td><td colspan="4">In the air: hold DOWN + ATTACK (dive + shockwave)</td></tr>
         </table>
@@ -265,6 +284,7 @@
           <p><b>SUPER METER</b> Fills as you deal and take damage, parry and taunt. Half a bar: press EX then a skill for a powered-up EX skill (+35% dmg). Full bar while being comboed: EX = COMBO BREAKER.</p>
           <p><b>THROWS</b> Forward + PARRY up close. Beats blocking and parrying; attacks beat throws; throwing at the same time = THROW TECH.</p>
           <p><b>MORE</b> RAGE under 25% HP (+10% dmg) &bull; FIRST ATTACK each round +10% &bull; hold a direction when knocked down to TECH ROLL &bull; blocking too much fills your guard gauge until it BREAKS &bull; TAUNT for meter (you're open while you do it).</p>
+          <p><b>NEW</b> CLASH: two skills collide — mash ATTACK to break through &bull; ITEMS: frying pan / chair (3 powered hits), energy drink (speed + meter), banana peel (slip trap) &bull; EVOLVED fighters' ultimates become super-ultimates (+50%).</p>
           <p><b>STAGES</b> Rooftop: smash someone into the wall to break through to the street &bull; Arcade: grab JACKPOT power-ups &bull; Classroom: knock foes through desks.</p>
           <p><b>AIR</b> Double jump once per jump. DOWN + ATTACK in the air dives into a slam with a ground shockwave that knocks down.</p>
           <p><b>K.O.</b> The round-winning blow triggers a slow-motion finisher. Best of 3 rounds, 99s timer.</p>
@@ -313,6 +333,7 @@
       <button data-bit="ST" class="stc"><span>STN</span></button>
       <button data-bit="EX" class="exb"><span>EX</span><i class="mtr"></i></button>
       <button data-bit="TAUNT" class="tnt"><span>TAUNT</span></button>
+      <button data-bit="HEAT" class="heat"><span>HEAT</span></button>
     </div>
     <button id="tPause" class="tpause">II</button>
   </div>
