@@ -19,7 +19,7 @@
 
   // shot chips
   const NAMES = { well: 'Well cutaway' };
-  $('shots').innerHTML = S.SHOTS.map((s, i) => `<button class="chip" data-t="${s.t}" type="button"><b>${i + 1}</b><span>${NAMES[s.set]}</span><i>${fmt(s.t)}</i></button>`).join('');
+  $('shots').innerHTML = S.SHOTS.map((s, i) => `<button class="chip" data-t="${s.t}" type="button"><b>${i + 1}</b><span>${s.n || NAMES[s.set]}</span><i>${fmt(s.t)}</i></button>`).join('');
   const chips = [...document.querySelectorAll('.chip')];
   chips.forEach((c) => c.addEventListener('click', () => { pause(); show(Math.round(+c.dataset.t * FPS) + 6); }));
   const markShot = (t) => { let k = 0; S.SHOTS.forEach((s, i) => { if (t >= s.t) k = i; }); chips.forEach((c, i) => c.classList.toggle('on', i === k)); };
@@ -89,7 +89,7 @@
       }
       await venc.flush(); muxer.finalize();
       const blob = new Blob([target.buffer], { type: box === 'mp4' ? 'video/mp4' : 'video/webm' });
-      const name = `escalation_test_${w}x${h}.${box}`;
+      const name = `never_yours_${w}x${h}.${box}`;
       const url = URL.createObjectURL(blob); $('result').hidden = false; $('vid').src = url; $('dl').href = url; $('dl').download = name;
       $('size').textContent = `${name} \u00b7 ${(blob.size / 1048576).toFixed(1)} MB \u00b7 ${((performance.now() - t0) / 1000).toFixed(0)} s render`;
       status('Done. Saving the file\u2026', 'good');
