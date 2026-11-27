@@ -1023,7 +1023,9 @@ const EVOLVE_AT = 50;
 app.evo = [false, false];
 function usesAll() { return store.get("uses", {}); }
 function usesOf(ch) { return usesAll()[ch] || 0; }
-function canEvolve(ch) { return !!ch && usesOf(ch) >= EVOLVE_AT; }
+// players named ADMIN have every evolution unlocked
+function isAdmin() { return myName() === "ADMIN"; }
+function canEvolve(ch) { return !!ch && (isAdmin() || usesOf(ch) >= EVOLVE_AT); }
 function countUses(S) {
   if (!["cpu", "local", "online", "tag"].includes(app.mode)) return;
   const mine = twoP() ? [0, 1] : [mySide()];
@@ -1057,7 +1059,7 @@ function renderEvo(side, p, id) {
   const mineSide = app.mode === "online" ? p === app.slot : twoP() ? true : p === 0;
   if (!mineSide) { const on = app.mode === "online" && app.room?.players?.[p]?.evo; el.className = "evo" + (on ? " on" : ""); el.innerHTML = on ? `<span class="star">★</span> EVOLVED` : ""; el.disabled = true; el.classList.toggle("hidden", !on); return; }
   el.classList.remove("hidden"); el.disabled = false;
-  const n = usesOf(id);
+  const n = isAdmin() ? Math.max(EVOLVE_AT, usesOf(id)) : usesOf(id);
   const altTxt = hasAlt(id) ? ` <small>ALT ${app.alt[p] ? "ON" : "OFF"} · C</small>` : "";
   if (n >= EVOLVE_AT) { el.className = "evo ready" + (app.evo[p] ? " on" : ""); el.innerHTML = app.evo[p] ? `<span class="star">★</span> EVOLVED FORM <small>ON · X</small>` : `<span class="star">★</span> EVOLVE AVAILABLE <small>OFF · X</small>`; el.innerHTML += altTxt; }
   else { el.className = "evo"; el.innerHTML = `EVOLUTION <span class="bar"><i style="width:${(n / EVOLVE_AT) * 100}%"></i></span> <small>${n}/${EVOLVE_AT}</small>` + altTxt; }
