@@ -1,0 +1,121 @@
+<title>Sinking Tower Render</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE occasion: a little TV control room for one cartoon short
+   IDEA the studio's own on-air board: red DAILY NUMBER plate, yellow bulbs, blue stage curtain
+   PICTURE the live 9:16 frame of the short itself, rendered by the viewer's GPU
+   COLOUR curtain blue ground, lottery red, bulb yellow, cream ink
+   TYPE Lilita One (the captions' face) + Inter
+   LAYOUT laptop: frame left, control desk right; phone: title, frame, controls */
+:root{color-scheme:dark;--bg:#1d2458;--panel:#263070;--edge:#3b4690;--ink:#f7f2e4;--soft:#c9cdea;--red:#c62f36;--gold:#f4d35e;--ok:#7fd69a;--bad:#ff9a8a}
+@font-face{font-family:"Lilita One";src:url("LilitaOne.ttf") format("truetype");font-display:block}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif;overflow-x:clip;margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-block:clamp(18px,3vw,36px);padding-left:max(4vw,16px,env(safe-area-inset-left,0px));padding-right:max(4vw,16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(20px,3vw,40px);align-items:start}
+.stage{position:relative;height:min(84svh,960px);aspect-ratio:9/16;border-radius:14px;overflow:hidden;background:#000;box-shadow:0 0 0 3px var(--gold),0 0 0 9px var(--red)}
+#screen{display:block;width:100%;height:100%}
+.plate{display:inline-flex;align-items:center;gap:12px;background:var(--red);border:3px solid var(--gold);border-radius:10px;padding:8px 18px 6px;font:clamp(30px,4vw,46px)/1 "Lilita One",Impact,sans-serif;letter-spacing:.01em;margin:0 0 10px}
+.plate i{width:12px;height:12px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold)}
+h1{margin:0}
+.lede{color:var(--soft);margin:0 0 20px;max-width:56ch}
+.desk{display:grid;gap:16px}
+.box{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:16px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button,select,.btn{font:600 16px/1 Inter,system-ui,sans-serif;border-radius:10px;min-height:44px;padding:0 18px;border:2px solid var(--gold);background:transparent;color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+button:hover,.btn:hover{background:rgba(244,211,94,.12)}
+button:focus-visible,select:focus-visible,input:focus-visible,.btn:focus-visible{outline:3px solid #fff;outline-offset:2px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.go{background:var(--red);border-color:var(--gold);font:22px/1 "Lilita One",Impact,sans-serif;letter-spacing:.02em;padding:0 26px;min-height:54px}
+.go:hover{background:#d8414a}
+select{background:var(--bg);padding-right:12px}
+#time{font-variant-numeric:tabular-nums;color:var(--soft);white-space:nowrap;margin-left:auto}
+input[type=range]{width:100%;accent-color:var(--gold);height:28px;margin:10px 0 0}
+.meter{height:12px;border-radius:6px;background:var(--bg);border:1px solid var(--edge);overflow:hidden;margin-top:14px}
+#bar{height:100%;width:0;background:repeating-linear-gradient(90deg,var(--gold) 0 14px,#ffe9a0 14px 20px);transition:width .2s}
+.status{margin:10px 0 0;color:var(--soft);min-height:1.5em}
+.status.good{color:var(--ok)}.status.bad{color:var(--bad)}
+.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.chip{min-height:44px;justify-content:flex-start;gap:8px;border:1px solid var(--edge);background:var(--bg);font-weight:400;font-size:14px;padding:6px 10px}
+.chip b{font:16px/1 "Lilita One",Impact,sans-serif;color:var(--gold)}
+.chip span{text-align:left;line-height:1.2}
+.chip i{margin-left:auto;font-style:normal;color:var(--soft);font-variant-numeric:tabular-nums}
+.chip.on{border-color:var(--gold);background:rgba(244,211,94,.14)}
+h2{font:22px/1.1 "Lilita One",Impact,sans-serif;margin:0 0 10px;letter-spacing:.01em}
+.notes{color:var(--soft);font-size:14px;margin:0;padding-left:18px}
+.notes li{margin:4px 0}
+#result video{width:min(240px,100%);border-radius:8px;border:2px solid var(--gold);display:block;margin:12px 0}
+#size{color:var(--soft);font-size:14px;overflow-wrap:anywhere}
+.credit{font-size:13px;color:var(--soft);margin:0}
+@media(max-width:860px){.wrap{grid-template-columns:minmax(0,1fr)}.stage{height:auto;width:min(100%,460px);margin:0 auto}.head{order:-1}}
+</style>
+
+<div class="wrap">
+  <div class="stage"><canvas id="screen" width="540" height="960" aria-label="Preview of the short"></canvas></div>
+  <div class="desk">
+    <div class="head">
+      <h1 class="plate"><i></i>The Sinking Tower<i></i></h1>
+      <p class="lede">The Sinking Tower, starring Gus: 43 seconds, 1080×1920, 30 fps. Your graphics card draws every frame here, and the browser’s own encoder writes the MP4 with the voice, music and sound effects already mixed in.</p>
+    </div>
+    <div class="box">
+      <div class="row">
+        <button id="play" type="button">Play preview</button>
+        <span id="time">0:00.0 / 0:49.4</span>
+      </div>
+      <input id="scrub" type="range" min="0" max="1480" value="20" aria-label="Scrub through the video">
+    </div>
+    <div class="box">
+      <h2>Render the video</h2>
+      <div class="row">
+        <label for="res" class="sr">Size</label>
+        <select id="res"><option value="1080x1920" selected>Final · 1080×1920</option><option value="720x1280">Fast · 720×1280</option></select>
+        <button id="render" class="go" type="button">Render MP4</button>
+      </div>
+      <div class="meter"><div id="bar"></div></div>
+      <p id="status" class="status">Ready. Desktop Chrome or Edge works best; keep this tab in front while it renders.</p>
+      <div id="result" hidden>
+        <video id="vid" controls playsinline></video>
+        <div class="row"><button id="again" type="button">Save again</button><a id="dl" class="btn" href="#">Open file</a></div>
+        <p id="size"></p>
+      </div>
+    </div>
+    <div class="box">
+      <h2>Shots</h2>
+      <div class="shots" id="shots"></div>
+    </div>
+    <div class="box">
+      <h2>Notes</h2>
+      <ul class="notes">
+        <li>Voice: your ElevenLabs take, sped up to 1.25× (49.4 s), compressed and mastered to about −15 LUFS.</li>
+        <li>Music: “Hidden Agenda”, then “Local Forecast – Elevator” from “So who buys?” on.</li>
+        <li>Sound effects: 62 real Mixkit hits timed to the action (whooshes on scene changes, money bags, the hatch, bubbles, splashes, the tank collapse, stamps), about 12 dB under the voice.</li>
+        <li>Captions, face glow and the ink outlines are drawn into every frame, so the MP4 is upload-ready.</li>
+      </ul>
+      <p class="credit">Music by Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0. Put this credit in the video description.</p>
+    </div>
+  </div>
+</div>
+<audio id="mix" src="mix.mp3" preload="auto"></audio>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/webm-muxer@5.0.3/build/webm-muxer.js"></script>
+<script>
+{
+  const files = ['paint.js', 'toon.js', 'engine.js', 'words.js', 'world.js', 'story.js', 'app.js'];
+  const load = (src) => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error('could not load ' + src)); document.body.appendChild(s); });
+  const boot = async () => {
+    const st = document.getElementById('status');
+    try {
+      st.textContent = 'Loading fonts and building the sets…';
+      const ff = new FontFace('Lilita One', 'url(LilitaOne.ttf)'); await ff.load(); document.fonts.add(ff); await document.fonts.ready;
+      for (const f of files) await load(f);
+      st.textContent = 'Ready. Desktop Chrome or Edge works best; keep this tab in front while it renders.';
+    } catch (e) { st.textContent = 'Could not start: ' + e.message; st.className = 'status bad'; window.err = e.message; }
+  };
+  boot();
+}
+</script>
+<style>.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}</style>
