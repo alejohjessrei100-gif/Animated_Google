@@ -63,11 +63,12 @@ window.WORLD = (() => {
   for (let k = 0; k < 120; k++) { const x = X0 + R() * (X1 - X0); if (x > Wd.S.x0 - 0.2 && x < Wd.S.x1 + 0.2) continue; const z = ZBACK + R() * (ZF - ZBACK - 0.05); if (z > -2.0 && z < -0.45) continue; add(new THREE.ConeGeometry(0.035, 0.2, 4), k % 2 ? '#4c8a30' : '#5f9a3c', x, 0.1, z, scene, { cast: false }); }
 
   // ---------- swamp: murky water, reeds, lily pads, bubbles ----------
-  Wd.swampM = toon({ color: '#35675e', roughness: 0.15, emissive: '#16352f', emissiveIntensity: 0.35, transparent: true, opacity: 0.9 });
+  const swC = (() => { const [c, g] = cv(64, 256); const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, '#5f9a7a'); gr.addColorStop(0.25, '#35675e'); gr.addColorStop(1, '#122a24'); g.fillStyle = gr; g.fillRect(0, 0, 64, 256); for (let k = 0; k < 40; k++) { g.fillStyle = 'rgba(90,140,60,.35)'; g.fillRect(R() * 64, 60 + R() * 190, 2, 10 + R() * 30); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
+  Wd.swampM = toon({ map: swC, roughness: 0.15, emissive: '#16352f', emissiveIntensity: 0.25, transparent: true, opacity: 0.72, depthWrite: false });
   Wd.swamp = add(box(Wd.S.x1 - Wd.S.x0, 1.0, ZF - ZBACK - 0.02), Wd.swampM, (Wd.S.x0 + Wd.S.x1) / 2, Wd.S.y0 + 0.5 + 0.05, (ZF + ZBACK) / 2, scene, { cast: false });
   for (let k = 0; k < 22; k++) { const x = Wd.S.x0 + 0.2 + R() * (Wd.S.x1 - Wd.S.x0 - 0.4), z = ZBACK + 0.2 + R() * (ZF - ZBACK - 0.5); if (z > -2.3) continue; const h = 0.5 + R() * 0.5; add(cyl(0.02, 0.025, h, 5), '#4c7a2a', x, -0.1 + h / 2, z, scene, { cast: false }); add(cyl(0.045, 0.045, 0.16, 8), '#6b4a2a', x, -0.1 + h - 0.05, z, scene, { cast: false }); }
   for (let k = 0; k < 6; k++) add(cyl(0.22, 0.22, 0.02, 16, false, 0.3, 5.8), '#5aa83a', Wd.S.x0 + 0.5 + R() * 3.6, -0.24, ZF - 0.2 - R() * 0.3, scene, { cast: false });
-  Wd.bubbles = []; for (let i = 0; i < 8; i++) Wd.bubbles.push(add(sph(0.05, 8, 6), toon({ color: '#9ec46a' }), 0, -50, 0, scene, { cast: false }));
+  Wd.bubbles = []; for (let i = 0; i < 8; i++) Wd.bubbles.push(add(sph(0.035, 8, 6), toon({ color: '#cfe8c0', transparent: true, opacity: 0.7 }), 0, -50, 0, scene, { cast: false }));
 
   // ---------- the road: dirt, then asphalt rolls out, then the second lane ----------
   const RZ = Wd.ROADZ, RW = 1.5;
@@ -127,7 +128,7 @@ window.WORLD = (() => {
   Wd.pigeon = group(-0.22, 1.05, 0.12); { const p = Wd.pigeon, gm = toon({ color: '#8a93a6' });
     const bd = add(sph(0.12, 16, 12), gm, 0, 0.1, 0, p); bd.scale.set(1.3, 0.9, 0.9); Wd.pigHead = group(0.12, 0.22, 0, p); add(sph(0.07, 12, 10), toon({ color: '#6b7488' }), 0, 0, 0, Wd.pigHead); add(new THREE.ConeGeometry(0.025, 0.06, 6), '#f4c430', 0.08, -0.01, 0, Wd.pigHead).rotation.z = -Math.PI / 2; for (const s of [-1, 1]) add(sph(0.016, 6, 5), '#1e1714', 0.04, 0.02, s * 0.05, Wd.pigHead);
     add(box(0.12, 0.04, 0.18), '#6b7488', -0.15, 0.12, 0, p).rotation.z = 0.4; for (const s of [-1, 1]) add(box(0.02, 0.06, 0.02), '#e07a5f', 0, -0.01, s * 0.04, p); }
-  Wd.horse = group(1.45, 0, -0.15); { const h = Wd.horse, bm = toon({ color: '#9a6a3e' }), dm = toon({ color: '#3b2a20' });
+  Wd.horse = group(1.85, 0, -0.15); { const h = Wd.horse, bm = toon({ color: '#9a6a3e' }), dm = toon({ color: '#3b2a20' });
     add(box(0.95, 0.5, 0.42), bm, 0, 0.9, 0, h); for (const [x, z] of [[-0.36, -0.14], [-0.36, 0.14], [0.36, -0.14], [0.36, 0.14]]) add(box(0.1, 0.66, 0.1), bm, x, 0.33, z, h);
     const nk = group(-0.45, 1.05, 0, h); add(box(0.22, 0.55, 0.26), bm, 0, 0.22, 0, nk).rotation.z = 0.35; const hd = group(-0.16, 0.52, 0, nk); add(box(0.42, 0.22, 0.24), bm, -0.12, 0, 0, hd); add(box(0.14, 0.16, 0.22), '#c9a58a', -0.34, -0.04, 0, hd); for (const s of [-1, 1]) { add(sph(0.03, 8, 6), '#1e1714', -0.04, 0.06, s * 0.125, hd); add(new THREE.ConeGeometry(0.04, 0.12, 6), bm, 0.06, 0.15, s * 0.08, hd); }
     for (let k = 0; k < 5; k++) add(box(0.06, 0.12, 0.3), dm, 0.04 + k * 0.03, 0.15 - k * 0.12, 0, nk); add(box(0.08, 0.5, 0.08), dm, 0.5, 0.82, 0, h).rotation.z = -0.5;
@@ -139,7 +140,7 @@ window.WORLD = (() => {
   Wd.sparks = []; for (let i = 0; i < 24; i++) Wd.sparks.push(add(sph(0.03, 6, 4), toon({ color: '#fff6c8', emissive: '#ffe9a0', emissiveIntensity: 1.6 }), 0, -50, 0, scene, { cast: false }));
   const dustM = toon({ color: '#d8c8ae', transparent: true, opacity: 0.75 });
   Wd.dust = []; for (let i = 0; i < 22; i++) Wd.dust.push(add(sph(0.11, 10, 8), dustM, 0, -50, 0, scene, { cast: false }));
-  Wd.drops = []; for (let i = 0; i < 20; i++) Wd.drops.push(add(sph(0.05, 8, 6), toon({ color: '#9ec46a', emissive: '#4a6a2a', emissiveIntensity: 0.4 }), 0, -50, 0, scene, { cast: false }));
+  Wd.drops = []; for (let i = 0; i < 20; i++) Wd.drops.push(add(sph(0.035, 8, 6), toon({ color: '#e4f4ee', transparent: true, opacity: 0.8 }), 0, -50, 0, scene, { cast: false }));
   Wd.confetti = []; for (let i = 0; i < 60; i++) Wd.confetti.push(add(box(0.08, 0.05, 0.01), ['#c62f36', '#f4d35e', '#2a5fae', '#3fa39a', '#e07a5f'][i % 5], 0, -50, 0, scene, { cast: false }));
   Wd.steam = []; for (let i = 0; i < 16; i++) Wd.steam.push(add(sph(0.12, 10, 8), toon({ color: '#e8eef2', transparent: true, opacity: 0.6 }), 0, -50, 0, scene, { cast: false }));
   Wd.birds = [0, 1, 2].map((i) => { const b = group(0, 6, -10); add(sph(0.08, 8, 6), '#3b3f4a', 0, 0, 0, b).scale.set(1.4, 0.7, 0.7); const w1 = add(box(0.3, 0.01, 0.1), '#3b3f4a', 0, 0, 0.1, b), w2 = add(box(0.3, 0.01, 0.1), '#3b3f4a', 0, 0, -0.1, b); Wd.life.push((t) => { const u = (t * 0.03 + i * 0.3) % 1; b.position.set(-16 + u * 32, 6 + Math.sin(t + i) * 0.5 + i * 0.6, -10 - i); const f = Math.sin(t * 14 + i) * 0.7; w1.rotation.x = f; w2.rotation.x = -f; }); return b; });

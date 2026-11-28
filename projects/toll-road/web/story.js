@@ -69,24 +69,24 @@ window.STORY = (() => {
     { t: 12.9, pos: [7.9, 1.0, 5.4], look: [7.9, -0.05, -1.2], fov: 50, drift: [0, -0.1, -0.5] },                                         // the bridge sinks 3 feet
     { t: 14.28, pos: [-0.3, 1.45, 3.4], look: [-0.35, 1.18, 0.0], fov: 46, drift: [-0.1, 0.03, -0.3], roll: 1.5 },                          // charge 2 coins
     { t: 15.7, pos: [2.0, 3.4, 9.6], look: [2.0, 0.6, -1.6], fov: 50, drift: [-0.8, 0.2, 0.4] },                                           // a highway
-    { t: 16.86, pos: [-0.45, 1.4, 3.5], look: [-0.5, 1.1, -0.4], fov: 46, drift: [0.1, 0.05, -0.4] },                                      // needs workers
+    { t: 16.86, pos: [-0.45, 1.4, 3.3], look: [-0.5, 1.1, -0.4], fov: 46, drift: [0.1, 0.05, 0.4] },                                      // needs workers
     { t: 18.9, pos: [-0.35, 1.4, 3.3], look: [-0.4, 1.15, 0.0], fov: 46, drift: [0.05, 0.02, -0.25] },                                     // a pigeon
     { t: 19.56, pos: [0.8, 1.45, 4.0], look: [0.8, 1.0, -0.3], fov: 48, drift: [0.2, 0.05, -0.2] },                                       // a horse
     { t: 20.3, pos: [-1.4, 1.45, 3.5], look: [-1.55, 1.1, -0.2], fov: 46, drift: [-0.1, 0.05, -0.3], roll: -1.5 },                         // Uncle Ray
     { t: 21.0, pos: [-0.35, 1.35, 3.1], look: [-0.4, 1.15, 0.0], fov: 46, drift: [0.03, 0.02, -0.25] },                                   // pigeon counts, badly
     { t: 23.08, pos: [1.15, 1.5, 2.7], look: [0.95, 1.25, -0.1], fov: 46, drift: [-0.1, 0.03, -0.3] },                                    // horse eats receipts
     { t: 24.5, pos: [-1.3, 1.4, 3.2], look: [-1.4, 1.15, -0.3], fov: 48, drift: [0.3, 0.05, -0.3], roll: 2 },                              // family rides free
-    { t: 26.74, pos: [-9.5, 1.45, 3.2], look: [-9.5, 1.0, -2.2], fov: 48, drift: [0.2, 0.05, -0.6] },                                     // bank + screen door
+    { t: 26.74, pos: [-9.5, 1.45, 3.0], look: [-9.5, 1.0, -2.2], fov: 48, drift: [0.2, 0.05, 0.6] },                                     // bank + screen door
     { t: 28.6, pos: [-0.3, 1.6, 3.6], look: [-0.3, 1.25, 0.0], fov: 46, drift: [-0.1, -0.1, -0.5] },                                       // the coins pour in
     { t: 30.42, pos: [-0.3, 1.35, 3.0], look: [-0.3, 1.2, 0.05], fov: 44, drift: [0, 0.02, -0.15], roll: -2 },                              // 900 a week
-    { t: 31.66, pos: [-0.35, 1.38, 3.2], look: [-0.4, 1.18, -0.1], fov: 46, drift: [0.05, 0, -0.3] },                                       // Wait, why is your jar empty?
+    { t: 31.66, pos: [-0.35, 1.38, 3.0], look: [-0.4, 1.18, -0.1], fov: 46, drift: [0.05, 0, 0.45] },                                       // Wait, why is your jar empty?
     { t: B.because - 0.06, pos: [0.7, -0.8, 4.3], look: [0.6, -1.3, -0.3], fov: 50, drift: [0.4, -0.6, 0], dlook: [0.6, -1.2, 0] },         // down the pipe
-    { t: B.not - 0.04, pos: [LX, -2.55, 4.7], look: [LX, -2.7, -0.6], fov: 50, drift: [0.1, 0.05, -0.6] },                                  // the lair
+    { t: B.not - 0.04, whipIn: true, pos: [LX, -2.55, 4.7], look: [LX, -2.7, -0.6], fov: 50, drift: [0.1, 0.05, -0.6] },                                  // the lair
     { t: 36.2, pos: [LX + 0.45, -2.75, 2.7], look: [LX + 0.55, -2.95, -0.4], fov: 46, drift: [-0.1, 0.03, -0.3], roll: 1.5 },               // the man who sold it
     { t: 37.0, pos: [LX - 0.2, -0.9, 7.2], look: [LX - 0.2, -1.2, -0.8], fov: 50, drift: [0.6, 0.1, -0.3] },                                // owns the road
     { t: 38.2, pos: [BMID - 0.5, -0.5, 7.0], look: [BMID - 0.5, -0.4, -1.2], fov: 50, drift: [0.8, 0.05, -0.4] },                          // and the bridge, and the swamp
     { t: 39.78, pos: [LX, -2.6, 4.4], look: [LX, -2.8, -0.6], fov: 50, drift: [-0.2, 0.05, -0.5], roll: -1.5 },                            // paying him rent
-    { t: B.congrats - 0.06, pos: [-2.6, -0.4, 6.8], look: [-2.6, -0.8, -1.0], fov: 50, drift: [11.0, 0, -0.4], dlook: [11.0, 0, 0] },      // Congratulations: pan the build
+    { t: B.congrats - 0.06, pos: [-2.6, 0.5, 7.4], look: [-2.6, -0.5, -1.0], fov: 50, drift: [11.0, 0, -0.4], dlook: [11.0, 0, 0] },      // Congratulations: pan the build
     { t: 44.4, pos: [-0.3, 1.35, 3.4], look: [-0.3, 1.15, -0.1], fov: 46, drift: [0.05, 0.02, -0.35] },                                  // the only one paying the toll
   ];
   K.forEach((k, i) => { k.set = 'dio'; k.t1 = i + 1 < K.length ? K[i + 1].t : END + 0.5; });
@@ -135,9 +135,9 @@ window.STORY = (() => {
     Wd.planks.forEach((p, i) => { const a = B.bridge - 0.5 + i * 0.03; p.visible = t >= a; if (!p.visible) return; p.scale.setScalar(Math.max(0.01, pop(t, a, 0.2))); p.position.y = bridgeY(p.position.x, t); const [x0, x1] = Wd.bridgeX; const u = p.userData.u; p.rotation.z = -sagAt(t) * Math.PI / (x1 - x0) * Math.cos(Math.PI * u) * 0.9; });
     Wd.rails.forEach((r) => { r.visible = false; });
     // swamp bubbles + the splash when the first cart drives in
-    Wd.bubbles.forEach((m, i) => { const r = PAINT.rng(i + 30), u = (t * 0.5 + r()) % 1; m.position.set(Wd.S.x0 + 0.4 + r() * 3.8, -0.15 + u * 0.12, ZFRONT(r)); m.scale.setScalar(u < 0.9 ? 0.6 + u : 0.01); });
-    burst(Wd.drops, t, B.swamp, [6.1, 0.0, RZ + 0.3], 5, { spread: 1.0, up: 2.4, g: 5, life: 0.8 });
-    if (t > 13 && t < 15) burst(Wd.drops, t, B.feet, [BMID, -0.4, RZ + 0.4], 25, { spread: 1.3, up: 2.0, g: 5, life: 0.7 });
+    Wd.bubbles.forEach((m, i) => { const r = PAINT.rng(i + 30), u = (t * 0.5 + r()) % 1; m.position.set(Wd.S.x0 + 0.4 + r() * 3.8, -0.27 + u * 0.06, -2.6 - r() * 1.2); m.scale.setScalar(u > 0.6 ? 0.5 + (u - 0.6) * 2 : 0.001); });
+    burst(Wd.drops, t, B.swamp, [6.1, -0.1, RZ + 0.3], 5, { spread: 1.8, up: 1.8, g: 5, life: 0.8, sc: 1.6 });
+    if (t > 13 && t < 15) burst(Wd.drops, t, B.feet, [BMID, -0.25, RZ + 0.4], 25, { spread: 2.2, up: 1.6, g: 5, life: 0.7, sc: 1.6 });
     // barrier arm: up for traffic, down to charge, pumping for Uncle Ray
     let armA = t < B.nowRoad ? 0 : 1.3; if (win(t, 14.3, 15.4)) armA = 1.3 * (1 - eout(ramp(t, 14.3, 14.5))) + 1.3 * eout(ramp(t, 15.2, 15.4)); if (win(t, B.yells, 26.8)) armA = 1.3 + 0.25 * Math.sin(t * 14); Wd.arm.rotation.x = armA;
     // the jar
@@ -146,7 +146,7 @@ window.STORY = (() => {
     Wd.pigeon.visible = t >= B.pigeon; if (Wd.pigeon.visible) { Wd.pigeon.scale.setScalar(Math.max(0.01, pop(t, B.pigeon, 0.3))); const peck = win(t, B.counts - 0.1, B.badly + 0.2) ? Math.max(0, Math.sin(t * 16)) : Math.max(0, Math.sin(t * 3)) * 0.3; Wd.pigHead.rotation.z = -peck * 0.9; Wd.pigHead.position.x = 0.12 + peck * 0.04; Wd.pigeon.rotation.y = win(t, B.badly, B.badly + 0.5) ? (t - B.badly) * 12 : 0.4; }
     // horse: eats the receipts
     Wd.horse.visible = t >= B.horse; if (Wd.horse.visible) { Wd.horse.scale.setScalar(Math.max(0.01, pop(t, B.horse, 0.3))); const eat = win(t, B.eats - 0.3, 24.4); Wd.horseNeck.rotation.z = eat ? -0.35 + 0.08 * Math.sin(t * 20) : 0.05 * Math.sin(t * 1.4); }
-    Wd.receipts.forEach((m, i) => { const u = (t - (B.eats - 0.2) - i * 0.12) / 0.4; if (u < 0 || u > 1 || t > 24.4) { m.position.y = -50; return; } m.position.set(lerp(0.5, 0.82, u), 0.95 + by + Math.sin(u * Math.PI) * 0.25, lerp(0.3, -0.05, u)); m.rotation.set(u * 3, u * 2, Math.sin(u * 9) * 0.5); m.scale.set(1, 1 - u * 0.8, 1); });
+    Wd.receipts.forEach((m, i) => { const u = (t - (B.eats - 0.2) - i * 0.12) / 0.4; if (u < 0 || u > 1 || t > 24.4) { m.position.y = -50; return; } m.position.set(lerp(0.5, 1.17, u), 0.95 + by + Math.sin(u * Math.PI) * 0.25, lerp(0.3, -0.05, u)); m.rotation.set(u * 3, u * 2, Math.sin(u * 9) * 0.5); m.scale.set(1, 1 - u * 0.8, 1); });
     // bank with a screen door (the analogy): flaps in the wind
     Wd.bank.visible = win(t, 26.6, 28.6); Wd.screenDoor.rotation.y = -0.6 - 0.5 * Math.sin(t * 5) * (0.6 + 0.4 * Math.sin(t * 1.3));
     // the hidden lair: soil cover drops away on "not", the pipe shows when the jar drains
@@ -155,9 +155,10 @@ window.STORY = (() => {
     Wd.hoard.scale.setScalar(1 + 0.2 * ramp(t, 39.9, 41.0));
     // ownership glows: road, bridge, swamp
     const glow = (a) => (t >= a && t < a + 1.0 ? Math.sin((t - a) / 1.0 * Math.PI) : 0);
-    Wd.asph[0].material.emissive.set('#f4c430'); Wd.asph[0].material.emissiveIntensity = 0.9 * glow(B.owns);
-    E_col('#9a6a3e').emissive.set('#f4c430'); E_col('#9a6a3e').emissiveIntensity = 0.9 * glow(B.bridge2); E_col('#8a5a32').emissive.set('#f4c430'); E_col('#8a5a32').emissiveIntensity = 0.9 * glow(B.bridge2);
-    Wd.swampM.emissive.set(glow(B.swamp2) > 0 ? '#c8a020' : '#2a4a1a'); Wd.swampM.emissiveIntensity = 0.35 + 0.8 * glow(B.swamp2);
+    Wd.asph[0].material.emissive.set('#f4c430'); Wd.asph[0].material.emissiveIntensity = 0.45 * glow(B.owns);
+    E_col('#9a6a3e').emissive.set('#f4c430'); E_col('#9a6a3e').emissiveIntensity = 0.5 * glow(B.bridge2); E_col('#8a5a32').emissive.set('#f4c430'); E_col('#8a5a32').emissiveIntensity = 0.5 * glow(B.bridge2);
+    Wd.swampM.emissive.set(glow(B.swamp2) > 0 ? '#6a5a14' : '#16352f'); Wd.swampM.emissiveIntensity = 0.25 + 0.45 * glow(B.swamp2);
+    if (t > 37 && t < 40.2) { burst(Wd.sparks.slice(0, 12), t, B.bridge2, [BMID, 0.3, RZ + 0.6], 120, { spread: 1.6 }); if (t >= B.swamp2) burst(Wd.sparks.slice(12), t, B.swamp2, [BMID, -0.2, 0.2], 140, { spread: 1.8 }); }
     // wagons
     wagons(t);
     // coins
@@ -173,7 +174,7 @@ window.STORY = (() => {
     burst(Wd.sparks.slice(0, 12), t, B.k900, [0.25, 1.5 + by, 0.3], 70, { spread: 1.1 });
     burst(Wd.sparks.slice(12), t, B.not + 0.1, [LX + 0.1, -3.0, 0.2], 90, { spread: 1.3 });
     // confetti on "Congratulations" (falls across the whole pan)
-    Wd.confetti.forEach((m, i) => { const r = PAINT.rng(i + 300), u = t - B.congrats; if (u < 0 || u > 3.4) { m.position.y = -50; return; } m.position.set(-9 + r() * 6 + u * 3.6 + Math.sin(u * 3 + i) * 0.3, 4.5 + r() * 2 - u * 2.2, -0.6 + r() * 1.4); m.rotation.set(u * 7 + i, u * 5, u * 3); m.scale.setScalar(2.4); });
+    Wd.confetti.forEach((m, i) => { const r = PAINT.rng(i + 300), u = t - B.congrats; if (u < 0 || u > 3.4) { m.position.y = -50; return; } m.position.set(-4.5 + r() * 15 + Math.sin(u * 3 + i) * 0.3, 3.2 + r() * 2.5 - u * 1.9, -0.2 + r() * 1.2); m.rotation.set(u * 7 + i, u * 5, u * 3); m.scale.setScalar(2.4); });
   };
   const ZFRONT = (r) => Wd.ZF - 0.3 - r() * 0.2;
   const E_col = (c) => ENGINE.col(c);
