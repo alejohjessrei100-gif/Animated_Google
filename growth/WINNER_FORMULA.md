@@ -5,8 +5,8 @@
 ## Why it worked
 1. **A treasure plus a mundane hiding place, in 11 words.** "If you find gold down a well, you have a vault." Viewers instantly know the prize and the place.
 2. **The story goes down.** Every "So you..." digs, floods or tunnels, so the escalations stack visibly in one cutaway. The underground *is* the story, so the cutaway is always on screen for a reason.
-3. **Gold on screen the whole time.** The prize never leaves the frame, so viewers keep watching to see what happens to it.
-4. **Small-time hero against a king or guards.** It's an underdog with a stash against authority.
+3. **The thing at stake stays on screen the whole time.** It never leaves the frame, so viewers keep watching to see what happens to it.
+4. **Small-time hero against a king or guards.** It's an underdog against authority.
 5. **Trio: animal, animal, cousin Steve.** Each gets a one-line gag, and Steve is the human who ruins it.
 6. **A "Wait. Why?" beat about 34 s in.** It re-hooks viewers right before the twist.
 7. **Twist: "not there by mistake".** The place was set up by someone more powerful, and the hero was a pawn, or the heir.
