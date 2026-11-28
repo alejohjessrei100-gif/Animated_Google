@@ -43,12 +43,22 @@ window.WORLD = (() => {
   { const wm = group(16, 0, -26); add(cyl(0.9, 1.4, 5, 10), '#efe6d2', 0, 2.5, 0, wm); add(new THREE.ConeGeometry(1.25, 1.4, 10), '#8a5734', 0, 5.7, 0, wm); const bl = group(0, 4.8, 1.3, wm); for (let k = 0; k < 4; k++) { const a = group(0, 0, 0, bl); a.rotation.z = k * Math.PI / 2; add(box(0.25, 3.2, 0.05), '#f6f1e6', 0, 1.7, 0, a); add(box(0.06, 3.2, 0.06), '#6a4a32', -0.14, 1.7, 0.02, a); } add(sph(0.2, 10, 8), '#6a4a32', 0, 0, 0, bl); Wd.life.push((t) => { bl.rotation.z = -t * 0.9; }); }
   { const b = group(-10, 26, -30); const n = 12; for (let k = 0; k < n; k++) add(new THREE.SphereGeometry(2.2, 24, 16, k / n * Math.PI * 2, Math.PI * 2 / n), k % 2 ? '#e0574a' : '#f4d35e', 0, 0, 0, b); add(box(0.9, 0.7, 0.9), '#8a5734', 0, -3.0, 0, b); for (const [x, z] of [[-0.4, -0.4], [0.4, -0.4], [-0.4, 0.4], [0.4, 0.4]]) add(cyl(0.02, 0.02, 1.2, 4), '#3b3f4a', x * 1.6, -2.1, z * 1.6, b); Wd.life.push((t) => { b.position.set(-10 + t * 0.35, 26 + Math.sin(t * 0.5) * 0.8, -30); b.rotation.y = t * 0.1; }); }
   // puffy flat-bottomed clouds at many heights (the tower climbs through them)
-  const cloudM = toon({ color: '#ffffff', emissive: '#eef4ff', emissiveIntensity: 0.22, roughness: 1 });
-  const cloud = (x, y, z, s = 1, parent = scene) => { const cl = group(x, y, z, parent); const n = 6 + Math.floor(R() * 4);
-    for (let k = 0; k < n; k++) { const r = (0.7 + R() * 0.8) * s, px = (k - n / 2) * 0.85 * s + (R() - 0.5) * 0.4 * s, py = (Math.sin(k / (n - 1) * Math.PI) * 0.7 + R() * 0.25) * s; const m = add(sph(r, 16, 12), cloudM, px, py, (R() - 0.5) * 0.8 * s, cl, { cast: false }); }
-    const base = add(cyl(n * 0.42 * s, n * 0.42 * s, 0.25 * s, 24), cloudM, 0, -0.05 * s, 0, cl, { cast: false }); base.scale.z = 0.35; return cl; };
-  for (let i = 0; i < 30; i++) { const cl = cloud(-28 + R() * 56, 10 + i * 3.1, -10 - R() * 22, 0.8 + R() * 0.7); const x0 = cl.position.x, sp = 0.15 + R() * 0.15; Wd.life.push((t) => { cl.position.x = x0 + t * sp; }); }
-  Wd.cloud = cloud(3.5, 16, -4.0, 0.9);
+  // painted storybook clouds: soft white tops, blue-grey shaded undersides, flat-ish bottoms, a thin outline (no 3D lumps)
+  const cloudTex = (seed) => { const r = PAINT.rng(seed); const [c, g] = cv(1024, 512); const base = 400, blobs = [];
+    const n = 6 + Math.floor(r() * 4); for (let k = 0; k < n; k++) { const u = (k + 0.5) / n, x = 110 + u * 800 + (r() - 0.5) * 40, rad = (90 + r() * 70) * (0.55 + 0.45 * Math.sin(u * Math.PI)); blobs.push([x, base - rad * (0.55 + r() * 0.3), rad]); }
+    for (let k = 0; k < 3; k++) { const x = 300 + r() * 420, rad = 120 + r() * 50; blobs.push([x, base - rad * 1.05 - 40, rad]); }
+    g.save(); g.beginPath(); g.rect(0, 0, 1024, base + 2); g.clip();
+    g.fillStyle = 'rgba(70,95,130,.55)'; for (const [x, y, rad] of blobs) { g.beginPath(); g.arc(x, y, rad + 7, 0, 7); g.fill(); }
+    const gr = g.createLinearGradient(0, 60, 0, base); gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.55, '#f6f9ff'); gr.addColorStop(1, '#c6d6ea'); g.fillStyle = gr; for (const [x, y, rad] of blobs) { g.beginPath(); g.arc(x, y, rad, 0, 7); g.fill(); }
+    for (const [x, y, rad] of blobs) { const hg = g.createRadialGradient(x - rad * 0.3, y - rad * 0.4, rad * 0.05, x - rad * 0.2, y - rad * 0.3, rad * 0.9); hg.addColorStop(0, 'rgba(255,255,255,.9)'); hg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = hg; g.beginPath(); g.arc(x, y, rad * 0.95, 0, 7); g.fill(); }
+    g.fillStyle = 'rgba(150,175,205,.35)'; g.fillRect(0, base - 40, 1024, 42); g.restore();
+    g.strokeStyle = 'rgba(70,95,130,.55)'; g.lineWidth = 7; g.beginPath(); g.moveTo(blobs[0][0] - blobs[0][2] * 0.8, base); g.lineTo(blobs[n - 1][0] + blobs[n - 1][2] * 0.8, base); g.stroke();
+    const t = tex(c); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t; };
+  const cloudMats = [1, 2, 3, 4, 5, 6].map((k) => new THREE.MeshBasicMaterial({ map: cloudTex(k * 13), transparent: true, depthWrite: false, fog: false, toneMapped: false, color: '#f4f7fc' }));
+  const cloud = (x, y, z, s = 1, parent = scene) => { const cl = group(x, y, z, parent); const m = add(new THREE.PlaneGeometry(7 * s, 3.5 * s), cloudMats[Math.floor(R() * cloudMats.length)], 0, 0.9 * s, 0, cl, { cast: false, noink: true }); m.scale.x = R() < 0.5 ? -1 : 1; m.renderOrder = -1; return cl; };
+  for (let i = 0; i < 34; i++) { const cl = cloud(-30 + R() * 60, 10 + i * 2.8, -12 - R() * 26, 0.9 + R() * 0.9); const x0 = cl.position.x, sp = 0.12 + R() * 0.15; Wd.life.push((t) => { cl.position.x = x0 + t * sp; }); }
+  for (let i = 0; i < 7; i++) cloud(-60 + i * 20 + R() * 6, 30 + R() * 14, -100, 3 + R() * 2);
+  Wd.cloud = cloud(3.5, 16, -4.0, 0.75);
   Wd.flock = []; for (let i = 0; i < 7; i++) { const b = group(0, 0, 0); add(sph(0.07, 8, 6), '#3b3f4a', 0, 0, 0, b).scale.set(1.5, 0.7, 0.7); const w1 = add(box(0.26, 0.01, 0.1), '#3b3f4a', 0, 0, 0.09, b), w2 = add(box(0.26, 0.01, 0.1), '#3b3f4a', 0, 0, -0.09, b); Wd.life.push((t) => { const u = (t * 0.035) % 1; b.position.set(-18 + u * 36 + (i % 3) * 0.6, 9 + Math.floor(i / 3) * 0.4 + Math.sin(t * 1.3 + i) * 0.15, -12 - (i % 2) * 0.5); const f = Math.sin(t * 13 + i) * 0.8; w1.rotation.x = f; w2.rotation.x = -f; }); }
 
   // ---------- ground: back slab with the tower trench + the front lid (street) that drops away on "swamp" ----------
