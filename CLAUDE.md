@@ -20,8 +20,9 @@ These are the user's standing decisions. Apply them to every new video without b
 - Captions: 1–2 words, Lilita One, 61 px at 1080 wide, y = 1300/1920, white with black outline.
 
 ## Scripts
-- Escalation format: "If you X, you have Y", then "But… So you…" cycles, naming anchors, a trio, "not there by mistake", and "Congratulations. You have built…", with the ending calling back to the hook.
-- Follow `growth/WINNER_FORMULA.md`: copy the engine, never the premise (no repeating gold, vaults or hiding). Aim for 150–170 words; the voice is sped to 1.25x.
+- **Use the user's 7-step template in `growth/ESCALATION_TEMPLATE.md` for every script:** seed, 4 escalation loops (obvious flaw, counter-measure, hidden or technical threat, survival or scale), a counter-intuitive twist (relocate or flip; "that [planted feature] is not there to X, it's there to Y"), then dressing and a dry "Congratulations, you have built…". Use visual-only nouns. About 210–220 words for 60 s.
+- Before delivering, check: the hook has stakes, every "But" is a real threat that the "So you" visibly solves, the twist uses a feature planted earlier and doesn't contradict what was shown, and the payoff lands.
+- Follow `growth/WINNER_FORMULA.md`: copy the engine, never the premise (no repeating gold, vaults or hiding). The voice is sped to 1.25x.
 - When delivering a script, give a one-line version with no spaces between sentences (for ElevenLabs).
 
 ## Audio
