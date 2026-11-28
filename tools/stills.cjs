@@ -15,7 +15,7 @@ const srv = http.createServer((q, s) => { let p = decodeURIComponent(q.url.split
   if (spec === 'page') { await pg.screenshot({ path: path.join(outdir, 'page.png') }); await pg.setViewportSize({ width: 400, height: 860 }); await pg.screenshot({ path: path.join(outdir, 'page_phone.png'), fullPage: true }); await b.close(); srv.close(); return; }
   let frames = spec === 'mid' ? await pg.evaluate(() => STORY.K.map((k) => Math.round(((k.t + Math.min(k.t1, STORY.END)) / 2) * 30))) : spec.includes('-') ? (() => { const [a, b] = spec.split('-').map(Number); const o = []; for (let f = a; f <= b; f++) o.push(f); return o; })() : spec.split(',').map(Number);
   const t0 = Date.now();
-  for (const f of frames) { const PW = +(process.env.PW || 0), PH = +(process.env.PH || 0); const d = await pg.evaluate(([f, w, h]) => { if (w) window.renderAt(f, w, h); else window.renderFrame(f); return document.getElementById('screen').toDataURL('image/jpeg', 0.85); }, [f, PW, PH]); fs.writeFileSync(path.join(outdir, `f${String(f).padStart(4, '0')}.jpg`), Buffer.from(d.split(',')[1], 'base64')); }
+  for (const f of frames) { const PW = +(process.env.PW || 0), PH = +(process.env.PH || 0); const d = await pg.evaluate(([f, w, h, q]) => { if (w) window.renderAt(f, w, h); else window.renderFrame(f); return document.getElementById('screen').toDataURL('image/jpeg', q); }, [f, PW, PH, +(process.env.Q || 0.85)]); fs.writeFileSync(path.join(outdir, `f${String(f).padStart(4, '0')}.jpg`), Buffer.from(d.split(',')[1], 'base64')); }
   console.log(`done ${frames.length} frames, ${((Date.now() - t0) / frames.length / 1000).toFixed(2)} s/frame`);
   await b.close(); srv.close();
 })();

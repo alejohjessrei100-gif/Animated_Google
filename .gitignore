@@ -2,3 +2,5 @@ projects/*/audio/*.wav
 projects/*/stills/
 projects/*/web/test.html
 **/qa_*/
+projects/*/render_frames/
+projects/*/*_1080x1920.mp4
