@@ -4,7 +4,7 @@ fs.mkdirSync(outdir, { recursive: true });
 const types = { js: 'text/javascript', html: 'text/html', mp3: 'audio/mpeg' };
 const srv = http.createServer((q, s) => { let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/test.html'; const f = path.join(root, p); if (!fs.existsSync(f)) { s.writeHead(404); return s.end(); } s.writeHead(200, { 'Content-Type': types[f.split('.').pop()] || 'application/octet-stream' }); fs.createReadStream(f).pipe(s); }).listen(0);
 (async () => {
-  const b = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+  const b = await chromium.launch(process.env.GPU ? { channel: process.env.CHANNEL || undefined, args: ['--ignore-gpu-blocklist', '--enable-gpu-rasterization', process.platform === 'win32' ? '--use-angle=d3d11' : '--use-angle=default'] } : { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });   // GPU=1 on a real PC uses its graphics card
   const pg = await b.newPage({ viewport: { width: 1280, height: 900 } });
   pg.on('console', m => { const t = m.text(); if (!/deprecated|GPU stall|WebGL/.test(t)) console.log('PAGE', t); }); pg.on('pageerror', e => console.log('ERR', e.message));
   await pg.route('**/cdn.jsdelivr.net/**', (r) => { const u = r.request().url(); const map = { 'three.min.js': 'three-0.159.0/package/build/three.min.js', 'mp4-muxer.js': 'mp4-muxer-5.1.3/package/build/mp4-muxer.js', 'webm-muxer.js': 'webm-muxer-5.0.3/package/build/webm-muxer.js' }; const k = Object.keys(map).find((k) => u.endsWith(k)); r.fulfill({ status: 200, contentType: 'text/javascript', body: fs.readFileSync(path.join(V, map[k])) }); });
