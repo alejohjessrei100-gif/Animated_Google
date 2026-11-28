@@ -13,21 +13,20 @@
 8. **The last line calls back the hook noun** ("vault", "door", "castle") and the last shot returns to the first shot, so the loop is seamless and rewatches stack.
 
 ## Rules for the next scripts
-- **Prize:** gold or treasure, not a business. Business stories (toll road, umbrellas) are the weaker lane.
-- **Hiding place:** underground or inside something, so the cutaway is meaningful. Show the surface only when nothing is happening below.
+- **Copy the engine, never the premise.** No more gold, vaults or hiding things. The well worked because of its structure, not its noun.
+- **One place that visibly transforms.** A hole, a house, a tree or a tower grows with every "So you...", in one continuous stage.
+- **The twist is a camera reveal.** The last beat shows something that was in the world all along (the sunk floors, the digger on the other side). The cutaway opens only for it, or for digging.
 - **Hero:** Gus is "you". Cousin Steve recurs in every trio.
-- **Length:** 150–170 words, the "But… So you…" engine, and the twist landing at 33–36 s.
+- **Length:** 150–170 words, the "But… So you…" engine, with the twist landing at 33–36 s.
 
-## The next batch (same formula)
-| # | Hook | Twist |
+## Fresh premises (different noun every time)
+| # | Hook | Twist (camera reveal) |
 |---|---|---|
-| 1 | If you find a door in your basement, you have a secret room. | The king built it as his escape tunnel, and tonight he needs it. (Script written: projects/secret-door) |
-| 2 | If you bury gold under a castle, you have the safest vault in the kingdom. | Your great-grandfather was the king, so you dug into your own castle with a spoon. (Script written: projects/spoon-castle) |
-| 3 | If you hide gold in a mine, you have a mountain of money. | The mine was salted: someone planted the gold to sell you the mountain. |
-| 4 | If you hide gold at the bottom of a lake, you have a vault nobody can reach. | The lake is the king's reservoir; he drains it every spring. |
-| 5 | If you find gold under a graveyard, you have a very quiet vault. | The graves were fake: the old banker buried his savings, not people. |
-| 6 | If you hide gold in a pyramid, you have a tomb. | The pharaoh was a con man: the real treasure is under your stash. |
-| 7 | If you dig to the center of the earth for gold, you have a hole. | It comes out under the king's treasury on the other side. |
-| 8 | If you hide gold inside a volcano, you have a vault nobody will rob. | It was the dragon's nest, and now you owe rent. |
-| 9 | If you find gold in a shipwreck, you have a fortune. | The wreck was sunk on purpose to hide the gold, and the captain is still down there. |
-| 10 | If you hide gold in a prison wall, you have a vault with guards. | You're the one who gets locked up to guard it. |
+| 1 | If you dig a hole through the earth, you have a shortcut to the other side. | A man on the other side has been digging toward you for 20 years. (Script: projects/deep-hole) |
+| 2 | If you add one floor to your house, you have the tallest house on the street. | It's built on a swamp: every floor sinks, and you still live on the ground floor. (Script: projects/sinking-tower) |
+| 3 | If you plant one bean, you have a garden. | The beanstalk is the giant's ladder down, and you just built his stairs. |
+| 4 | If you catch one fish, you have dinner. | The "lake" is a whale's back. |
+| 5 | If you build a snowman, you have a friend. | It's spring next week, and you built him a fridge. |
+| 6 | If you adopt one cat, you have a pet. | The cats were never strays: they own the house. |
+| 7 | If you make one paper plane, you have a toy. | It lands on the king's desk as the royal tax form. |
+| 8 | If you blow one bubble, you have bubblegum. | The bubble keeps the whole town afloat. |
