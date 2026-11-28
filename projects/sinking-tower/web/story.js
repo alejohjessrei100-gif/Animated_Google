@@ -57,7 +57,7 @@ window.STORY = (() => {
   };
 
   // ---------- light ----------
-  const LIGHT = { dio: { sky: '#cfe8ff', ground: '#c9b58e', hemi: 1.35, sun: '#fff1d6', sunI: 2.1, az: -35, el: 58, fog: '#cfe6ff', bg: '#9fd0ff', fogNear: 40, fogFar: 160, sat: 1.1, fillI: 1.35, fillCol: '#fff0dc', shadowExt: 12, expo: 1.55 } };
+  const LIGHT = { dio: { sky: '#b4d8f4', ground: '#8a9458', hemi: 1.3, sun: '#fff4dc', sunI: 2.25, az: -35, el: 58, fog: '#cfe6ff', bg: '#9fd0ff', fogNear: 40, fogFar: 160, sat: 1.1, fillI: 1.35, fillCol: '#fff0dc', shadowExt: 12, expo: 1.55 } };
 
   // ---------- camera ('top' keys ride with the tower's roof) ----------
   const K = [
@@ -187,7 +187,10 @@ window.STORY = (() => {
 
   const frame = (f) => {
     const t = f / FPS; state(t); const Cm = camAt(t); Wd.tick(t); CAMP = Cm.pos;
-    return { t, cam: Cm, light: { ...LIGHT.dio }, dof: dofAt(Cm), actors: actors(t), whip: Cm.whip, flash: 0, ca: caAt(t) };
+    const L = { ...LIGHT.dio }, ug = clamp((-Cm.pos[1] - 1.0) / 4);   // underground mood: dimmer sky bounce, warm lantern fill, deeper vignette
+    if (ug > 0) { L.hemi *= 1 - 0.5 * ug; L.sunI *= 1 - 0.55 * ug; L.fillCol = '#ffb36a'; L.fillI = L.fillI + 2.2 * ug; L.vig = 0.18 + 0.3 * ug; L.sat = 1.1 + 0.08 * ug; L.expo = L.expo + 0.15 * ug; }
+    Wd.motes.visible = t >= B.swamp; Wd.motes.material.opacity = 0.55 * ug;
+    return { t, cam: Cm, light: L, dof: dofAt(Cm), actors: actors(t), whip: Cm.whip, flash: 0, ca: caAt(t) };
   };
   const SHOTS = [{ t: 0, n: 'One floor' }, { t: 3.64, n: 'The neighbor' }, { t: 5.12, n: 'Add 10' }, { t: 7.7, n: 'The wind' }, { t: 9.66, n: 'The cloud' }, { t: 12.52, n: '300 stairs' }, { t: 14.84, n: 'The trio' }, { t: 23.52, n: 'Spaghetti' }, { t: 25.38, n: '500 floors' }, { t: 27.8, n: 'Wait' }, { t: 33.2, n: 'The swamp' }, { t: 37.98, n: 'Congratulations' }].map((s) => ({ ...s, set: 'dio' }));
   return { FPS, END, TOTAL, frame, drawCaption, K, SHOTS, CAPS };

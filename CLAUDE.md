@@ -15,6 +15,8 @@ These are the user's standing decisions. Apply them to every new video without b
 - **Layered background every time:** sky gradient with sun glow, 3 mountain ranges, hills with trees, fields, far town, plus life (windmill, balloon, birds, smoke).
 - **Characters:** the 2D card style from `toon.js`. The star is **Gus** (box head, flat-top, gold tooth, red sleeves, blue overalls; config `C.gus` in `story.js`). **Cousin Steve** is in every trio.
 - Frame 0 is mid-action. The camera is never static for more than about 1.5 s; big re-aims are 0.14 s whips. Never cut characters off at the frame edge.
+- **Rendering (engine.js, keep it):** MSAA, half-res ambient occlusion in the crevices, ink edges tinted by the surface hue and thinned with distance, ACES tone mapping, emissive-only bloom, depth of field, grain and vignette, a soft sky-dome environment (envMapIntensity 0.25), PCF soft sun shadows with tuned bias, blob contact shadows under every character, and a cool sky-blue hemisphere fill (sky `#b4d8f4`, ground `#8a9458`).
+- **Underground mood:** when the camera goes below ground, dim the sky bounce, add a warm lantern fill, deepen the vignette and show floating dust motes (see `frame()` in `projects/sinking-tower/web/story.js`).
 - Captions: 1–2 words, Lilita One, 61 px at 1080 wide, y = 1300/1920, white with black outline.
 
 ## Scripts

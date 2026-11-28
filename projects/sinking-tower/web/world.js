@@ -245,6 +245,12 @@ window.WORLD = (() => {
     add(cyl(0.5, 0.4, 0.3, 18), '#f4f1e8', 0.9, 0.15, 0.3, L); add(sph(0.38, 14, 10), '#f2d27a', 0.9, 0.3, 0.3, L).scale.y = 0.35; add(sph(0.06, 8, 6), '#c62f36', 0.8, 0.42, 0.4, L); add(sph(0.06, 8, 6), '#c62f36', 1.0, 0.42, 0.25, L); }
   add(tbox(3.0, 4.0, 0.4, 1), texM(PAINT.stone(5, 40, 8, 80), 2, 2), -9, 2.0, -1.2, scene);
 
+  // floating dust motes in the cutaway (only seen underground)
+  { const n = 420, pos = new Float32Array(n * 3), r = PAINT.rng(321); for (let i = 0; i < n; i++) { pos[i * 3] = (r() - 0.5) * 12; pos[i * 3 + 1] = -r() * 72; pos[i * 3 + 2] = Wd.ZF + 0.2 + r() * 3.5; }
+    const [c, g] = cv(64, 64); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,230,190,1)'); gr.addColorStop(1, 'rgba(255,230,190,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); const base = pos.slice();
+    Wd.motes = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.09, map: tex(c), transparent: true, depthWrite: false, opacity: 0.5, color: '#ffe2b0' })); Wd.motes.visible = false; scene.add(Wd.motes);
+    Wd.life.push((t) => { if (!Wd.motes.visible) return; const p = geo.attributes.position; for (let i = 0; i < n; i++) { p.setX(i, base[i * 3] + Math.sin(t * 0.4 + i) * 0.15); p.setY(i, base[i * 3 + 1] + Math.sin(t * 0.3 + i * 1.7) * 0.2); } p.needsUpdate = true; }); }
   // FX pools
   Wd.confetti = []; for (let i = 0; i < 70; i++) Wd.confetti.push(add(box(0.1, 0.06, 0.01), ['#c62f36', '#f4d35e', '#2a5fae', '#3fa39a', '#e07a5f'][i % 5], 0, -200, 0, scene, { cast: false }));
   Wd.sparks = []; for (let i = 0; i < 24; i++) Wd.sparks.push(add(sph(0.04, 6, 4), toon({ color: '#fff6c8', emissive: '#ffe9a0', emissiveIntensity: 1.6 }), 0, -200, 0, scene, { cast: false }));

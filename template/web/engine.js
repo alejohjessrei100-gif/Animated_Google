@@ -24,7 +24,7 @@ window.ENGINE = (() => {
     m.customProgramCacheKey = () => 'painted' + (m.map ? 'm' : '') + (m.transparent ? 't' : '');
     return m;
   };
-  const toon = (opts) => { const o = { ...opts }; delete o.gradientMap; return painted(new THREE.MeshStandardMaterial({ roughness: 0.78, metalness: 0.0, ...o })); };
+  const toon = (opts) => { const o = { ...opts }; delete o.gradientMap; return painted(new THREE.MeshStandardMaterial({ roughness: 0.78, metalness: 0.0, envMapIntensity: 0.25, ...o })); };
   E.toon = toon;
   const matCache = {};
   const METAL = new Set(['#b6bec7', '#c9ced6', '#d8dde6', '#9aa0aa', '#7f8896', '#c9a24a', '#e6c25a', '#e5c158', '#c0c6d0', '#3b3f4a']);
@@ -201,7 +201,8 @@ window.ENGINE = (() => {
       vec3 c = texture2D(col, vUv).rgb;
       float e = edgeAt(vUv, px);
       c *= 1. - ao * texture2D(aoT, vUv).r;
-      c = mix(c, vec3(.028,.018,.016), e);
+      vec3 inkC = mix(vec3(.028,.018,.016), c * vec3(.22,.2,.24), .45);   // ink takes a deep tint of the surface it outlines
+      c = mix(c, inkC, e);
       float l = dot(c, vec3(.299,.587,.114)); c = mix(vec3(l), c, sat + .18 * (1. - smoothstep(0., .35, l)));   // shadows keep their hue, slightly richer (measured on the reference)
       c = c*gain + lift;
       vec2 q = vUv-.5; c *= 1. - vig*dot(q*vec2(1.,.6), q*vec2(1.,.6))*2.2;
@@ -283,6 +284,10 @@ window.ENGINE = (() => {
     const r = E.renderer; r.setPixelRatio(1); r.setSize(W, H, false);
     r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
     r.outputColorSpace = THREE.LinearSRGBColorSpace; r.toneMapping = THREE.NoToneMapping;
+    if (!E.envDone) { E.envDone = true;   // soft sky-dome environment: windows, metal and eyes catch a hint of sky (envMapIntensity 0.25 on every material)
+      const es = new THREE.Scene(), dome = new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, vertexShader: 'varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }',
+        fragmentShader: 'varying vec3 vP; void main(){ float h = normalize(vP).y; vec3 sky = mix(vec3(1.0,.93,.8), vec3(.45,.68,1.0), smoothstep(0.,.6,h)); vec3 gnd = mix(vec3(.55,.6,.35), vec3(.32,.4,.2), smoothstep(0.,-.5,h)); gl_FragColor = vec4(h > 0. ? sky : gnd, 1.); }' }));
+      es.add(dome); const pm = new THREE.PMREMGenerator(r); scene.environment = pm.fromScene(es, 0.04).texture; pm.dispose(); }
     [rtColor, rtNd, rtInk, rtDof, rtG1, rtG2, rtAO, rtAO2, rtE, rtQ1, rtQ2, rtO1, rtO2, rtAA, rtRefl].forEach((t) => t && t.dispose());
     const HF = { type: THREE.HalfFloatType };
     rtAO = new THREE.WebGLRenderTarget(W >> 1, H >> 1, HF); rtAO2 = new THREE.WebGLRenderTarget(W >> 1, H >> 1, HF);
