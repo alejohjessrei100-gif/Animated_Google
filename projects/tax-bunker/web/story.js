@@ -54,32 +54,32 @@ window.STORY = (() => {
   // ---------- camera keys: { t, pos, look, fov, drift, dlook, roll } -- big re-aims become 0.14 s whips automatically ----------
   const RX = -7.4, RY = -1.9, HX = Wd.HX, OX = Wd.OX;
   const K = [
-    { t: 0.0, pos: [-6.5, 0.2, 4.0], look: [-7.1, -0.45, -0.4], fov: 48, drift: [-0.2, -0.2, -0.4], roll: -1.5 },                     // digging, mid-action
-    { t: 1.84, pos: [-11.4, 1.3, 4.0], look: [-11.9, 1.0, -0.6], fov: 48, drift: [0.4, 0.05, -0.3] },                                // the king's tax collector
+    { t: 0.0, pos: [-6.6, 0.0, 4.4], look: [-7.2, -0.6, -0.4], fov: 48, drift: [-0.6, -0.9, 0.6], dlook: [-0.6, -1.2, 0], roll: -1.5 },                     // digging, mid-action
+    { t: 1.84, noGus: true, pos: [-11.4, 1.3, 4.0], look: [-11.9, 1.0, -0.6], fov: 48, drift: [0.4, 0.05, -0.3] },                                // the king's tax collector
     { t: 3.0, pos: [RX, -0.4, 6.6], look: [RX, -1.2, -0.5], fov: 50, drift: [0.1, 0.1, 0.5] },                                       // you have a hideout
-    { t: 4.42, pos: [-8.6, 1.0, 4.8], look: [-7.1, 0.3, -0.5], fov: 48, drift: [0.4, 0.05, -0.4] },                                  // the hounds sniff the dirt
-    { t: 6.2, pos: [-6.7, 1.0, 3.0], look: [-7.2, 0.15, -0.4], fov: 46, drift: [-0.1, 0.05, -0.3], roll: 2 },                        // lid, mud, pine branches
+    { t: 4.42, pos: [-8.0, 0.1, 6.4], look: [-7.4, -0.8, -0.5], fov: 50, drift: [0.4, 0.05, -0.5] },                                  // the hounds sniff the dirt
+    { t: 6.2, pos: [-7.1, -0.1, 4.8], look: [-7.4, -0.75, -0.4], fov: 48, drift: [-0.1, 0.05, -0.3], roll: 2 },                        // lid, mud, pine branches
     { t: 9.42, pos: [RX - 0.2, -0.3, 6.4], look: [RX - 0.2, -1.0, -0.5], fov: 50, drift: [0, 0.05, 0.5] },                          // your trapdoor bunker
-    { t: 11.2, pos: [-10.5, 1.2, 4.8], look: [-10.3, 0.6, -0.5], fov: 48, drift: [2.6, 0, -0.3], dlook: [2.6, 0, 0] },                 // the iron cane, tapping
-    { t: 14.44, pos: [-6.6, -0.3, 3.4], look: [-7.2, -0.55, -0.3], fov: 48, drift: [0.1, 0.15, -0.3], roll: -1.5 },                  // 2 feet of sand
-    { t: 17.64, pos: [-4.6, 3.0, 9.4], look: [-4.6, 2.3, -1.6], fov: 50, drift: [0.6, 0.2, -0.5] },                                  // chimney smoke, the watchtower
-    { t: 19.4, pos: [-0.4, 6.0, 3.0], look: [-1.6, 5.7, -2.4], fov: 46, drift: [-0.2, 0, -0.2], roll: 1.5 },                          // the collector with his spyglass
-    { t: 20.2, pos: [-4.4, -0.8, 4.2], look: [-4.4, -1.2, -0.3], fov: 50, drift: [5.4, 0.1, 0], dlook: [5.4, 0.2, 0] },               // 30 feet of hollow logs
-    { t: 23.1, pos: [1.6, 2.6, 7.6], look: [1.6, 2.4, -1.0], fov: 50, drift: [-0.3, 0.2, 0.6] },                                     // out a dead tree, like morning fog
-    { t: 25.44, pos: [-3.0, 1.8, 10.6], look: [-3.0, 0.8, -2.0], fov: 50, drift: [0.8, 0.1, -0.6] },                                 // your ghost bunker
+    { t: 11.2, pos: [-9.3, 0.2, 6.6], look: [-9.1, -0.7, -0.5], fov: 50, drift: [1.4, 0, -0.3], dlook: [1.4, 0, 0] },                 // the iron cane, tapping
+    { t: 14.44, whipIn: true, pos: [-6.6, -0.3, 3.4], look: [-7.2, -0.55, -0.3], fov: 48, drift: [0.1, 0.15, -0.3], roll: -1.5 },                  // 2 feet of sand
+    { t: 17.64, pos: [-4.4, 1.6, 11.6], look: [-4.2, 1.6, -1.6], fov: 50, drift: [0.4, 0.1, -0.6] },                                  // chimney smoke, the watchtower
+    { t: 19.4, noGus: true, pos: [-0.4, 6.0, 3.0], look: [-1.6, 5.7, -2.4], fov: 46, drift: [-0.2, 0, -0.2], roll: 1.5 },                          // the collector with his spyglass
+    { t: 20.2, noGus: true, pos: [-4.4, -0.8, 4.2], look: [-4.4, -1.2, -0.3], fov: 50, drift: [5.4, 0.1, 0], dlook: [5.4, 0.2, 0] },               // 30 feet of hollow logs
+    { t: 23.1, noGus: true, pos: [1.6, 2.6, 7.6], look: [1.6, 2.4, -1.0], fov: 50, drift: [-0.3, 0.2, 0.6] },                                     // out a dead tree, like morning fog
+    { t: 25.44, pos: [-5.3, 0.7, 11.2], look: [-5.3, -0.3, -2.0], fov: 50, drift: [0.6, 0.1, -0.6] },                                 // your ghost bunker
     { t: 27.1, pos: [-8.3, -1.6, 2.9], look: [-8.5, -1.95, -0.5], fov: 46, drift: [0.1, 0, -0.3] },                                  // you run out of food
     { t: 28.0, pos: [-4.4, -1.9, 3.8], look: [-4.4, -2.3, -0.3], fov: 50, drift: [10.6, 0.1, 0], dlook: [10.6, 0.1, 0] },             // tunnel under the grain barn
     { t: 30.0, pos: [6.8, -0.4, 5.0], look: [6.5, -0.6, -0.6], fov: 50, drift: [-0.1, 0.05, -0.4], roll: 1.5 },                       // drill a hole in 1 sack
     { t: 32.1, pos: [-9.0, 2.4, 11.5], look: [-9.0, 0.9, -2.5], fov: 50, drift: [0.8, 0.1, -0.8] },                                  // 200 soldiers
-    { t: 34.66, pos: [-6.6, 0.9, 3.8], look: [-7.3, 0.4, -0.4], fov: 46, drift: [0.1, 0.05, -0.4], roll: -1.5 },                     // search every inch
-    { t: 36.28, pos: [7.6, -1.6, 4.4], look: [7.6, -2.1, -0.3], fov: 50, drift: [9.6, 0.4, 0], dlook: [9.6, 0.6, 0] },                // move through the tunnel to town
+    { t: 34.66, pos: [-7.6, -0.2, 6.6], look: [-7.6, -0.8, -0.4], fov: 50, drift: [0.1, 0.05, -0.4], roll: -1.5 },                     // search every inch
+    { t: 36.28, pos: [7.6, -1.7, 4.4], look: [7.6, -1.95, -0.3], fov: 50, drift: [9.6, 0, 0], dlook: [9.6, 0, 0] },                // move through the tunnel to town
     { t: 38.86, pos: [OX, 0.2, 9.0], look: [OX, -0.5, -0.6], fov: 50, drift: [0, 0.05, -0.8] },                                     // the cellar under the tax office
-    { t: 40.82, pos: [HX, 1.2, 3.4], look: [HX, 1.0, -0.4], fov: 46, drift: [0.1, 0.05, -0.3] },                                      // those pine branches
+    { t: 40.82, noGus: true, pos: [HX, 1.2, 3.4], look: [HX, 1.0, -0.4], fov: 46, drift: [0.1, 0.05, -0.3] },                                      // those pine branches
     { t: 42.1, pos: [HX + 0.1, -0.25, 3.0], look: [HX, -0.2, -0.4], fov: 46, drift: [0, 0.02, -0.25], roll: 1.5 },                  // your trapdoor (Gus peeks)
-    { t: 43.5, pos: [HX - 0.4, 1.3, 4.6], look: [HX - 0.6, 1.1, -0.5], fov: 48, drift: [0.2, 0.05, -0.3] },                           // the tax collector's Christmas tree
-    { t: 45.24, pos: [HX, 1.1, 4.2], look: [HX, 1.0, -0.5], fov: 48, drift: [0, -2.4, 0.2], dlook: [0, -2.6, 0] },                   // right on top of it (tilt down)
-    { t: 46.74, pos: [18.7, -1.5, 4.2], look: [18.7, -1.95, -0.5], fov: 48, drift: [0.3, 0.05, -0.4], roll: -1.5 },                   // lantern, socks rug
-    { t: 49.3, pos: [HX - 0.5, -0.8, 5.4], look: [HX - 0.5, -1.0, -0.5], fov: 50, drift: [0, 0.05, -0.3] },                           // Steve knocking on the hatch
+    { t: 43.5, whipIn: true, noGus: true, pos: [HX - 0.4, 1.3, 4.6], look: [HX - 0.6, 1.1, -0.5], fov: 48, drift: [0.2, 0.05, -0.3] },                           // the tax collector's Christmas tree
+    { t: 45.24, reveal: true, pos: [HX, 1.1, 4.2], look: [HX, 1.0, -0.5], fov: 48, drift: [0, -2.4, 0.2], dlook: [0, -2.6, 0] },                   // right on top of it (tilt down)
+    { t: 46.74, pos: [19.1, -1.5, 4.6], look: [19.1, -1.95, -0.5], fov: 48, drift: [0.2, 0.05, -0.4], roll: -1.5 },                   // lantern, socks rug
+    { t: 49.3, pos: [HX - 0.85, -1.0, 6.8], look: [HX - 0.85, -1.2, -0.5], fov: 50, drift: [0, 0.05, -0.3] },                           // Steve knocking on the hatch
     { t: 51.64, pos: [OX, 0.0, 10.6], look: [OX, -0.6, -0.6], fov: 50, drift: [0, 0.1, 0.8] },                                       // Congratulations
     { t: 54.6, pos: [OX - 0.6, -1.0, 6.8], look: [OX - 0.8, -1.5, -0.5], fov: 50, drift: [0, 1.1, -0.2], dlook: [0, 1.3, 0] },        // right under the man looking for you
   ];
@@ -113,9 +113,12 @@ window.STORY = (() => {
     if (t < 4.4 || t > 10.8) { h.position.y = -50; return; }
     if (t < 5.1) x = lerp(-13, -6.6 - i * 0.8, ease(ramp(t, 4.4, 5.1))); else if (t < 9.1) { x = -6.6 - i * 0.8 + Math.sin(t * 2 + i) * 0.15; walk = false; sniff = 1; } else { x = lerp(-6.6 - i * 0.8, -14, ease(ramp(t, 9.1, 10.6))); dir = -1; }
     h.position.set(x, 0, z); h.rotation.y = dir > 0 ? 0 : Math.PI; d.legs.forEach((l, k) => { l.rotation.z = walk ? Math.sin(t * 16 + k * 1.6) * 0.5 : 0; }); d.hd.rotation.z = sniff ? -0.5 + Math.abs(Math.sin(t * 9 + i)) * 0.3 : 0.1; d.tail.rotation.x = Math.sin(t * 14 + i) * 0.6; };
+  const camU = (t, a, b) => ease(ramp(t, a, b)) * 0.85 + ramp(t, a, b) * 0.15;
+  const gusTun = (t) => clamp(-4.4 + 10.6 * camU(t, 28.0, 30.0), -5.4, 6.2), gusTun2 = (t) => clamp(7.6 + 9.6 * camU(t, 36.28, 38.86), 7.2, 17.4);
+  const gusRoom = (t) => lerp(-7.2, -8.6, ease(ramp(t, 1.2, 3.3)));
   const state = (t) => {
     // digging: the shaft, then the room; the dirt mound grows
-    Wd.setFill(Wd.fShaft, 1 - ramp(t, -0.4, 1.2)); Wd.setFill(Wd.fRoom, 1 - ease(ramp(t, 1.2, 3.4)));
+    Wd.setFill(Wd.fShaft, 1 - ramp(t, -0.4, 1.0)); Wd.setFill(Wd.fRoomM, 1 - ramp(t, 0.9, 1.2)); Wd.setFill(Wd.fRoomL, t < 1.2 ? 1 : 1 - clamp((-7.6 - (gusRoom(t) - 0.45)) / 2.0)); Wd.setFill(Wd.fRoomR, 1 - ease(ramp(t, 2.0, 3.4)));
     Wd.mound.scale.set(1.2 * (0.4 + 0.6 * ramp(t, -0.4, 3.6)), 0.45 * (0.4 + 0.6 * ramp(t, -0.4, 3.6)), 1); Wd.mound.visible = t < 9.0;
     if (t < 3.6) Wd.dirt.forEach((m, i) => { const r = PAINT.rng(i + 3), u = ((t + 0.4) * 1.4 + r()) % 1; m.position.set(-7.2 + u * 1.1, -0.2 + Math.sin(u * Math.PI) * 0.9, -0.4 + (r() - 0.5) * 0.4); m.rotation.set(u * 9, u * 5, i); }); else Wd.dirt.forEach((m) => { m.position.y = -50; });
     // lid, mud, pine branches (pine branches leave for the Christmas tree once you move)
@@ -127,14 +130,14 @@ window.STORY = (() => {
     const fireOn = t >= 17.6 && t < 40; Wd.fire.visible = fireOn; Wd.fireLight.intensity = fireOn ? 2.4 + 0.5 * Math.sin(t * 17) + 0.3 * Math.sin(t * 7.3) : 0; Wd.fire.scale.y = 1 + 0.15 * Math.sin(t * 19);
     const piped = t >= B.dead + 0.2;
     Wd.puffs.forEach((m, i) => { const r = PAINT.rng(i + 50), u = (t * 0.45 + i / Wd.puffs.length) % 1; if (!fireOn || (t > 20.4 && !piped)) { m.position.y = -50; return; }
-      if (!piped) { const y = lerp(GY + 0.5, 3.0, u); m.position.set(-7.2 + Math.sin(u * 6 + i) * 0.2 * u, y, -0.4 + (r() - 0.5) * 0.3); m.scale.setScalar((0.5 + u * 2.2) * (y > -0.95 && y < 0.1 ? 0.6 : 1)); if (y < 0) m.position.y = y; }
-      else { m.position.set(1.6 + u * 2.5 * (r() - 0.3), 4.3 + u * 0.8 - u * u * 1.6, -0.5 + (r() - 0.5) * 1.0); m.scale.setScalar(0.6 + u * 2.6); } });
-    Wd.fog.forEach((f, i) => { const r = PAINT.rng(i + 70), a = B.fog - 0.9 + i * 0.04; if (!(t >= a && t < 31.5)) { f.position.y = -50; return; } const k = eout(ramp(t, a, a + 1.0)); f.position.set(-8 + r() * 11 + Math.sin(t * 0.3 + i) * 0.4, 0.15 + r() * 0.35, -1.2 - r() * 4.5); f.scale.set((1.6 + r()) * k, (0.45 + r() * 0.25) * k, (1.2 + r()) * k); });
+      if (!piped) { const y = lerp(GY + 0.5, 3.0, u); m.position.set(-7.2 + Math.sin(u * 6 + i) * 0.2 * u, y, -0.4 + (r() - 0.5) * 0.3); { const k = (0.7 + u * 3.0) * (y > -0.95 && y < 0.1 ? 0.6 : 1); m.scale.set(k, k, 1); } if (y < 0) m.position.y = y; }
+      else { m.position.set(1.6 + u * 5.0 * (r() - 0.45), 4.25 + u * 0.5 - u * u * 3.2, -0.5 + (r() - 0.5) * 2.4); m.scale.set(0.4 + u * 2.4, 0.35 + u * 1.3, 1); } });
+    Wd.fog.forEach((f, i) => { const r = PAINT.rng(i + 70), a = B.fog - 0.9 + i * 0.03; if (!(t >= a && t < 31.5)) { f.position.y = -50; return; } const k = eout(ramp(t, a, a + 1.0)); f.position.set(-8 + r() * 11 + Math.sin(t * 0.3 + i) * 0.4, 0.1 + r() * 0.5, -1.6 - r() * 5); f.scale.set((3.2 + r() * 2.0) * k, (1.0 + r() * 0.6) * k, 1); });
     // hollow logs pop in one after another; the dead tree rises
     Wd.logs.forEach((l, i) => popG(l, t, B.pipe + 0.3 + i * 0.12)); popG(Wd.deadTree, t, B.dead);
     // food runs out; the tunnel; the barn shaft; the drill; grain pours into your sack
     Wd.food.children.forEach((m, i) => { m.visible = t < 27.2 + i * 0.12; });
-    Wd.setFill(Wd.fTun, 1 - ramp(t, 28.4, 29.9)); Wd.setFill(Wd.fBsh, 1 - ramp(t, 29.85, 30.15)); Wd.setFill(Wd.fTun2, 1 - ramp(t, 36.4, 38.2)); Wd.setFill(Wd.fCel, 0);
+    Wd.setFill(Wd.fTun, t < 28.0 ? 1 : 1 - clamp((gusTun(t) + 0.55 - Wd.TUN.x0) / (Wd.TUN.x1 - Wd.TUN.x0))); Wd.setFill(Wd.fBsh, 1 - ramp(t, 29.85, 30.15)); Wd.setFill(Wd.fTun2, t < 36.28 ? 1 : 1 - clamp((gusTun2(t) + 0.55 - Wd.TUN2.x0) / (Wd.TUN2.x1 - Wd.TUN2.x0))); Wd.setFill(Wd.fCel, 0);
     Wd.sackHole.scale.setScalar(1 - 0.35 * ramp(t, B.drill + 0.3, B.night));
     Wd.grain.forEach((m, i) => { const r = PAINT.rng(i + 9), u = ((t - B.drill - 0.3) * 1.6 + i / Wd.grain.length) % 1; if (!win(t, B.drill + 0.3, 31.9)) { m.position.y = -50; return; } m.position.set(6.5 + (r() - 0.5) * 0.12, -0.05 - u * 1.4, -0.45 + (r() - 0.5) * 0.12); });
     Wd.grainBag.visible = t >= 31.9; Wd.grainBag.scale.setScalar(t >= 31.9 ? 1 : 0.01);
@@ -157,25 +160,25 @@ window.STORY = (() => {
   const actors = (t) => {
     const L = [];
     // GUS
-    if (t < 1.2) { const d = 0.95 * ramp(t, -0.4, 1.2); L.push(A('gus', t, -7.2, -d * 0.9, -0.05, { expr: 'grin', R: Math.sin(t * 11) > 0 ? 'up' : 'point', propR: 'shovel', L: 'hip', lookBase: 0.4, hop: Math.abs(Math.sin(t * 11)) * 0.03 })); }
-    else if (t < 3.5) L.push(A('gus', t, lerp(-7.2, -8.6, ease(ramp(t, 1.2, 3.3))), GY, -0.1, { expr: [[0, 'grin'], [B.hideout, 'beam']], R: Math.sin(t * 11) > 0 ? 'up' : 'point', propR: 'shovel', L: 'hip', lookBase: -0.5, walk: t * 1.4 }));
+    if (t < 1.2) { const d = t < 1.0 ? 0.95 * ramp(t, -0.4, 1.0) : 0.95 + (t - 1.0) * 5; L.push(A('gus', t, -7.2, -d * 0.9, -0.05, { expr: 'grin', R: Math.sin(t * 11) > 0 ? 'up' : 'point', propR: 'shovel', L: 'hip', lookBase: 0.4, hop: Math.abs(Math.sin(t * 11)) * 0.03 })); }
+    else if (t < 3.5) L.push(A('gus', t, gusRoom(t), GY, -0.1, { expr: [[0, 'grin'], [B.hideout, 'beam']], R: Math.sin(t * 11) > 0 ? 'up' : 'point', propR: 'shovel', L: 'hip', lookBase: -0.5, walk: t * 1.4 }));
     else if (t < 14.4) L.push(A('gus', t, -7.9, GY, -0.1, { expr: [[0, 'beam'], [B.hounds, 'nervous'], [B.lid, 'smirk'], [B.trapdoor, 'grin'], [B.taps, 'nervous'], [B.hollow, 'shock']], R: [[0, 'thumb'], [B.hounds, 'mouth'], [B.lid, 'up'], [B.trapdoor, 'thumb'], [B.taps, 'mouth']], L: [[0, 'hip'], [B.hounds, 'mouth'], [B.lid, 'hip']], lookBase: 0.3, tilt: t > B.hounds && t < B.lid ? 8 : null }));
     else if (t < 17.6) L.push(A('gus', t, -7.2, -1.75, -0.05, { expr: [[0, 'stern'], [B.rock, 'smugsmile']], R: 'up', propR: 'sack', L: 'hang', lookBase: 0.2 }));
     else if (t < 28.0) L.push(A('gus', t, t < 20.2 ? -6.6 : t < 25.4 ? -5.95 : t < 27.0 ? -7.6 : -8.2, GY, -0.1, { expr: [[0, 'smirk'], [B.watchtower, 'shock'], [B.pipe, 'think'], [B.dead, 'grin'], [B.ghost, 'smugsmile'], [27.1, 'nervous'], [B.food, 'sleepy']], R: [[0, 'hold'], [B.watchtower, 'up'], [B.pipe, 'point'], [B.ghost, 'thumb'], [27.1, 'mouth']], L: [[0, 'hip'], [B.watchtower, 'up'], [B.pipe, 'hip']], lookBase: 0.5 }));
-    else if (t < 29.95) L.push(A('gus', t, lerp(-5.6, 6.2, ease(ramp(t, 28.3, 29.9))), TY, -0.1, { expr: 'smirk', R: Math.sin(t * 11) > 0 ? 'up' : 'point', propR: 'shovel', L: 'hip', walk: t * 1.6, lookBase: 0.6 }));
+    else if (t < 29.95) L.push(A('gus', t, gusTun(t), TY, -0.1, { expr: 'smirk', R: Math.sin(t * 11) > 0 ? 'up' : 'point', propR: 'shovel', L: 'hip', walk: t * 1.6, lookBase: 0.6 }));
     else if (t < 32.1) { const rk = eout(ramp(t, B.drill - 0.15, B.drill + 0.15)); L.push(A('gus', t, 6.35, TY, -0.1, { expr: [[0, 'smirk'], [30.5, 'grin'], [B.night, 'beam']], R: 'holdUp', propR: 'sack', L: 'hip', lookBase: 0.2, reach: rk > 0.01 && t < 30.6 ? { to: [6.5, -0.05, -0.4], k: rk, prop: 'drill', bend: 0.1 } : null })); }
     else if (t < 36.3) L.push(A('gus', t, -7.9, GY, -0.1, { expr: [[0, 'nervous'], [B.search, 'shock']], R: 'mouth', L: 'mouth', lookBase: 0.2, hop: win(t, B.search, B.search + 0.6) ? Math.abs(Math.sin(t * 12)) * 0.03 : 0 }));
-    else if (t < 38.4) L.push(A('gus', t, lerp(7.2, 16.9, ease(ramp(t, 36.4, 38.3))), TY, -0.1, { expr: 'smirk', R: 'holdUp', propR: 'sack', L: 'hip', walk: t * 1.6, lookBase: 0.7 }));
-    else if (win(t, 42.1, 43.5)) L.push(A('gus', t, HX, -1.5, -0.25, { expr: 'smirk', R: 'up', L: 'up', lookBase: 0.2 }));
-    else { const end = t >= B.lantern; L.push(A('gus', t, end ? 19.0 : 18.0, CY, -0.15, { expr: [[0, 'smirk'], [B.cellar, 'smugsmile'], [B.lantern, 'beam'], [B.steve, 'think'], [B.sugar, 'bored'], [B.congrats, 'smugsmile'], [B.under, 'laugh']], R: [[0, 'holdUp'], [B.cellar, 'thumb'], [B.steve, 'chin'], [B.congrats, 'thumb']], propR: t < B.cellar ? 'sack' : null, L: 'hip', lookBase: t > B.under ? 0.9 : 0.3 })); }
+    else if (t < 38.86) L.push(A('gus', t, gusTun2(t), TY, -0.1, { expr: 'smirk', R: 'holdUp', propR: 'sack', L: 'hip', walk: t * 1.6, lookBase: 0.7 }));
+    else if (win(t, 42.4, 43.5)) L.push(A('gus', t, HX, -1.5, -0.25, { expr: 'smirk', R: 'up', L: 'up', lookBase: 0.2 }));
+    else { const end = t >= 45.0; L.push(A('gus', t, end ? 19.7 : 18.0, CY, -0.15, { expr: [[0, 'smirk'], [B.cellar, 'smugsmile'], [B.lantern, 'beam'], [B.steve, 'think'], [B.sugar, 'bored'], [B.congrats, 'smugsmile'], [B.under, 'laugh']], R: [[0, 'holdUp'], [B.cellar, 'thumb'], [B.steve, 'chin'], [B.congrats, 'thumb']], propR: t < B.cellar ? 'sack' : null, L: 'hip', lookBase: t > B.under ? 0.9 : 0.3 })); }
     // THE TAX COLLECTOR
     if (win(t, 1.8, 3.0)) L.push(A('tax', t, lerp(-12.6, -11.4, ramp(t, 1.8, 3.0)), 0, -0.4, { pop: B.kings, expr: 'smirk', R: 'holdUp', propR: 'notepad', L: 'hip', walk: t * 1.3, lookBase: 0.5 }));
-    if (win(t, 11.1, 17.6)) { const x = t < B.hollow ? lerp(-10.8, -7.7, ease(ramp(t, 11.2, B.hollow - 0.2))) : -7.7; const tap = [B.taps, 12.4, 13.0, B.hollow, B.rock].some((a) => win(t, a - 0.05, a + 0.2)); L.push(A('tax', t, x, 0.0, -0.75, { expr: [[0, 'stern'], [B.hollow, 'sly'], [B.rock, 'angry']], R: tap ? 'point' : 'hold', propR: 'cane', L: 'hip', walk: t < B.hollow ? t * 1.3 : null, lookBase: 0.6, hop: tap ? 0.03 : 0 })); }
+    if (win(t, 11.1, 17.6)) { const x = t < B.hollow ? lerp(-10.0, -7.7, ease(ramp(t, 11.2, B.hollow - 0.2))) : -7.7; const tap = [B.taps, 12.4, 13.0, B.hollow, B.rock].some((a) => win(t, a - 0.05, a + 0.2)); L.push(A('tax', t, x, 0.0, -0.75, { expr: [[0, 'stern'], [B.hollow, 'sly'], [B.rock, 'angry']], R: tap ? 'point' : 'hold', propR: 'cane', L: 'hip', walk: t < B.hollow ? t * 1.3 : null, lookBase: 0.6, hop: tap ? 0.03 : 0 })); }
     if (win(t, 17.6, 27.1)) L.push(A('tax', t, -1.5, 5.06, -1.95, { expr: [[0, 'stern'], [B.smoke, 'sly'], [B.dead, 'think'], [B.fog, 'shock'], [B.ghost, 'bored']], R: 'holdUp', propR: 'spyglass', L: 'hip', lookBase: t < B.dead ? -0.9 : 0.9, flip: t < B.dead }));
     if (win(t, 32.1, 36.3)) L.push(A('tax', t, -9.4, 0, -0.3, { expr: 'angry', R: 'point', L: 'hip', lookBase: 0.6 }));
     if (t >= B.cellar - 0.1) { const deco = win(t, 43.5, 45.3); L.push(A('tax', t, deco ? HX - 0.75 : OX - 1.0, 0.0, -0.75, { expr: [[0, 'stern'], [43.5, 'smugsmile'], [B.knocking, 'sleepy'], [B.under, 'sly']], R: deco ? 'up' : t > B.under ? 'holdUp' : 'hold', propR: t > B.under ? 'spyglass' : deco ? null : 'notepad', L: 'hip', lookBase: deco ? 0.8 : 0.4 })); }
     // SOLDIERS (probing with spears)
-    if (win(t, 32.6, 36.3)) [['s1', -8.6], ['s2', -7.8], ['s3', -6.4]].forEach(([id, x], i) => { const stab = Math.sin(t * 6 + i * 2) > 0.3; L.push(A(id, t, x + lerp(-4, 0, ease(ramp(t, 32.6, 34.4))), stab ? -0.04 : 0, -0.55 - i * 0.2, { expr: i % 2 ? 'stern' : 'angry', R: stab ? 'point' : 'holdUp', propR: 'spear', L: 'hip', walk: t < 34.4 ? t * 1.5 : null, lookBase: 0.5 })); });
+    if (win(t, 32.6, 36.3)) [['s1', -8.5], ['s2', -7.7], ['s3', -6.9]].forEach(([id, x], i) => { const stab = Math.sin(t * 6 + i * 2) > 0.3; L.push(A(id, t, x + lerp(-4, 0, ease(ramp(t, 32.6, 34.4))), stab ? -0.04 : 0, -0.55 - i * 0.2, { expr: i % 2 ? 'stern' : 'angry', R: stab ? 'point' : 'holdUp', propR: 'spear', L: 'hip', walk: t < 34.4 ? t * 1.5 : null, lookBase: 0.5 })); });
     // STEVE knocking on the hatch to borrow sugar (and in the finale)
     if (t >= B.steve - 0.2) L.push(A('steve', t, HX + 0.55, 0.0, -0.2, { pop: t < 50 ? B.steve : null, expr: [[0, 'grin'], [B.sugar, 'smugsmile']], R: win(t, B.knocking, 50.8) ? (Math.sin(t * 20) > 0 ? 'point' : 'hold') : 'holdUp', propR: 'coffee', L: 'hip', lookBase: -0.6, flip: true }));
     return L;
@@ -183,13 +186,28 @@ window.STORY = (() => {
 
   // ---------- captions ----------
   const CAPS = (() => { const out = []; const W = window.WORDS; for (let i = 0; i < W.length;) { const a = W[i], b = W[i + 1]; const clean = (s) => s.replace(/,(?!\d)/g, '').replace(/\.$/, ''); const short = (s) => clean(s).length <= 4; if (b && short(a[0]) && clean(a[0] + b[0]).length <= 11 && !/[.?!,]$/.test(a[0]) && b[1] - a[2] < 0.25) { out.push({ t: a[1], txt: clean(a[0]) + ' ' + clean(b[0]) }); i += 2; } else { out.push({ t: a[1], txt: clean(a[0]) }); i += 1; } } out.forEach((c, k) => { c.e = k + 1 < out.length ? out[k + 1].t : END; }); return out; })();
+  // captions never cover a face: each caption is tested against every character's head (projected through that moment's camera)
+  // and takes the first free slot: 1300 (default), 1580 (lower), 1060, 380 (top). Decided once per caption, so it never jumps mid-word.
+  const capCam = new THREE.PerspectiveCamera(40, 9 / 16, 0.05, 800), SLOTS = [1300, 1580, 1060, 380];
+  const faceBoxes = (ts, W, H_) => { state(ts); const cm = camAt(ts); CAMP = cm.pos; capCam.fov = cm.fov; capCam.aspect = W / H_; capCam.updateProjectionMatrix(); capCam.position.set(...cm.pos); capCam.up.set(0, 1, 0); capCam.lookAt(...cm.look); capCam.rotateZ((cm.roll || 0) * Math.PI / 180); capCam.updateMatrixWorld();
+    const out = []; for (const a of actors(ts)) { const s = a.s, hc = (a.key.startsWith('gus') ? 1.27 : 1.4) * s; const v = new THREE.Vector3(a.x, a.y + hc, a.z).project(capCam); if (v.z > 1 || v.z < -1) continue; const top = new THREE.Vector3(a.x, a.y + hc + 0.36 * s, a.z).project(capCam);
+      const cx = (v.x * 0.5 + 0.5) * W, cy = (0.5 - v.y * 0.5) * H_, hh = Math.abs(cy - (0.5 - top.y * 0.5) * H_), hw = hh * 0.85; out.push({ id: a.key.match(/^[a-z0-9]+/)[0], box: [cx - hw, cy - hh, cx + hw, cy + hh] }); } return out; };
+  const capBox = (g, c, W, H_, slot) => { const fs = Math.round(61 * W / 1080); g.save(); g.font = `${fs}px "Lilita One", Impact, sans-serif`; const mw = Math.min(g.measureText(c.txt).width, W * 0.86); g.restore(); const y = H_ * slot / 1920; return [W / 2 - mw / 2 - fs * 0.2, y - fs * 0.75, W / 2 + mw / 2 + fs * 0.2, y + fs * 0.75]; };
+  const ovl = (a, b) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
+  const slotOf = (g, c, W, H_) => { const key = W + 'x' + H_; c.slots = c.slots || {}; if (c.slots[key] != null) return c.slots[key]; const t1 = Math.min(c.e, c.t + 1.2);
+    const faces = [c.t + 0.03, (c.t + t1) / 2, t1 - 0.03].flatMap((ts) => faceBoxes(ts, W, H_)); let best = SLOTS[0], bestO = Infinity;
+    for (const sl of SLOTS) { const b = capBox(g, c, W, H_, sl); const o = faces.reduce((acc, f) => acc + ovl(b, f.box) * (f.id === 'gus' ? 3 : 1), 0); if (o === 0) { best = sl; bestO = 0; break; } if (o < bestO) { bestO = o; best = sl; } }
+    c.slots[key] = best; return best; };
+  const capAt = (t) => CAPS.find((c) => t >= c.t && t < c.e && t < c.t + 1.2);
   const drawCaption = (g, t, W, H_) => {
-    const c = CAPS.find((c) => t >= c.t && t < c.e && t < c.t + 1.2); if (!c) return;
+    const c = capAt(t); if (!c) return; const slot = slotOf(g, c, W, H_); state(t); CAMP = camAt(t).pos;
     const u = clamp((t - c.t) / 0.09), s = 0.88 + 0.12 * eout(u); const fs = Math.round(61 * W / 1080);
-    g.save(); g.translate(W / 2, H_ * 1300 / 1920); g.scale(s, s); g.font = `${fs}px "Lilita One", Impact, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.save(); g.translate(W / 2, H_ * slot / 1920); g.scale(s, s); g.font = `${fs}px "Lilita One", Impact, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
     let f = 1; const mw = g.measureText(c.txt).width; if (mw > W * 0.86) f = W * 0.86 / mw; g.scale(f, f);
     g.lineJoin = 'round'; g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = fs * 0.18; g.shadowOffsetY = fs * 0.06; g.lineWidth = fs * 0.24; g.strokeStyle = '#000'; g.strokeText(c.txt, 0, 0); g.shadowColor = 'transparent'; g.fillStyle = '#fff'; g.fillText(c.txt, 0, 0); g.restore();
   };
+  // for tools/autocheck: the caption box and every face box at time t
+  const checkAt = (g, t, W, H_) => { const c = capAt(t); const faces = faceBoxes(t, W, H_); return { cap: c ? { txt: c.txt, box: capBox(g, c, W, H_, slotOf(g, c, W, H_)) } : null, faces, cam: camAt(t) }; };
 
   const frame = (f) => {
     const t = f / FPS; state(t); const Cm = camAt(t); Wd.tick(t); CAMP = Cm.pos;
@@ -199,5 +217,5 @@ window.STORY = (() => {
     return { t, cam: Cm, light: L, dof: dofAt(Cm), actors: actors(t), whip: Cm.whip, flash: 0, ca: caAt(t) };
   };
   const SHOTS = [{ t: 0, n: 'Dig' }, { t: 4.42, n: 'Hounds' }, { t: 11.2, n: 'Iron cane' }, { t: 17.64, n: 'Watchtower' }, { t: 20.2, n: 'Hollow logs' }, { t: 27.1, n: 'Grain barn' }, { t: 32.1, n: '200 soldiers' }, { t: 36.28, n: 'Move' }, { t: 40.82, n: 'Christmas tree' }, { t: 46.74, n: 'Lantern, socks, Steve' }, { t: 51.64, n: 'Congratulations' }].map((x) => ({ ...x, set: 'dio' }));
-  return { FPS, END, TOTAL, frame, drawCaption, K, SHOTS, CAPS };
+  return { FPS, END, TOTAL, frame, drawCaption, K, SHOTS, CAPS, checkAt, actors, camAt, state };
 })();

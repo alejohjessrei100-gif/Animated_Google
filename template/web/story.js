@@ -81,18 +81,33 @@ window.STORY = (() => {
 
   // ---------- captions ----------
   const CAPS = (() => { const out = []; const W = window.WORDS; for (let i = 0; i < W.length;) { const a = W[i], b = W[i + 1]; const clean = (s) => s.replace(/,(?!\d)/g, '').replace(/\.$/, ''); const short = (s) => clean(s).length <= 4; if (b && short(a[0]) && clean(a[0] + b[0]).length <= 11 && !/[.?!,]$/.test(a[0]) && b[1] - a[2] < 0.25) { out.push({ t: a[1], txt: clean(a[0]) + ' ' + clean(b[0]) }); i += 2; } else { out.push({ t: a[1], txt: clean(a[0]) }); i += 1; } } out.forEach((c, k) => { c.e = k + 1 < out.length ? out[k + 1].t : END; }); return out; })();
+  // captions never cover a face: each caption is tested against every character's head (projected through that moment's camera)
+  // and takes the first free slot: 1300 (default), 1580 (lower), 1060, 380 (top). Decided once per caption, so it never jumps mid-word.
+  const capCam = new THREE.PerspectiveCamera(40, 9 / 16, 0.05, 800), SLOTS = [1300, 1580, 1060, 380];
+  const faceBoxes = (ts, W, H_) => { state(ts); const cm = camAt(ts); CAMP = cm.pos; capCam.fov = cm.fov; capCam.aspect = W / H_; capCam.updateProjectionMatrix(); capCam.position.set(...cm.pos); capCam.up.set(0, 1, 0); capCam.lookAt(...cm.look); capCam.rotateZ((cm.roll || 0) * Math.PI / 180); capCam.updateMatrixWorld();
+    const out = []; for (const a of actors(ts)) { const s = a.s, hc = (a.key.startsWith('gus') ? 1.27 : 1.4) * s; const v = new THREE.Vector3(a.x, a.y + hc, a.z).project(capCam); if (v.z > 1 || v.z < -1) continue; const top = new THREE.Vector3(a.x, a.y + hc + 0.36 * s, a.z).project(capCam);
+      const cx = (v.x * 0.5 + 0.5) * W, cy = (0.5 - v.y * 0.5) * H_, hh = Math.abs(cy - (0.5 - top.y * 0.5) * H_), hw = hh * 0.85; out.push({ id: a.key.match(/^[a-z0-9]+/)[0], box: [cx - hw, cy - hh, cx + hw, cy + hh] }); } return out; };
+  const capBox = (g, c, W, H_, slot) => { const fs = Math.round(61 * W / 1080); g.save(); g.font = `${fs}px "Lilita One", Impact, sans-serif`; const mw = Math.min(g.measureText(c.txt).width, W * 0.86); g.restore(); const y = H_ * slot / 1920; return [W / 2 - mw / 2 - fs * 0.2, y - fs * 0.75, W / 2 + mw / 2 + fs * 0.2, y + fs * 0.75]; };
+  const ovl = (a, b) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
+  const slotOf = (g, c, W, H_) => { const key = W + 'x' + H_; c.slots = c.slots || {}; if (c.slots[key] != null) return c.slots[key]; const t1 = Math.min(c.e, c.t + 1.2);
+    const faces = [c.t + 0.03, (c.t + t1) / 2, t1 - 0.03].flatMap((ts) => faceBoxes(ts, W, H_)); let best = SLOTS[0], bestO = Infinity;
+    for (const sl of SLOTS) { const b = capBox(g, c, W, H_, sl); const o = faces.reduce((acc, f) => acc + ovl(b, f.box) * (f.id === 'gus' ? 3 : 1), 0); if (o === 0) { best = sl; bestO = 0; break; } if (o < bestO) { bestO = o; best = sl; } }
+    c.slots[key] = best; return best; };
+  const capAt = (t) => CAPS.find((c) => t >= c.t && t < c.e && t < c.t + 1.2);
   const drawCaption = (g, t, W, H_) => {
-    const c = CAPS.find((c) => t >= c.t && t < c.e && t < c.t + 1.2); if (!c) return;
+    const c = capAt(t); if (!c) return; const slot = slotOf(g, c, W, H_); state(t); CAMP = camAt(t).pos;
     const u = clamp((t - c.t) / 0.09), s = 0.88 + 0.12 * eout(u); const fs = Math.round(61 * W / 1080);
-    g.save(); g.translate(W / 2, H_ * 1300 / 1920); g.scale(s, s); g.font = `${fs}px "Lilita One", Impact, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.save(); g.translate(W / 2, H_ * slot / 1920); g.scale(s, s); g.font = `${fs}px "Lilita One", Impact, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
     let f = 1; const mw = g.measureText(c.txt).width; if (mw > W * 0.86) f = W * 0.86 / mw; g.scale(f, f);
     g.lineJoin = 'round'; g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = fs * 0.18; g.shadowOffsetY = fs * 0.06; g.lineWidth = fs * 0.24; g.strokeStyle = '#000'; g.strokeText(c.txt, 0, 0); g.shadowColor = 'transparent'; g.fillStyle = '#fff'; g.fillText(c.txt, 0, 0); g.restore();
   };
+  // for tools/autocheck: the caption box and every face box at time t
+  const checkAt = (g, t, W, H_) => { const c = capAt(t); const faces = faceBoxes(t, W, H_); return { cap: c ? { txt: c.txt, box: capBox(g, c, W, H_, slotOf(g, c, W, H_)) } : null, faces, cam: camAt(t) }; };
 
   const frame = (f) => {
     const t = f / FPS; state(t); const Cm = camAt(t); Wd.tick(t); CAMP = Cm.pos;
     return { t, cam: Cm, light: { ...LIGHT.dio }, dof: dofAt(Cm), actors: actors(t), whip: Cm.whip, flash: 0, ca: caAt(t) };
   };
   const SHOTS = [{ t: 0, n: 'Opening', set: 'dio' }];
-  return { FPS, END, TOTAL, frame, drawCaption, K, SHOTS, CAPS };
+  return { FPS, END, TOTAL, frame, drawCaption, K, SHOTS, CAPS, checkAt, actors, camAt, state };
 })();

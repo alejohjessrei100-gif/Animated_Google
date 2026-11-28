@@ -28,7 +28,7 @@ window.WORLD = (() => {
   slab(X0, 12, YB, 0, ZBACK, ZB, floorM); slab(12, X1, YB, 0, ZBACK, ZB, grassM);
   // fillers: soil the story digs out (anchored so they shrink in the digging direction)
   const filler = (c, dir) => { const m = slab(c.x0, c.x1, c.y0, c.y1, ZB + 0.002, ZF - 0.002, darkSoilM); m.userData.c = c; m.userData.dir = dir; return m; };
-  Wd.fShaft = filler(Wd.SHAFT, 'down'); Wd.fRoom = filler(Wd.ROOM, 'left'); Wd.fTun = filler(Wd.TUN, 'right'); Wd.fBsh = filler(Wd.BSH, 'up'); Wd.fTun2 = filler(Wd.TUN2, 'right'); Wd.fCel = filler(Wd.CEL, 'none');
+  Wd.fShaft = filler(Wd.SHAFT, 'down'); Wd.fRoomL = filler({ x0: Wd.ROOM.x0, x1: Wd.SHAFT.x0, y0: Wd.ROOM.y0, y1: Wd.ROOM.y1 }, 'left'); Wd.fRoomM = filler({ x0: Wd.SHAFT.x0, x1: Wd.SHAFT.x1, y0: Wd.ROOM.y0, y1: Wd.ROOM.y1 }, 'down'); Wd.fRoomR = filler({ x0: Wd.SHAFT.x1, x1: Wd.ROOM.x1, y0: Wd.ROOM.y0, y1: Wd.ROOM.y1 }, 'right'); Wd.fTun = filler(Wd.TUN, 'right'); Wd.fBsh = filler(Wd.BSH, 'up'); Wd.fTun2 = filler(Wd.TUN2, 'right'); Wd.fCel = filler(Wd.CEL, 'none');
   Wd.setFill = (m, k) => { const c = m.userData.c; m.visible = k > 0.003; if (!m.visible) return; k = Math.max(0.003, Math.min(1, k)); const w = c.x1 - c.x0, h = c.y1 - c.y0;
     if (m.userData.dir === 'down') { m.scale.set(1, k, 1); m.position.y = c.y0 + h * k / 2; } else if (m.userData.dir === 'up') { m.scale.set(1, k, 1); m.position.y = c.y1 - h * k / 2; }
     else if (m.userData.dir === 'right') { m.scale.set(k, 1, 1); m.position.x = c.x1 - w * k / 2; } else if (m.userData.dir === 'left') { m.scale.set(k, 1, 1); m.position.x = c.x0 + w * k / 2; } else m.scale.set(1, 1, 1); };
@@ -68,9 +68,11 @@ window.WORLD = (() => {
   Wd.grainBag = group(-8.3, Wd.ROOM.y0 + 0.06, -0.3); add(sph(0.3, 14, 10), '#d8c08a', 0, 0.28, 0, Wd.grainBag).scale.set(1, 1.1, 0.8);
 
   // ---------- smoke: puffs (from the fire, out the trapdoor / later out the dead tree as fog) ----------
-  const smokeM = toon({ color: '#eef0f2', emissive: '#ffffff', emissiveIntensity: 0.2, transparent: true, opacity: 0.5, depthWrite: false });
-  Wd.puffs = []; for (let i = 0; i < 22; i++) Wd.puffs.push(add(sph(0.22, 10, 8), smokeM, 0, -50, 0, scene, { cast: false, noink: true }));
-  Wd.fog = []; for (let i = 0; i < 28; i++) { const f = add(sph(0.5, 12, 8), smokeM, 0, -50, 0, scene, { cast: false, noink: true }); Wd.fog.push(f); }
+  const smokeM = toon({ color: '#eef0f2', emissive: '#ffffff', emissiveIntensity: 0.2, transparent: true, opacity: 0.32, depthWrite: false });
+  const puffTex = (() => { const [c, g] = cv(128, 128); const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, 'rgba(255,255,255,0.95)'); gr.addColorStop(0.45, 'rgba(244,246,248,0.75)'); gr.addColorStop(1, 'rgba(236,240,244,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return tex(c); })();
+  const sprite = (op) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, transparent: true, depthWrite: false, opacity: op, color: '#f4f6f8' })); sp.position.set(0, -50, 0); scene.add(sp); return sp; };
+  Wd.puffs = []; for (let i = 0; i < 26; i++) Wd.puffs.push(sprite(0.42));
+  Wd.fog = []; for (let i = 0; i < 40; i++) Wd.fog.push(sprite(0.38));
   // ---------- 30 feet of hollow logs (on the cut face) + the dead tree ----------
   Wd.logs = []; { const y = -1.2; for (let x = Wd.ROOM.x1; x < 1.4; x += 0.85) { const l = group(x + 0.42, y, ZF - 0.08); add(cyl(0.16, 0.16, 0.84, 12), '#7a5232', 0, 0, 0, l).rotation.z = Math.PI / 2; add(new THREE.TorusGeometry(0.16, 0.035, 6, 14), '#c9a571', 0.42, 0, 0, l).rotation.y = Math.PI / 2; Wd.logs.push(l); }
     for (let y2 = -1.2; y2 < 0; y2 += 0.4) { const l = group(1.6, y2 + 0.2, ZF - 0.08); add(cyl(0.16, 0.16, 0.4, 12), '#7a5232', 0, 0, 0, l); Wd.logs.push(l); } }
