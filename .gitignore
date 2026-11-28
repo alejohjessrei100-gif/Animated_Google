@@ -1,0 +1,4 @@
+projects/*/audio/*.wav
+projects/*/stills/
+projects/*/web/test.html
+**/qa_*/

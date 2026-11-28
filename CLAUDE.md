@@ -2,6 +2,15 @@
 
 These are the user's standing decisions. Apply them to every new video without being asked.
 
+## One-command tools (use these, don't redo the steps by hand)
+- `tools/new_video.sh <name> "Title"`: new project from the template.
+- `tools/script.sh <script.txt>`: word count, length at the 1.25x voice, lint, one-line ElevenLabs version.
+- `tools/voice.sh <voice.mp3> <name> ["prompt words"]`: speeds to 1.25x, gets whisper timings and writes `words.js` (digits, But/So), and prints END.
+- `tools/mix.sh <name> [MusicName]`: SFX bus from `audio/sfx_cues.py`, then voice + music + SFX into `web/mix.mp3`. Assets live in `assets/sfx` (Mixkit ids) and `assets/music`.
+- `tools/stills.sh <name> "<frames>" [width] [cols]`: renders frames into `projects/<name>/stills/sheet.jpg`.
+- `tools/qa_render.sh <video.mp4>`: format check (flags re-encodes), motion QA and 2 fps contact sheets for a user's uploaded render.
+- `tools/save.sh "message"`: commits with attribution and pushes to the working branch.
+
 ## Start every video from the template
 - Run `tools/new_video.sh <name> "Title"`. It copies `template/web` (engine, toon with Gus, render page, demo story) plus `lib/scenery.js` into `projects/<name>/web`.
 - Build the world with the scenery kit (`lib/scenery.js`, `SCENERY.create()`): `backdrop()`, `clouds()`, `farTown()`, `houseRow()` (two rows: one along the street, one behind it), `street()`, `tree()`, `smoke()`. Call `S.tick(t)` every frame.
@@ -31,7 +40,7 @@ These are the user's standing decisions. Apply them to every new video without b
 - Mix: music at −21 dB, voice compressed, loudnorm I = −14, TP = −2.
 
 ## Delivery
-- Check the video with stills (scratchpad `stills.cjs`) before publishing.
+- Check the video with stills (`tools/stills.sh`) before publishing.
 - Publish the render page as an Artifact with the `downloads` capability. The user renders on their phone GPU.
 - Tell the user to upload the exact saved MP4. Gallery or chat sharing re-encodes it to 720p with a rotation flag.
 - No emoji in titles or descriptions.
